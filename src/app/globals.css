@@ -1,26 +1,263 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-tertiary: var(--tertiary);
+  --color-glass: var(--glass);
+  --color-glass-border: var(--glass-border);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --color-card-border: var(--card-border);
+  --color-dark-maroon: var(--dark-maroon);
+
+  --font-sans: var(--font-outfit);
+  --font-body: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  /* Light Mode */
+  --background: #FFFDF9;
+  --foreground: #1A1A1A;
+  --primary: #C8102E;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FFB300;
+  --secondary-foreground: #1A1A1A;
+  --tertiary: #2E7D32;
+  --glass: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --accent: #FFF5E6;
+  --muted: #F1F1F1;
+  --card: #FFFFFF;
+  --card-border: rgba(0, 0, 0, 0.06);
+  --dark-maroon: #4A0E0E;
+}
+
+.dark {
+  /* Dark Mode */
+  --background: #0D0A09;
+  --foreground: #F5F0EB;
+  --primary: #E63946;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FFC733;
+  --secondary-foreground: #1A1A1A;
+  --tertiary: #4CAF50;
+  --glass: rgba(20, 16, 14, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --accent: #1C1410;
+  --muted: #1A1614;
+  --card: #161210;
+  --card-border: rgba(255, 255, 255, 0.06);
+  --dark-maroon: #1A0808;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), var(--font-sans), system-ui, sans-serif;
+  transition: background-color 0.4s ease, color 0.4s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-weight: 700;
+}
+
+/* ====== Glassmorphism ====== */
+.glass-panel {
+  background-color: var(--glass);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+}
+
+/* ====== Buttons ====== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), #a00d24);
+  color: var(--primary-foreground);
+  box-shadow: 0 4px 20px rgba(200, 16, 46, 0.3);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 28px rgba(200, 16, 46, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, var(--secondary), #E6A200);
+  color: var(--secondary-foreground);
+  box-shadow: 0 4px 20px rgba(255, 179, 0, 0.25);
+}
+
+.btn-secondary:hover {
+  box-shadow: 0 6px 28px rgba(255, 179, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-outlined {
+  background: transparent;
+  color: var(--foreground);
+  border: 2px solid var(--glass-border);
+}
+
+.btn-outlined:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(200, 16, 46, 0.05);
+}
+
+.btn-sm {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+}
+
+.btn-md {
+  padding: 0.75rem 1.75rem;
+  font-size: 1rem;
+}
+
+.btn-lg {
+  padding: 1rem 2.5rem;
+  font-size: 1.125rem;
+}
+
+/* ====== Cards ====== */
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  border-color: rgba(200, 16, 46, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+/* ====== Gradient Text ====== */
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-green {
+  background: linear-gradient(135deg, var(--tertiary), #66BB6A);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ====== Custom Scrollbar ====== */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* ====== Selection ====== */
+::selection {
+  background: rgba(200, 16, 46, 0.2);
+  color: var(--foreground);
+}
+
+/* ====== Animations ====== */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(200, 16, 46, 0.2); }
+  50% { box-shadow: 0 0 40px rgba(200, 16, 46, 0.4); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ====== Toast Notification ====== */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  background: var(--tertiary);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  z-index: 100;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
 }
