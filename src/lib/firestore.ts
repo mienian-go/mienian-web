@@ -33,6 +33,19 @@ export const getCateringPackages = async (onlyActive = false) => {
 };
 
 // ORDERS
+export interface Order {
+  id: string;
+  orderId?: string;
+  status: string;
+  totalPrice: number;
+  event?: {
+    picName?: string;
+    date?: string;
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
+
 export const createOrder = async (orderData: any) => {
   const docRef = await addDoc(collection(db, "orders"), {
     ...orderData,
@@ -42,10 +55,10 @@ export const createOrder = async (orderData: any) => {
   return docRef.id;
 };
 
-export const getOrders = async () => {
+export const getOrders = async (): Promise<Order[]> => {
   const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Order));
 };
 
 export const updateOrderStatus = async (orderId: string, status: string) => {
