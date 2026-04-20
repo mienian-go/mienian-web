@@ -47,12 +47,25 @@ export interface Order {
 }
 
 export const createOrder = async (orderData: any) => {
-  const docRef = await addDoc(collection(db, "orders"), {
-    ...orderData,
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
-  });
-  return docRef.id;
+  // Promise race to prevent infinite hanging
+  const timeoutStr = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error("Firebase Database tidak merespon (Timeout 10 detik). URL salah atau Database Firestore belum ada di Konsol.")), 10000)
+  );
+  
+  try {
+    const docRef: any = await Promise.race([
+      addDoc(collection(db, "orders"), {
+        ...orderData,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      }),
+      timeoutStr
+    ]);
+    return docRef.id;
+  } catch (error) {
+    console.error("Firebase Database Error:", error);
+    throw error;
+  }
 };
 
 export const getOrders = async (): Promise<Order[]> => {

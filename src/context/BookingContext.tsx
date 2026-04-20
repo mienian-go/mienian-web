@@ -39,6 +39,7 @@ export interface BookingState {
   mie: LineItem[];
   toppingReg: LineItem[];
   toppingPrem: LineItem[];
+  toppingSuper: LineItem[];
   odeng: LineItem[];
   
   // Step 5: Checkout
@@ -62,7 +63,7 @@ export interface BookingState {
 
 export type BookingAction = 
   | { type: "SET_FIELD"; payload: { field: keyof BookingState; value: any } }
-  | { type: "SET_LINE_ITEM"; payload: { category: "mie"|"toppingReg"|"toppingPrem"|"odeng"; items: LineItem[] } }
+  | { type: "SET_LINE_ITEM"; payload: { category: "mie"|"toppingReg"|"toppingPrem"|"toppingSuper"|"odeng"; items: LineItem[] } }
   | { type: "RESET_WIZARD" };
 
 const initialState: BookingState = {
@@ -82,6 +83,7 @@ const initialState: BookingState = {
   mie: [],
   toppingReg: [],
   toppingPrem: [],
+  toppingSuper: [],
   odeng: [],
   paymentType: "full",
   calculations: {
@@ -103,6 +105,7 @@ const initialState: BookingState = {
 const HARGA_MIE = 8500; 
 const HARGA_TOPPING = 3500;
 const HARGA_TOPPING_PREM = 6500;
+const HARGA_TOPPING_SUPER = 11000;
 const T_BASE_FEE = 120000;
 const STAFF_FEE_PER = 75000;
 
@@ -121,13 +124,15 @@ function calculateTotals(state: BookingState): BookingState["calculations"] {
   const totalMieInput = sumQty(state.mie);
   const totalTopRegInput = sumQty(state.toppingReg);
   const totalTopPremInput = sumQty(state.toppingPrem);
+  const totalTopSuperInput = sumQty(state.toppingSuper);
   const totalOdengInput = sumQty(state.odeng);
 
   if (isReguler) {
     totalPorsi = totalMieInput;
-    basePrice = (totalMieInput * HARGA_MIE) + 
-                (totalTopRegInput * HARGA_TOPPING) + 
-                ((totalTopPremInput + totalOdengInput) * HARGA_TOPPING_PREM);
+    basePrice = (totalMieInput * HARGA_MIE);
+    extraPrice = (totalTopRegInput * HARGA_TOPPING) + 
+                 ((totalTopPremInput + totalOdengInput) * HARGA_TOPPING_PREM) +
+                 (totalTopSuperInput * HARGA_TOPPING_SUPER);
   } else if (pkg) {
     const basePorsi = pkg.portions;
     basePrice = pkg.price;
@@ -147,20 +152,27 @@ function calculateTotals(state: BookingState): BookingState["calculations"] {
 
     extraPrice = (extraMie * HARGA_MIE) + 
                  (extraTopReg * HARGA_TOPPING) + 
-                 ((extraTopPrem + extraOdeng) * HARGA_TOPPING_PREM);
+                 ((extraTopPrem + extraOdeng) * HARGA_TOPPING_PREM) +
+                 (totalTopSuperInput * HARGA_TOPPING_SUPER);
                  
     totalPorsi = totalMieInput > basePorsi ? totalMieInput : basePorsi;
   }
 
   // 2. Staff Calculation
   let staffCount = 0;
+  let staffFee = 0;
+
   if (isReguler) {
-    staffCount = 1;
+    staffCount = 1; // 1 petugas include/gratis
+    if (state.stallType === "gerobak") {
+      staffCount += 1; // Wajib tambah 1 petugas jika gerobak
+    }
+    staffFee = (staffCount - 1) * STAFF_FEE_PER; // Tambahan petugas 75rb
   } else if (totalPorsi > 0) {
     staffCount = totalPorsi <= 200 ? 2 : 2 + Math.ceil((totalPorsi - 200) / 50);
+    staffFee = staffCount * STAFF_FEE_PER;
   }
   
-  let staffFee = staffCount * STAFF_FEE_PER;
   if (state.paymentType === "full" && !isReguler) {
     staffFee = 0; // Free for full payment (Package only)
   }
@@ -168,7 +180,7 @@ function calculateTotals(state: BookingState): BookingState["calculations"] {
   // 3. Extra Fees
   let extraFee = state.komporPrice + (state.addTable ? 100000 : 0);
   if (isReguler && state.stallType === "gerobak") {
-    extraFee += 250000;
+    extraFee += 250000; // Sewa gerobak 250rb
   }
 
   // 4. Transport Fee
@@ -187,7 +199,9 @@ function calculateTotals(state: BookingState): BookingState["calculations"] {
   const payNow = state.paymentType === "dp" ? grandTotal * 0.5 : grandTotal;
 
   // validations
-  const isValidReguler = isReguler ? (basePrice + extraPrice) >= 700000 : true;
+  // total order exclude transport, staff, and extra fees (only food)
+  const totalFoodOnly = basePrice + extraPrice;
+  const isValidReguler = isReguler ? totalFoodOnly >= 700000 : true;
   
   let isDpAllowed = true;
   if (state.date) {

@@ -236,9 +236,6 @@ export function Step4Menu() {
              className="w-full px-4 py-3 rounded-xl bg-muted border border-transparent focus:border-primary focus:outline-none transition-colors appearance-none text-sm font-bold"
            >
              <option value="">-- Pilih Paket --</option>
-             {state.eventType !== "Wedding" && (
-                <option value="reguler">Paket Reguler (A la Carte - Min. Rp 700.000)</option>
-             )}
              {cateringPackages.map(p => (
                 <option key={p.id} value={p.id}>{p.name} — Rp {p.price.toLocaleString("id-ID")} | {p.portions} Porsi</option>
              ))}
@@ -247,7 +244,7 @@ export function Step4Menu() {
 
         {!state.calculations.isValidReguler && state.packageId === "reguler" && (
           <div className="p-3 bg-primary/10 border-l-4 border-primary rounded text-sm text-primary font-bold">
-            ⚠️ Minimum belanja untuk Paket Reguler adalah Rp 700.000. Belanja Anda kurang Rp {(700000 - state.calculations.basePrice - state.calculations.extraPrice).toLocaleString("id-ID")}
+            ⚠️ Minimum belanja untuk Paket Reguler adalah Rp 700.000 (tidak termasuk transport). Belanja Anda kurang Rp {(700000 - (state.calculations.basePrice + state.calculations.extraPrice + state.calculations.staffFee + state.calculations.extraFee)).toLocaleString("id-ID")}
           </div>
         )}
 
