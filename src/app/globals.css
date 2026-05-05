@@ -261,3 +261,16 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateX(-50%) translateY(0);
   opacity: 1;
 }
+
+/* ====== Custom Utilities ====== */
+.clip-path-wave {
+  clip-path: polygon(0 20%, 10% 15%, 20% 12%, 30% 10%, 40% 12%, 50% 20%, 60% 30%, 70% 35%, 80% 38%, 90% 35%, 100% 25%, 100% 100%, 0 100%);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -20,10 +20,19 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
+      // Verify if they actually have an admin role
+      const { getAdminRole } = await import("@/lib/firestore");
+      const role = await getAdminRole(userCred.user.uid);
+      
+      if (!role) {
+        await auth.signOut();
+        throw new Error("Akses Ditolak: Akun Anda tidak memiliki hak akses admin.");
+      }
+
       router.push("/admin");
     } catch (err: any) {
-      setError("Email atau password salah.");
+      setError(err.message === "Akses Ditolak: Akun Anda tidak memiliki hak akses admin." ? err.message : "Email atau password salah.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -77,7 +86,7 @@ export default function AdminLogin() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 bg-muted/50 border border-white/10 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-                  placeholder="admin@mienian.com"
+                  placeholder="mienianid@gmail.com"
                   required
                 />
               </div>

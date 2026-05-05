@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, MapPin, Utensils, CreditCard, CheckCircle, Flame, PartyPopper, Users } from "lucide-react";
 import { CalendarPreview } from "@/components/catering/CalendarPreview";
 
+
 const container = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.1 } },
@@ -35,9 +36,9 @@ export default function CateringLanding() {
         {/* Background Image using inline style to guarantee load */}
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/images/bg-hero-banner-catering.gif')" }}
+          style={{ backgroundImage: "url('/images/bg-hero-banner-catering1.png')" }}
         />
-        <div className="absolute inset-0 bg-dark-maroon/60" />
+        <div className="absolute inset-0 bg-black/45" />
 
         {/* Glow Effects */}
         <div className="absolute top-20 right-20 w-72 h-72 bg-primary/20 rounded-full blur-[120px]" />
@@ -60,7 +61,7 @@ export default function CateringLanding() {
 
           <motion.p variants={item} className="text-sm text-white/60 max-w-lg mx-auto mb-10">
             🗺️ Kita ready buat take over acara kalian di <br className="hidden sm:inline" />
-            <strong className="text-white">Jakarta, Bandung,</strong> dan <strong className="text-white">Yogyakarta.</strong>
+            <strong className="text-white">JaBoDeTaBek, Bandung,</strong> dan <strong className="text-white">Yogyakarta.</strong>
           </motion.p>
 
           <motion.div variants={item}>
@@ -72,6 +73,8 @@ export default function CateringLanding() {
         </motion.div>
       </section>
 
+
+
       {/* ============ KATEGORI QUICK LINKS ============ */}
       <section className="py-12 px-4 sm:px-6 lg:px-8 bg-background relative z-20 -mt-10">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
@@ -82,8 +85,8 @@ export default function CateringLanding() {
             <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
               <Flame className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="text-xl font-bold mb-1">Pesanan Reguler</h3>
-            <p className="text-sm text-foreground/60">Pesen buat makan harian</p>
+            <h3 className="text-xl font-bold mb-1">Pesan Reguler</h3>
+            <p className="text-sm text-foreground/60">buat yang mau pilih sesuai selera</p>
           </Link>
 
           <Link
@@ -94,7 +97,7 @@ export default function CateringLanding() {
               <PartyPopper className="w-6 h-6 text-secondary" />
             </div>
             <h3 className="text-xl font-bold mb-1">Paket Wedding</h3>
-            <p className="text-sm text-foreground/60">Catering pernikahan</p>
+            <p className="text-sm text-foreground/60">simple dan cepat</p>
           </Link>
 
           <Link
@@ -105,7 +108,7 @@ export default function CateringLanding() {
               <Users className="w-6 h-6 text-accent" />
             </div>
             <h3 className="text-xl font-bold mb-1">Paket Gathering</h3>
-            <p className="text-sm text-foreground/60">Acara kantor/komunitas</p>
+            <p className="text-sm text-foreground/60">cocok buat acara selebrasi</p>
           </Link>
         </div>
       </section>
@@ -215,13 +218,13 @@ export default function CateringLanding() {
 
           <div className="relative z-10">
             <h3 className="text-2xl sm:text-4xl font-extrabold mb-4">
-              Slot Terbatas, First Pay First Serve! ⏰
+              Slot Terbatas, Siapa cepat dia dapat! ⏰
             </h3>
             <p className="text-white/60 text-lg max-w-lg mx-auto mb-8">
-              Jangan sampai tanggal acara lo keburu diambil orang. Booking sekarang!
+              Jangan sampai slot habis diambil orang
             </p>
             <Link href="/catering/booking" className="btn btn-secondary btn-lg">
-              Booking Jadwal Segera
+              Booking sekarang
               <ArrowRight className="w-5 h-5" />
             </Link>
           </div>

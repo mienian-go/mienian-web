@@ -20,7 +20,7 @@ export default function OrdersPage() {
   // Status mapping
   const statuses: Record<string, { label: string, color: string }> = {
     pending: { label: "Menunggu Upload", color: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30" },
-    payment_uploaded: { label: "Perlu Verifikasi", color: "bg-amber-500/20 text-amber-500 border-amber-500/30" },
+    payment_verifying: { label: "Perlu Verifikasi", color: "bg-amber-500/20 text-amber-500 border-amber-500/30" },
     verified: { label: "Lunas / Verified", color: "bg-blue-500/20 text-blue-500 border-blue-500/30" },
     preparing: { label: "Persiapan", color: "bg-fuchsia-500/20 text-fuchsia-500 border-fuchsia-500/30" },
     completed: { label: "Selesai", color: "bg-green-500/20 text-green-500 border-green-500/30" },
@@ -158,7 +158,7 @@ export default function OrdersPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1.5 rounded-md text-[11px] font-bold border uppercase tracking-wider flex items-center justify-center w-max gap-1.5 ${statuses[order.status]?.color || statuses.pending.color}`}>
-                        {order.status === "payment_uploaded" && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>}
+                        {order.status === "payment_verifying" && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>}
                         {statuses[order.status]?.label || order.status}
                       </span>
                     </td>
@@ -283,7 +283,7 @@ export default function OrdersPage() {
                 <div className="flex-1 flex flex-col justify-center">
                   <h4 className="font-bold text-sm uppercase tracking-wider text-foreground/50 mb-4 text-center md:text-left">Ubah Status Order</h4>
                   
-                  {selectedOrder.status === "payment_uploaded" && (
+                  {selectedOrder.status === "payment_verifying" && (
                     <div className="bg-amber-500/10 border border-amber-500/30 text-amber-500 p-3 rounded-lg text-sm mb-4 text-center">
                       User telah mengupload bukti. Silakan verifikasi!
                     </div>

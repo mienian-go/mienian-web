@@ -96,7 +96,7 @@ export default function ConfirmPage() {
             date: state.date,
             time: state.time,
             venue: state.address,
-            notes: `Stall: ${state.stallType}, Extras: ${state.komporType}, Meja: ${state.addTable}`
+            notes: `Stall: ${state.stallType}, Extras: ${state.komporType}, Meja: ${state.tableCount}`
         },
         payment: {
           method: state.paymentType + " - " + bankOrWallet,

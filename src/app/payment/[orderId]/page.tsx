@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { Copy, UploadCloud, CheckCircle2, AlertCircle } from "lucide-react";
+import { Copy, UploadCloud, CheckCircle2, AlertCircle, ReceiptText, MapPin, Calendar, Clock, Phone, User, Download } from "lucide-react";
 import { getDoc, doc, updateDoc } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -78,75 +78,193 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
       <div className="max-w-xl mx-auto px-4">
         
         <div className="text-center mb-8">
-           <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">Menunggu Pembayaran</h1>
-           <p className="text-sm text-foreground/60">Selesaikan pembayaran sesuai detail di bawah ini, lalu unggah bukti transaksinya agar dapat segera kami proses.</p>
+           <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">
+             {success || order.status === "payment_verifying" ? "Tanda Terima (Receipt)" : "Menunggu Pembayaran"}
+           </h1>
+           <p className="text-sm text-foreground/60">
+             {success || order.status === "payment_verifying" 
+                ? "Pesanan Anda sedang dalam antrean verifikasi otomatis oleh admin kami." 
+                : "Selesaikan pembayaran sesuai detail di bawah ini, lalu unggah bukti transaksinya agar dapat segera kami proses."}
+           </p>
         </div>
 
-        <div className="bg-card rounded-3xl border border-card-border shadow-xl overflow-hidden mb-8">
-           {/* Order Total Block */}
-           <div className="bg-primary/10 p-6 sm:p-8 text-center border-b border-primary/20">
-             <p className="text-sm font-bold text-primary mb-1">TOTAL TAGIHAN</p>
-             <h2 className="text-4xl font-extrabold tracking-tight">Rp {order.costs?.grandTotal?.toLocaleString("id-ID") || 0}</h2>
-             <p className="text-xs text-foreground/50 mt-2">Order ID: #{orderId.substring(0,8).toUpperCase()}</p>
-           </div>
+        {success || (order.status === "payment_verifying" && !uploading) ? (
+          <div className="bg-card rounded-3xl border border-card-border shadow-xl overflow-hidden mb-8 relative">
+             <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+                <ReceiptText className="w-48 h-48" />
+             </div>
+             
+             {/* Receipt Header */}
+             <div className="bg-primary p-6 sm:p-8 text-center text-white relative">
+                <div className="inline-flex items-center justify-center p-3 bg-white/20 rounded-full mb-3 backdrop-blur-sm">
+                   <CheckCircle2 className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-2xl font-extrabold tracking-tight">Menunggu Verifikasi</h2>
+                <p className="text-white/80 text-sm mt-1">Bukti transfer Anda telah kami terima.</p>
+             </div>
 
-           <div className="p-6 sm:p-8 space-y-8">
-              
-              {/* Manual Bank Transfer */}
-              <div>
-                 <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                   <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">1</div>
-                   Transfer Bank Manual
-                 </h3>
-                 <div className="bg-muted p-4 rounded-xl border border-card-border">
-                    <p className="text-xs text-foreground/60 mb-1">Bank Syariah Indonesia (BSI)</p>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xl font-bold tracking-widest text-primary">8777767896</span>
-                      <button onClick={() => copyToClipboard("8777767896")} className="p-2 bg-card hover:bg-card-border rounded-lg text-foreground/50 transition-colors">
-                         <Copy className="w-4 h-4"/>
-                      </button>
-                    </div>
-                    <p className="text-sm font-bold text-foreground">a/n PT Mie Kekinian Sukses</p>
-                 </div>
-              </div>
+             <div className="p-6 sm:p-8">
+                {/* Order Details */}
+                <div className="border-b border-dashed border-card-border pb-6 mb-6">
+                   <div className="flex justify-between items-start mb-6">
+                      <div>
+                         <p className="text-xs text-foreground/50 font-bold uppercase tracking-wider mb-1">Order ID</p>
+                         <p className="font-mono font-bold text-lg text-primary">#{orderId.substring(0,8).toUpperCase()}</p>
+                      </div>
+                      <div className="text-right">
+                         <p className="text-xs text-foreground/50 font-bold uppercase tracking-wider mb-1">Tanggal Pesanan</p>
+                         <p className="font-bold text-sm">{new Date(order.createdAt?.toMillis ? order.createdAt.toMillis() : Date.now()).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}</p>
+                      </div>
+                   </div>
 
-              {/* QRIS */}
-              <div>
-                 <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                   <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">2</div>
-                   Atau via QRIS (Semua E-Wallet/M-Banking)
-                 </h3>
-                 <div className="bg-white p-6 rounded-xl border border-card-border flex flex-col items-center">
-                    {/* The QRIS image provided by the user. If they provide exactly "qris.jpg" into public dir */}
-                    <div className="w-full max-w-[250px] aspect-square relative mb-3 bg-muted/30 rounded-lg overflow-hidden border">
-                       <Image src="/qris.jpg" alt="QRIS Mienian" fill className="object-contain" onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/250?text=QRIS+Not+Found+in+/public'; }} />
-                    </div>
-                    <p className="text-[10px] text-center text-black/40">Pastikan atas nama PT Mie Kekinian Sukses saat melakukan scan.</p>
-                 </div>
-              </div>
+                   <div className="bg-muted rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                      <div className="flex items-center gap-3">
+                         <User className="w-4 h-4 text-primary shrink-0" />
+                         <span className="font-bold">{order.customerName}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                         <Phone className="w-4 h-4 text-primary shrink-0" />
+                         <span className="font-bold">{order.whatsapp}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                         <Calendar className="w-4 h-4 text-primary shrink-0" />
+                         <span className="font-bold">{order.eventDate} <span className="text-foreground/50 font-normal">({order.eventTime})</span></span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                         <MapPin className="w-4 h-4 text-primary shrink-0" />
+                         <span className="font-bold line-clamp-1">{order.city} - {order.distanceKm}km</span>
+                      </div>
+                   </div>
+                </div>
 
-              {/* Upload Bukti */}
-              <div className="pt-4 border-t border-dashed border-card-border">
-                 <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                   <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">3</div>
-                   Unggah Bukti Transfer
-                 </h3>
+                {/* Items Breakdown */}
+                <div className="mb-6">
+                   <p className="text-xs text-foreground/50 font-bold uppercase tracking-wider mb-4">Rincian Paket Catering</p>
+                   {/* Loop Over Items if we stored them */}
+                   <div className="space-y-3">
+                      {(order.items?.mie || []).map((m: any, i: number) => m.qty > 0 && (
+                         <div key={i} className="flex justify-between text-sm">
+                            <span>{m.name} <span className="text-foreground/50">x{m.qty}</span></span>
+                            <span className="font-bold flex-shrink-0">Rp {(Number(m.qty) * 10000).toLocaleString('id-ID')}</span>
+                         </div>
+                      ))}
+                      {(order.items?.toppingReg || []).map((m: any, i: number) => m.qty > 0 && (
+                         <div key={i} className="flex justify-between text-sm text-foreground/80">
+                            <span>{m.name} <span className="text-foreground/50">x{m.qty}</span></span>
+                            <span className="font-bold flex-shrink-0">Rp {(Number(m.qty) * 5000).toLocaleString('id-ID')}</span>
+                         </div>
+                      ))}
+                      {(order.items?.toppingPrem || []).map((m: any, i: number) => m.qty > 0 && (
+                         <div key={i} className="flex justify-between text-sm text-foreground/80">
+                            <span>{m.name} <span className="text-foreground/50">x{m.qty}</span></span>
+                            <span className="font-bold flex-shrink-0">Rp {(Number(m.qty) * 8000).toLocaleString('id-ID')}</span>
+                         </div>
+                      ))}
+                      {(order.items?.toppingSuper || []).map((m: any, i: number) => m.qty > 0 && (
+                         <div key={i} className="flex justify-between text-sm text-foreground/80">
+                            <span>{m.name} <span className="text-foreground/50">x{m.qty}</span></span>
+                            <span className="font-bold flex-shrink-0">Rp {(Number(m.qty) * 13000).toLocaleString('id-ID')}</span>
+                         </div>
+                      ))}
+                   </div>
+                </div>
 
-                 {success ? (
-                    <div className="bg-green-500/10 border border-green-500/30 p-5 rounded-xl text-center">
-                       <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                       <h4 className="font-bold text-green-600 mb-1">Bukti Berhasil Diunggah!</h4>
-                       <p className="text-xs text-green-600/80">Admin kami akan segera meninjau dan mengkonfirmasi pesanan Anda melalui WhatsApp.</p>
-                       <Link href="/catering" className="mt-4 inline-block px-4 py-2 bg-green-500 text-white rounded-lg text-xs font-bold w-full">Kembali Kunjungi Beranda</Link>
-                    </div>
-                 ) : (
-                    <div className="space-y-4">
-                      {order.status === "payment_verifying" && (
-                        <div className="bg-yellow-500/10 border border-yellow-500/30 p-4 rounded-xl flex items-start gap-3">
-                          <AlertCircle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
-                          <div className="text-xs text-yellow-700">Anda sudah mengunggah bukti untuk pesanan ini. Anda bisa mengunggah ulang jika terdapat kesalahan.</div>
-                        </div>
-                      )}
+                {/* Costs Breakdown */}
+                <div className="border-t border-dashed border-card-border pt-4 mb-6 space-y-3 text-sm text-foreground/70">
+                   {order.costs?.extraFee > 0 && (
+                     <div className="flex justify-between">
+                        <span>Pilihan Stall ({order.stallType})</span>
+                        <span className="font-bold text-foreground">Rp {order.costs.extraFee.toLocaleString('id-ID')}</span>
+                     </div>
+                   )}
+                   {order.costs?.staffFee > 0 && (
+                     <div className="flex justify-between">
+                        <span>Layanan Staf (x{order.costs.totalStaff})</span>
+                        <span className="font-bold text-foreground">Rp {order.costs.staffFee.toLocaleString('id-ID')}</span>
+                     </div>
+                   )}
+                   {order.costs?.transportFee > 0 && (
+                     <div className="flex justify-between">
+                        <span>Ongkos Transport ({order.distanceKm} KM)</span>
+                        <span className="font-bold text-foreground">Rp {order.costs.transportFee.toLocaleString('id-ID')}</span>
+                     </div>
+                   )}
+                </div>
+
+                {/* Grand Total */}
+                <div className="bg-primary/5 rounded-2xl p-5 flex items-center justify-between">
+                   <span className="font-bold text-primary">Total Pembayaran</span>
+                   <span className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">Rp {order.costs?.grandTotal?.toLocaleString("id-ID") || 0}</span>
+                </div>
+
+                {/* Actions */}
+                <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                   <Link href="/catering" className="flex-1 btn btn-outlined bg-card hover:bg-muted py-3 justify-center text-sm">
+                      Kembali ke Beranda
+                   </Link>
+                   <button onClick={() => window.print()} className="flex-1 btn btn-primary py-3 justify-center text-sm gap-2">
+                      <Download className="w-4 h-4"/>
+                      Simpan / Cetak Struk
+                   </button>
+                </div>
+                
+                {/* Upload Ulang Button (Optional Escape Hatch) */}
+                <div className="mt-6 text-center">
+                   <button onClick={() => { setSuccess(false); setOrder({...order, status: "pending_payment"}); }} className="text-[11px] text-foreground/40 hover:text-primary transition-colors underline">
+                     Terjadi kesalahan transfer? Unggah ulang bukti
+                   </button>
+                </div>
+             </div>
+          </div>
+        ) : (
+          <div className="bg-card rounded-3xl border border-card-border shadow-xl overflow-hidden mb-8">
+             {/* Order Total Block */}
+             <div className="bg-primary/10 p-6 sm:p-8 text-center border-b border-primary/20">
+               <p className="text-sm font-bold text-primary mb-1">TOTAL TAGIHAN</p>
+               <h2 className="text-4xl font-extrabold tracking-tight">Rp {order.costs?.grandTotal?.toLocaleString("id-ID") || 0}</h2>
+               <p className="text-xs text-foreground/50 mt-2">Order ID: #{orderId.substring(0,8).toUpperCase()}</p>
+             </div>
+
+             <div className="p-6 sm:p-8 space-y-8">
+                {/* Manual Bank Transfer */}
+                <div>
+                   <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">1</div>
+                     Transfer Bank Manual
+                   </h3>
+                   <div className="bg-muted p-4 rounded-xl border border-card-border">
+                      <p className="text-xs text-foreground/60 mb-1">Bank Syariah Indonesia (BSI)</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xl font-bold tracking-widest text-primary">8777767896</span>
+                        <button onClick={() => copyToClipboard("8777767896")} className="p-2 bg-card hover:bg-card-border rounded-lg text-foreground/50 transition-colors">
+                           <Copy className="w-4 h-4"/>
+                        </button>
+                      </div>
+                      <p className="text-sm font-bold text-foreground">a/n PT Mie Kekinian Sukses</p>
+                   </div>
+                </div>
+
+                {/* QRIS */}
+                <div>
+                   <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">2</div>
+                     Atau via QRIS (Semua E-Wallet/M-Banking)
+                   </h3>
+                   <div className="bg-white p-6 rounded-xl border border-card-border flex flex-col items-center">
+                      <div className="w-full max-w-[250px] aspect-square relative mb-3 bg-muted/30 rounded-lg overflow-hidden border">
+                         <Image src="/qris.jpg" alt="QRIS Mienian" fill className="object-contain" onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/250?text=QRIS+Not+Found+in+/public'; }} />
+                      </div>
+                      <p className="text-[10px] text-center text-black/40">Pastikan atas nama PT Mie Kekinian Sukses saat melakukan scan.</p>
+                   </div>
+                </div>
+
+                {/* Upload Bukti */}
+                <div className="pt-4 border-t border-dashed border-card-border">
+                   <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">3</div>
+                     Unggah Bukti Transfer
+                   </h3>
+                   <div className="space-y-4">
                       <label className="flex items-center justify-center w-full h-32 px-4 transition bg-card border-2 border-primary/20 border-dashed rounded-xl appearance-none cursor-pointer hover:border-primary/50 focus:outline-none">
                           <div className="flex flex-col items-center space-y-2">
                             <UploadCloud className="w-6 h-6 text-foreground/40" />
@@ -159,12 +277,11 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
                       <button onClick={handleUpload} disabled={!file || uploading} className="w-full py-3 bg-primary text-white font-bold rounded-xl disabled:opacity-50 hover:bg-primary/90 transition-all flex justify-center items-center gap-2">
                          {uploading ? "Sedang Mengunggah..." : "Konfirmasi Pembayaran"}
                       </button>
-                    </div>
-                 )}
-              </div>
-
-           </div>
-        </div>
+                   </div>
+                </div>
+             </div>
+          </div>
+        )}
 
       </div>
     </div>

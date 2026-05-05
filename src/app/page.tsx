@@ -13,6 +13,7 @@ import {
   ChefHat,
 } from "lucide-react";
 import { InstagramIcon } from "@/components/ui/InstagramIcon";
+import { PackageShowcase } from "@/components/PackageShowcase";
 
 const container = {
   hidden: { opacity: 0 },
@@ -29,8 +30,11 @@ export default function Home() {
     <div className="flex flex-col overflow-hidden">
       {/* ============ HERO SECTION ============ */}
       <section className="relative min-h-[110vh] sm:min-h-screen flex items-center justify-center pt-32 pb-24 overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-dark-maroon via-[#6B1010] to-dark-maroon" />
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <img src="/images/bg-hero-banner-catering.gif" alt="Mienian Catering" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-b from-dark-maroon/80 via-dark-maroon/60 to-dark-maroon/90" />
+        </div>
         <div className="absolute inset-0 bg-[url('/images/pattern.svg')] opacity-5" />
 
         {/* Floating Decorations */}
@@ -131,6 +135,8 @@ export default function Home() {
           </motion.div>
         </motion.div>
       </section>
+
+      <PackageShowcase />
 
       {/* ============ SPLIT SECTION: Pilih Jalur Lo ============ */}
       <section className="py-24 px-4 sm:px-6 lg:px-8">

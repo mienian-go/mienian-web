@@ -17,7 +17,7 @@ const KOTA_ORIGIN: Record<string, string> = {
 export function Step2Location() {
   const { state, dispatch } = useBooking();
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyC-JcHUBPoB4BLCkVus1PyXd7IPkWEEyHI",
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyBgj6aPrkcd-B2lWsE0_AdA8PQpbO13R7c",
     libraries,
   });
 

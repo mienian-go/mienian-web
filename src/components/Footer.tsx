@@ -57,6 +57,7 @@ export function Footer() {
               <li><Link href="/catering" className="hover:text-secondary transition-colors">Mienian Catering</Link></li>
               <li><Link href="/about" className="hover:text-secondary transition-colors">About Us</Link></li>
               <li><Link href="/contact" className="hover:text-secondary transition-colors">Contact Us</Link></li>
+              <li><Link href="/affiliate/register" className="font-bold text-secondary hover:text-white transition-colors animate-pulse">Gabung Affiliator 🔥</Link></li>
             </ul>
           </div>
 

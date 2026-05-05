@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { Outfit, Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import { CartProvider } from "@/context/CartContext";
 import { BookingProvider } from "@/context/BookingContext";
+import { AuthProvider } from "@/context/AuthContext";
+import { ConditionalLayout } from "@/components/ConditionalLayout";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -41,20 +41,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" suppressHydrationWarning className="scroll-smooth">
-      <body className={`${outfit.variable} ${inter.variable} antialiased`}>
+      <body className={`${outfit.variable} ${inter.variable} antialiased`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
-          disableTransitionOnChange
         >
-          <BookingProvider>
-            <CartProvider>
-              <Navbar />
-              <main className="min-h-screen">{children}</main>
-              <Footer />
-            </CartProvider>
-          </BookingProvider>
+          <AuthProvider>
+            <BookingProvider>
+              <CartProvider>
+                <ConditionalLayout>{children}</ConditionalLayout>
+              </CartProvider>
+            </BookingProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

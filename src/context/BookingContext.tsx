@@ -32,15 +32,18 @@ export interface BookingState {
   stallType: StallType;
   komporType: string;
   komporPrice: number;
-  addTable: boolean;
+  tableCount: number;
+  addWaterBoiler: boolean;
   
   // Step 4: Menu
   packageId: string; // "reguler" or package ID
   mie: LineItem[];
   toppingReg: LineItem[];
+  toppingReg2: LineItem[];
   toppingPrem: LineItem[];
   toppingSuper: LineItem[];
   odeng: LineItem[];
+  affiliateCode?: string;
   
   // Step 5: Checkout
   paymentType: PaymentType;
@@ -58,12 +61,16 @@ export interface BookingState {
     payNow: number;
     isValidReguler: boolean;
     isDpAllowed: boolean;
+    extraPackagePorsi: number;
+    extraPackagePrice: number;
+    extraToppingPrice: number;
   };
 }
 
 export type BookingAction = 
   | { type: "SET_FIELD"; payload: { field: keyof BookingState; value: any } }
-  | { type: "SET_LINE_ITEM"; payload: { category: "mie"|"toppingReg"|"toppingPrem"|"toppingSuper"|"odeng"; items: LineItem[] } }
+  | { type: "SET_LINE_ITEM"; payload: { category: "mie"|"toppingReg"|"toppingReg2"|"toppingPrem"|"toppingSuper"|"odeng"; items: LineItem[] } }
+  | { type: "SELECT_PACKAGE"; payload: { packageId: string } }
   | { type: "RESET_WIZARD" };
 
 const initialState: BookingState = {
@@ -78,13 +85,16 @@ const initialState: BookingState = {
   stallType: "",
   komporType: "",
   komporPrice: 0,
-  addTable: false,
+  tableCount: 0,
+  addWaterBoiler: false,
   packageId: "",
   mie: [],
   toppingReg: [],
+  toppingReg2: [],
   toppingPrem: [],
   toppingSuper: [],
   odeng: [],
+  affiliateCode: "",
   paymentType: "full",
   calculations: {
     basePrice: 0,
@@ -98,14 +108,17 @@ const initialState: BookingState = {
     payNow: 0,
     isValidReguler: true,
     isDpAllowed: true,
+    extraPackagePorsi: 0,
+    extraPackagePrice: 0,
+    extraToppingPrice: 0,
   }
 };
 
 // --- Core Pricing Constants (from vanilla JS) ---
-const HARGA_MIE = 8500; 
-const HARGA_TOPPING = 3500;
-const HARGA_TOPPING_PREM = 6500;
-const HARGA_TOPPING_SUPER = 11000;
+const HARGA_MIE = 10000; 
+const HARGA_TOPPING = 5000;
+const HARGA_TOPPING_PREM = 8000;
+const HARGA_TOPPING_SUPER = 13000;
 const T_BASE_FEE = 120000;
 const STAFF_FEE_PER = 75000;
 
@@ -119,43 +132,67 @@ function calculateTotals(state: BookingState): BookingState["calculations"] {
   let totalPorsi = 0;
 
   // 1. Calculate Porsi from User Input array
-  const sumQty = (items: LineItem[]) => items.reduce((acc, curr) => acc + (Number(curr.qty) || 0), 0);
+  const sumQty = (items?: LineItem[]) => (items || []).reduce((acc, curr) => acc + (Number(curr.qty) || 0), 0);
   
   const totalMieInput = sumQty(state.mie);
   const totalTopRegInput = sumQty(state.toppingReg);
+  const totalTopReg2Input = sumQty(state.toppingReg2);
   const totalTopPremInput = sumQty(state.toppingPrem);
   const totalTopSuperInput = sumQty(state.toppingSuper);
   const totalOdengInput = sumQty(state.odeng);
 
+  let extraPackagePorsi = 0;
+  let extraPackagePrice = 0;
+  let extraToppingPrice = 0;
+
   if (isReguler) {
     totalPorsi = totalMieInput;
     basePrice = (totalMieInput * HARGA_MIE);
-    extraPrice = (totalTopRegInput * HARGA_TOPPING) + 
-                 ((totalTopPremInput + totalOdengInput) * HARGA_TOPPING_PREM) +
-                 (totalTopSuperInput * HARGA_TOPPING_SUPER);
+    extraToppingPrice = ((totalTopRegInput + totalTopReg2Input) * HARGA_TOPPING) + 
+                        ((totalTopPremInput + totalOdengInput) * HARGA_TOPPING_PREM) +
+                        (totalTopSuperInput * HARGA_TOPPING_SUPER);
+    extraPrice = extraToppingPrice;
   } else if (pkg) {
     const basePorsi = pkg.portions;
     basePrice = pkg.price;
+    const isPaketOdeng = pkg.name === "Paket Odeng";
+    const primaryQty = isPaketOdeng ? totalTopPremInput : totalMieInput;
+    totalPorsi = primaryQty > basePorsi ? primaryQty : basePorsi;
     
-    // Auto sync requirements
+    extraPackagePorsi = totalPorsi > basePorsi ? totalPorsi - basePorsi : 0;
+    const packagePerPorsiPrice = pkg.price / pkg.portions;
+    extraPackagePrice = extraPackagePorsi * packagePerPorsiPrice;
+    
     let reqTopReg = 0;
-    if (pkgName.includes("Satu Topping")) reqTopReg = basePorsi;
-    else if (pkgName.includes("Dua Topping") || pkgName.includes("Komplit") || pkgName.includes("Paket Odeng")) reqTopReg = basePorsi * 2;
+    let reqTopReg2 = 0;
+    let reqTopPrem = 0;
+    let reqTopSuper = 0;
     
-    let reqTopPrem = pkgName.includes("Premium") ? basePorsi : 0;
-    let reqOdeng = (pkgName.includes("Odeng") || pkgName.includes("Komplit")) ? basePorsi : 0;
+    if (pkg.name.includes("Satu Topping")) {
+      reqTopReg = totalPorsi;
+    } else if (pkg.name.includes("Dua Topping")) {
+      reqTopReg = totalPorsi;
+      reqTopReg2 = totalPorsi;
+    }
+    
+    if (pkg.name.includes("Premium") || pkg.name.includes("Komplit") || pkg.name.includes("Odeng")) {
+      reqTopPrem = totalPorsi;
+    }
+    if (pkg.name.includes("Super") || pkg.name.includes("Komplit")) {
+      reqTopSuper = totalPorsi;
+    }
 
-    let extraMie = totalMieInput > basePorsi ? totalMieInput - basePorsi : 0;
     let extraTopReg = totalTopRegInput > reqTopReg ? totalTopRegInput - reqTopReg : 0;
+    let extraTopReg2 = totalTopReg2Input > reqTopReg2 ? totalTopReg2Input - reqTopReg2 : 0;
     let extraTopPrem = totalTopPremInput > reqTopPrem ? totalTopPremInput - reqTopPrem : 0;
-    let extraOdeng = totalOdengInput > reqOdeng ? totalOdengInput - reqOdeng : 0;
+    let extraTopSuper = totalTopSuperInput > reqTopSuper ? totalTopSuperInput - reqTopSuper : 0;
+    let extraOdeng = totalOdengInput; // Corporate odeng, always extra
 
-    extraPrice = (extraMie * HARGA_MIE) + 
-                 (extraTopReg * HARGA_TOPPING) + 
-                 ((extraTopPrem + extraOdeng) * HARGA_TOPPING_PREM) +
-                 (totalTopSuperInput * HARGA_TOPPING_SUPER);
+    extraToppingPrice = ((extraTopReg + extraTopReg2) * HARGA_TOPPING) + 
+                        ((extraTopPrem + extraOdeng) * HARGA_TOPPING_PREM) +
+                        (extraTopSuper * HARGA_TOPPING_SUPER);
                  
-    totalPorsi = totalMieInput > basePorsi ? totalMieInput : basePorsi;
+    extraPrice = extraPackagePrice + extraToppingPrice;
   }
 
   // 2. Staff Calculation
@@ -178,7 +215,7 @@ function calculateTotals(state: BookingState): BookingState["calculations"] {
   }
 
   // 3. Extra Fees
-  let extraFee = state.komporPrice + (state.addTable ? 100000 : 0);
+  let extraFee = (state.komporType === "Kompor Gas portable HiCook" ? 100000 : 0) + (state.tableCount * 100000);
   if (isReguler && state.stallType === "gerobak") {
     extraFee += 250000; // Sewa gerobak 250rb
   }
@@ -223,7 +260,10 @@ function calculateTotals(state: BookingState): BookingState["calculations"] {
     grandTotal,
     payNow,
     isValidReguler,
-    isDpAllowed
+    isDpAllowed,
+    extraPackagePorsi,
+    extraPackagePrice,
+    extraToppingPrice
   };
 }
 
@@ -236,6 +276,18 @@ function reducer(state: BookingState, action: BookingAction): BookingState {
       break;
     case "SET_LINE_ITEM":
       newState = { ...state, [action.payload.category]: action.payload.items };
+      break;
+    case "SELECT_PACKAGE":
+      newState = { 
+        ...state, 
+        packageId: action.payload.packageId,
+        mie: [],
+        toppingReg: [],
+        toppingReg2: [],
+        toppingPrem: [],
+        toppingSuper: [],
+        odeng: []
+      };
       break;
     case "RESET_WIZARD":
       return initialState;

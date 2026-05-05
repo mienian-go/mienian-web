@@ -2,12 +2,12 @@
 
 import { useBooking, CityCode } from "@/context/BookingContext";
 import { CopyPlus, Trash2, MapPin, Rocket } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useLoadScript, Autocomplete } from "@react-google-maps/api";
 import { auth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
-import { createOrder } from "@/lib/firestore";
-import { useRouter } from "next/navigation";
+import { createOrder, updateUserProfile } from "@/lib/firestore";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const libraries: "places"[] = ["places"];
 
@@ -28,13 +28,14 @@ const DAFTAR_TOPPING_REG = ["Cheese Dumpling", "Chicken Dumpling", "Baso Sapi", 
 const DAFTAR_TOPPING_PREM = ["Odeng Original", "Odeng Spicy", "Telur Ceplok"];
 const DAFTAR_TOPPING_SUPER = ["Slice Beef (50gr)", "Grill Chicken", "Beef Enoki", "Chicken Katsu", "Kornet"];
 
-export default function RegulerBookingPage() {
+function RegulerBookingContent() {
   const { state, dispatch } = useBooking();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Maps Setup
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyC-JcHUBPoB4BLCkVus1PyXd7IPkWEEyHI",
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyBgj6aPrkcd-B2lWsE0_AdA8PQpbO13R7c",
     libraries,
   });
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
@@ -69,6 +70,12 @@ export default function RegulerBookingPage() {
         // Pre-fill email or name if we want
       }
     });
+
+    // Capture affiliate from URL
+    const aff = searchParams.get("aff") || searchParams.get("ref");
+    if (aff) {
+      dispatch({ type: "SET_FIELD", payload: { field: "affiliateCode", value: aff } });
+    }
 
     return () => unsub();
     // eslint-disable-next-line react-hooks/deps
@@ -114,7 +121,7 @@ export default function RegulerBookingPage() {
   }, [state.city]); // Recalculate if city changes
 
   // --- ROWS LOGIC ---
-  const addRow = (category: "mie" | "toppingReg" | "toppingSuper") => {
+  const addRow = (category: "mie" | "toppingReg" | "toppingPrem" | "toppingSuper") => {
     const list = state[category];
     if (category === "mie" && list.length >= 3) return;
     if (category === "toppingReg" && list.length >= 2) return;
@@ -122,10 +129,10 @@ export default function RegulerBookingPage() {
 
     dispatch({ type: "SET_LINE_ITEM", payload: { category, items: [...list, { id: crypto.randomUUID(), name: "", qty: 10 }] } });
   };
-  const removeRow = (category: "mie" | "toppingReg" | "toppingSuper", id: string) => {
+  const removeRow = (category: "mie" | "toppingReg" | "toppingPrem" | "toppingSuper", id: string) => {
     dispatch({ type: "SET_LINE_ITEM", payload: { category, items: state[category].filter(i => i.id !== id) } });
   };
-  const updateRow = (category: "mie" | "toppingReg" | "toppingSuper", id: string, field: "name" | "qty", val: string | number) => {
+  const updateRow = (category: "mie" | "toppingReg" | "toppingPrem" | "toppingSuper", id: string, field: "name" | "qty", val: string | number) => {
     dispatch({ type: "SET_LINE_ITEM", payload: { category, items: state[category].map(i => i.id === id ? { ...i, [field]: val } : i) } });
   };
   const handleStallToggle = (isChecked: boolean) => {
@@ -136,6 +143,13 @@ export default function RegulerBookingPage() {
   const isValidAmount = state.calculations.isValidReguler;
   const makananTotal = state.calculations.basePrice + state.calculations.extraPrice;
 
+  useEffect(() => {
+    const hasKuah = state.mie.some(m => m.name.includes("Soto") || m.name.includes("Kari") || m.name.includes("Bawang") || m.name.includes("Seblak"));
+    if (hasKuah && !state.addWaterBoiler) {
+      dispatch({ type: "SET_FIELD", payload: { field: "addWaterBoiler", value: true } });
+    }
+  }, [state.mie]);
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
@@ -143,7 +157,13 @@ export default function RegulerBookingPage() {
       if (isLoginMode) {
         await signInWithEmailAndPassword(auth, authEmail, authPassword);
       } else {
-        await createUserWithEmailAndPassword(auth, authEmail, authPassword);
+        const userCredential = await createUserWithEmailAndPassword(auth, authEmail, authPassword);
+        // Sync user to Firestore
+        await updateUserProfile(userCredential.user.uid, {
+          email: authEmail,
+          name: state.name,
+          whatsapp: state.whatsapp,
+        });
       }
       setShowAuthModal(false);
       proceedToDatabaseOrder();
@@ -169,6 +189,7 @@ export default function RegulerBookingPage() {
     try {
       const orderData = {
         userId: auth.currentUser?.uid || "guest",
+        email: auth.currentUser?.email || "",
         customerName: state.name,
         whatsapp: state.whatsapp,
         eventDate: state.date,
@@ -178,17 +199,46 @@ export default function RegulerBookingPage() {
         distanceKm: state.distanceKm,
         totalPorsi: state.calculations.totalPorsi,
         stallType: state.stallType,
+        komporType: state.komporType,
+        tableCount: state.tableCount,
+        addWaterBoiler: state.addWaterBoiler,
         items: {
           mie: state.mie,
           toppingReg: state.toppingReg,
           toppingSuper: state.toppingSuper
         },
         costs: state.calculations,
+        affiliateCode: state.affiliateCode || "",
         status: "pending_payment",
-        paymentMethod: "statis"
+        paymentMethod: "doku"
       };
 
       const orderId = await createOrder(orderData);
+
+      // Call DOKU Checkout API
+      try {
+        const dokuRes = await fetch("/api/doku/create-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId,
+            amount: state.calculations.grandTotal,
+            customerName: state.name,
+            customerEmail: auth.currentUser?.email || "",
+            invoiceNumber: `MIENIAN-${orderId}`,
+          }),
+        });
+        const dokuData = await dokuRes.json();
+
+        if (dokuData.paymentUrl) {
+          window.location.href = dokuData.paymentUrl;
+          return;
+        }
+      } catch (dokuErr) {
+        console.warn("DOKU payment failed, falling back to manual:", dokuErr);
+      }
+
+      // Fallback to manual payment page if DOKU fails
       router.push(`/payment/${orderId}`);
     } catch (error: any) {
       const msg = error?.message || error?.code || "Unknown error";
@@ -229,7 +279,7 @@ export default function RegulerBookingPage() {
 
   const renderCarousel = (title: string, category: "mie" | "toppingReg" | "toppingPrem" | "toppingSuper", options: string[], limit: number, priceStr: string) => {
     const list = state[category];
-    
+
     // We handle updates by checking if item exists; if not, add it; if qty becomes 0, remove it.
     const handleAdd = (name: string) => {
       const existing = list.find(l => l.name === name);
@@ -255,7 +305,7 @@ export default function RegulerBookingPage() {
         updateRow(category, existing.id, "qty", newQty);
       }
     };
-    
+
     const updateInput = (name: string, valStr: string) => {
       const val = parseInt(valStr) || 0;
       const existing = list.find(l => l.name === name);
@@ -266,8 +316,8 @@ export default function RegulerBookingPage() {
         if (val > 0) {
           const activeVariants = list.filter(l => Number(l.qty) > 0).length;
           if (activeVariants >= limit) {
-             alert(`Maksimal ${limit} varian`);
-             return;
+            alert(`Maksimal ${limit} varian`);
+            return;
           }
           dispatch({ type: "SET_LINE_ITEM", payload: { category, items: [...list, { id: crypto.randomUUID(), name, qty: val }] } });
         }
@@ -284,23 +334,32 @@ export default function RegulerBookingPage() {
         </div>
         <div className="flex overflow-x-auto gap-4 pb-4 snap-x no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
           {options.map(opt => {
-             const existing = list.find(l => l.name === opt);
-             const qty = existing ? (Number(existing.qty) || 0) : 0;
-             const isActive = qty > 0;
-             
-             return (
-               <div key={opt} className={`snap-start shrink-0 w-[160px] rounded-2xl border-2 ${isActive ? 'border-primary bg-primary/5 shadow-md shadow-primary/10' : 'border-card-border bg-card shadow-sm'} p-3 flex flex-col justify-between transition-all duration-300`}>
-                 <div className="aspect-[4/3] bg-background border border-card-border rounded-xl mb-3 flex items-center justify-center relative overflow-hidden">
-                   <span className={`text-4xl transition-transform duration-300 ${isActive ? 'scale-110' : 'grayscale opacity-50'}`}>🍜</span>
-                 </div>
-                 <div className="font-bold text-sm text-foreground mb-3 leading-snug line-clamp-2 min-h-[2.5rem]">{opt}</div>
-                 <div className="flex items-center justify-between bg-background rounded-full border border-card-border shadow-sm p-1">
-                   <button onClick={() => handleMinus(opt)} className={`w-8 h-8 rounded-full flex items-center justify-center font-bold transition-colors ${isActive ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-muted text-foreground/50 hover:bg-muted-foreground'}`}>-</button>
-                   <input type="number" min="0" value={qty === 0 ? "" : qty} onChange={e => updateInput(opt, e.target.value)} placeholder="0" className="w-10 text-center font-bold text-sm bg-transparent outline-none focus:text-primary transition-colors appearance-none m-0" style={{MozAppearance: 'textfield'}} />
-                   <button onClick={() => handleAdd(opt)} className={`w-8 h-8 rounded-full flex items-center justify-center font-bold transition-colors ${isActive ? 'bg-primary text-white hover:bg-primary/90' : 'bg-muted text-foreground hover:bg-muted-foreground'}`}>+</button>
-                 </div>
-               </div>
-             )
+            const existing = list.find(l => l.name === opt);
+            const qty = existing ? (Number(existing.qty) || 0) : 0;
+            const isActive = qty > 0;
+
+            const slug = opt.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+            const imageSrc = `/images/menu/${slug}.jpg`;
+
+            return (
+              <div key={opt} className={`snap-start shrink-0 w-[160px] rounded-2xl border-2 ${isActive ? 'border-primary bg-primary/5 shadow-md shadow-primary/10' : 'border-card-border bg-card shadow-sm'} p-3 flex flex-col justify-between transition-all duration-300`}>
+                <div className="aspect-square bg-background border border-card-border rounded-xl mb-3 flex items-center justify-center relative overflow-hidden group">
+                  <span className={`text-4xl transition-transform duration-300 ${isActive ? 'scale-110' : 'grayscale opacity-50 relative z-0'}`}>🍜</span>
+                  <img 
+                    src={imageSrc} 
+                    alt={opt} 
+                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 z-10 ${isActive ? 'scale-105' : 'grayscale-[50%] group-hover:scale-105 group-hover:grayscale-0'}`}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                </div>
+                <div className="font-bold text-sm text-foreground mb-3 leading-snug line-clamp-2 min-h-[2.5rem]">{opt}</div>
+                <div className="flex items-center justify-between bg-background rounded-full border border-card-border shadow-sm p-1">
+                  <button onClick={() => handleMinus(opt)} className={`w-8 h-8 rounded-full flex items-center justify-center font-bold transition-colors ${isActive ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-muted text-foreground/50 hover:bg-muted-foreground'}`}>-</button>
+                  <input type="number" min="0" value={qty === 0 ? "" : qty} onChange={e => updateInput(opt, e.target.value)} placeholder="0" className="w-10 text-center font-bold text-sm bg-transparent outline-none focus:text-primary transition-colors appearance-none m-0" style={{ MozAppearance: 'textfield' }} />
+                  <button onClick={() => handleAdd(opt)} className={`w-8 h-8 rounded-full flex items-center justify-center font-bold transition-colors ${isActive ? 'bg-primary text-white hover:bg-primary/90' : 'bg-muted text-foreground hover:bg-muted-foreground'}`}>+</button>
+                </div>
+              </div>
+            )
           })}
           <div className="snap-start shrink-0 w-2 sm:hidden"></div>
         </div>
@@ -337,7 +396,7 @@ export default function RegulerBookingPage() {
       <div className="max-w-3xl mx-auto px-4">
 
         <h1 className="text-3xl font-extrabold mb-2 text-foreground">Pesan Reguler </h1>
-        <p className="text-foreground/60 mb-8 text-sm">Pilih porsi bebas sesuka hatimu. Kami akan menghitung biaya secara transparan.</p>
+        <p className="text-foreground/60 mb-8 text-sm">Pilih porsi bebas sesuka hatimu. Kami akan menghitung biaya-nya.</p>
 
         {/* Info T&C & Stall */}
         <div className="bg-primary/10 border border-primary/30 p-5 sm:p-6 rounded-2xl mb-8">
@@ -372,14 +431,49 @@ export default function RegulerBookingPage() {
           </div>
         </div>
 
+        {/* Peralatan Tambahan */}
+        <div className="bg-card p-5 sm:p-6 rounded-2xl border border-card-border shadow-sm mb-8">
+            <h3 className="font-bold text-sm sm:text-base mb-4 flex items-center gap-2">Checklist Peralatan Tambahan</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold mb-2 text-foreground/70">Pilihan Kompor</label>
+                <select value={state.komporType} onChange={e => dispatch({ type: "SET_FIELD", payload: { field: "komporType", value: e.target.value } })} className="w-full px-4 py-3 rounded-xl border bg-muted focus:border-primary focus:outline-none text-sm transition-colors appearance-none">
+                  <option value="">-- Pilih Kompor --</option>
+                  <option value="Kompor + Gas 3Kg">Kompor + Gas 3Kg (Free)</option>
+                  <option value="Kompor + Gas 5Kg">Kompor + Gas 5Kg (Free)</option>
+                  <option value="Kompor Listrik 500 watt">Kompor Listrik 500 watt/kompor (Free)</option>
+                  <option value="Kompor Gas portable HiCook">Kompor Gas portable HiCook (+ Rp 100.000)</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-bold">Sewa Meja</div>
+                  <div className="text-xs text-foreground/60">Rp 100.000 / unit</div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => dispatch({ type: "SET_FIELD", payload: { field: "tableCount", value: Math.max(0, state.tableCount - 1) } })} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-bold text-foreground">-</button>
+                  <span className="w-4 text-center font-bold text-sm">{state.tableCount}</span>
+                  <button onClick={() => dispatch({ type: "SET_FIELD", payload: { field: "tableCount", value: state.tableCount + 1 } })} className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold">+</button>
+                </div>
+              </div>
+              <label className="flex items-center gap-3 cursor-pointer mt-2">
+                <input type="checkbox" checked={state.addWaterBoiler} onChange={e => dispatch({ type: "SET_FIELD", payload: { field: "addWaterBoiler", value: e.target.checked } })} className="w-5 h-5 accent-primary" />
+                <div>
+                  <div className="text-sm font-bold">Water boiler 500 watt</div>
+                  <div className="text-xs text-foreground/60">Ceklis apabila memilih menu mie kuah</div>
+                </div>
+              </label>
+            </div>
+        </div>
+
         {/* Menu Selection */}
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-sm">1</span> Pilih Mie dan Topping</h2>
         <p className="text-xs text-foreground/50 mb-4">* Silakan input nominal porsi di setiap varian yang Anda kehendaki.</p>
 
-        {renderCarousel("Pilih Varian Mie", "mie", DAFTAR_MIE, 3, "Rp 8.500/porsi")}
-        {renderCarousel("Pilih Topping Reguler", "toppingReg", DAFTAR_TOPPING_REG, 2, "Rp 3.500/pc")}
-        {renderCarousel("Pilih Topping Premium", "toppingPrem", DAFTAR_TOPPING_PREM, 2, "Rp 6.500/pc")}
-        {renderCarousel("Pilih Topping Super", "toppingSuper", DAFTAR_TOPPING_SUPER, 1, "Rp 11.000/pc")}
+        {renderCarousel("Pilih Varian Mie", "mie", DAFTAR_MIE, 3, "Rp 10.000/porsi")}
+        {renderCarousel("Pilih Topping Reguler", "toppingReg", DAFTAR_TOPPING_REG, 2, "Rp 5.000/pc")}
+        {renderCarousel("Pilih Topping Premium", "toppingPrem", DAFTAR_TOPPING_PREM, 2, "Rp 8.000/pc")}
+        {renderCarousel("Pilih Topping Super", "toppingSuper", DAFTAR_TOPPING_SUPER, 1, "Rp 13.000/pc")}
 
         {/* Progress Makanan */}
         <div className={`p-4 sm:p-5 rounded-2xl text-center font-bold my-8 border transition-colors ${isValidAmount ? 'bg-green-500/10 text-green-600 border-green-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'}`}>
@@ -446,32 +540,60 @@ export default function RegulerBookingPage() {
               {state.mie.map(item => item.name && Number(item.qty) > 0 ? (
                 <div key={item.id} className="flex justify-between items-center text-foreground">
                   <span>{item.name} ({item.qty} Porsi)</span>
-                  <span className="font-bold">Rp {(Number(item.qty) * 8500).toLocaleString("id-ID")}</span>
+                  <span className="font-bold">Rp {(Number(item.qty) * 10000).toLocaleString("id-ID")}</span>
                 </div>
               ) : null)}
               {state.toppingReg.map(item => item.name && Number(item.qty) > 0 ? (
                 <div key={item.id} className="flex justify-between items-center text-foreground/80">
                   <span>{item.name} ({item.qty} Porsi)</span>
-                  <span className="font-bold">Rp {(Number(item.qty) * 3500).toLocaleString("id-ID")}</span>
+                  <span className="font-bold">Rp {(Number(item.qty) * 5000).toLocaleString("id-ID")}</span>
                 </div>
               ) : null)}
               {state.toppingPrem.map(item => item.name && Number(item.qty) > 0 ? (
                 <div key={item.id} className="flex justify-between items-center text-foreground/80">
                   <span>{item.name} ({item.qty} Porsi)</span>
-                  <span className="font-bold">Rp {(Number(item.qty) * 6500).toLocaleString("id-ID")}</span>
+                  <span className="font-bold">Rp {(Number(item.qty) * 8000).toLocaleString("id-ID")}</span>
                 </div>
               ) : null)}
               {state.toppingSuper.map(item => item.name && Number(item.qty) > 0 ? (
                 <div key={item.id} className="flex justify-between items-center text-foreground/80">
                   <span>{item.name} ({item.qty} Porsi)</span>
-                  <span className="font-bold">Rp {(Number(item.qty) * 11000).toLocaleString("id-ID")}</span>
+                  <span className="font-bold">Rp {(Number(item.qty) * 13000).toLocaleString("id-ID")}</span>
                 </div>
               ) : null)}
               {state.calculations.extraFee > 0 && (
-                <div className="flex justify-between items-center text-foreground/80">
-                  <span>Upgrade Stall (Gerobak)</span>
-                  <span className="font-bold text-foreground">Rp {state.calculations.extraFee.toLocaleString("id-ID")}</span>
-                </div>
+                <>
+                  <div className="flex justify-between items-center text-foreground/80">
+                    <span>Peralatan & Stall</span>
+                    <span className="font-bold text-foreground">Rp {state.calculations.extraFee.toLocaleString("id-ID")}</span>
+                  </div>
+                  <div className="pl-4 space-y-0.5 mb-2">
+                    {state.stallType === "gerobak" && (
+                      <div className="text-[11px] text-foreground/60 flex justify-between">
+                        <span>- Upgrade Stall Gerobak</span>
+                        <span>Rp 250.000</span>
+                      </div>
+                    )}
+                    {state.komporType === "Kompor Gas portable HiCook" && (
+                      <div className="text-[11px] text-foreground/60 flex justify-between">
+                        <span>- Kompor Gas portable HiCook</span>
+                        <span>Rp 100.000</span>
+                      </div>
+                    )}
+                    {state.tableCount > 0 && (
+                      <div className="text-[11px] text-foreground/60 flex justify-between">
+                        <span>- Sewa Meja ({state.tableCount} unit)</span>
+                        <span>Rp {(state.tableCount * 100000).toLocaleString("id-ID")}</span>
+                      </div>
+                    )}
+                    {state.addWaterBoiler && (
+                      <div className="text-[11px] text-foreground/60 flex justify-between">
+                        <span>- Water Boiler 500 Watt</span>
+                        <span>(Free)</span>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
               {state.calculations.staffFee > 0 && (
                 <div className="flex justify-between items-center text-foreground/80">
@@ -497,6 +619,14 @@ export default function RegulerBookingPage() {
         </div>
 
       </div>
-    </div>
+      </div>
+  );
+}
+
+export default function RegulerBookingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-foreground/50">Memuat Formulir...</div>}>
+      <RegulerBookingContent />
+    </Suspense>
   );
 }

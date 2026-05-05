@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { MapPin, Sparkles, ShieldCheck, Clock, Utensils, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { menuItems, categoryLabels, categoryPrices, formatRupiah } from "@/data/menu";
+import { PackageShowcase } from "@/components/PackageShowcase";
 
 const container = {
   hidden: { opacity: 0 },
@@ -57,6 +58,8 @@ export default function MienianGO() {
           </motion.div>
         </motion.div>
       </section>
+
+      <PackageShowcase />
 
       {/* ============ USP ============ */}
       <section className="py-24 px-4 sm:px-6 lg:px-8">

@@ -6,8 +6,10 @@ import { getOrders } from "@/lib/firestore";
 import { formatRupiah } from "@/data/menu";
 import { BarChart3, Package, Users, TrendingUp, AlertCircle, Clock } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
 export default function AdminDashboard() {
+  const { role } = useAuth();
   const [stats, setStats] = useState({
     totalOrders: 0,
     pendingVerifications: 0,
@@ -191,24 +193,50 @@ export default function AdminDashboard() {
             <BarChart3 className="w-5 h-5 text-secondary" />
             Quick Actions
           </h2>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {(role === "superadmin" || role === "staff") && (
+              <Link
+                href="/admin/orders"
+                className="block p-4 rounded-xl border border-card-border hover:border-primary/50 hover:bg-primary/5 transition-all text-sm font-semibold"
+              >
+                📋 Verifikasi Pembayaran
+              </Link>
+            )}
+            {role === "superadmin" && (
+              <>
+                <Link
+                  href="/admin/affiliates"
+                  className="block p-4 rounded-xl border border-card-border hover:border-green-500/50 hover:bg-green-500/5 transition-all text-sm font-semibold"
+                >
+                  🤝 Kelola Affiliator
+                </Link>
+                <Link
+                  href="/admin/settings"
+                  className="block p-4 rounded-xl border border-card-border hover:border-tertiary/50 hover:bg-tertiary/5 transition-all text-sm font-semibold"
+                >
+                  ⚙️ Ubah Rekening Bank
+                </Link>
+                <Link
+                  href="/admin/admins"
+                  className="block p-4 rounded-xl border border-card-border hover:border-fuchsia-500/50 hover:bg-fuchsia-500/5 transition-all text-sm font-semibold"
+                >
+                  🛡️ Manajemen Admin
+                </Link>
+              </>
+            )}
+            {(role === "superadmin" || role === "staff") && (
+              <Link
+                href="/admin/packages"
+                className="block p-4 rounded-xl border border-card-border hover:border-secondary/50 hover:bg-secondary/5 transition-all text-sm font-semibold"
+              >
+                📦 Update Paket Catering
+              </Link>
+            )}
             <Link
-              href="/admin/orders"
-              className="block p-4 rounded-xl border border-card-border hover:border-primary/50 hover:bg-primary/5 transition-all text-sm font-semibold"
+              href="/admin/blog"
+              className="block p-4 rounded-xl border border-card-border hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-sm font-semibold"
             >
-              📋 Verifikasi Pembayaran
-            </Link>
-            <Link
-              href="/admin/packages"
-              className="block p-4 rounded-xl border border-card-border hover:border-secondary/50 hover:bg-secondary/5 transition-all text-sm font-semibold"
-            >
-              📦 Update Paket Catering
-            </Link>
-            <Link
-              href="/admin/settings"
-              className="block p-4 rounded-xl border border-card-border hover:border-tertiary/50 hover:bg-tertiary/5 transition-all text-sm font-semibold"
-            >
-              ⚙️ Ubah Rekening Bank
+              📝 Kelola Blog / Artikel
             </Link>
           </div>
         </motion.div>

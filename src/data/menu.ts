@@ -14,6 +14,7 @@ export interface CateringPackage {
   description?: string;
   category: "wedding" | "corporate";
   comingSoon?: boolean;
+  image?: string;
 }
 
 export const menuItems: MenuItem[] = [
@@ -53,6 +54,7 @@ export const cateringPackages: CateringPackage[] = [
     portions: 250,
     category: "wedding",
     description: "250 porsi mie pilihan tanpa topping tambahan",
+    image: "/images/paket-wedding-1.jpg"
   },
   {
     id: "pkg-mie-satu-topping",
@@ -61,6 +63,7 @@ export const cateringPackages: CateringPackage[] = [
     portions: 150,
     category: "wedding",
     description: "150 porsi mie dengan 1 topping reguler pilihan",
+    image: "/images/paket-wedding-2.png"
   },
   {
     id: "pkg-mie-dua-topping",
@@ -69,6 +72,7 @@ export const cateringPackages: CateringPackage[] = [
     portions: 150,
     category: "wedding",
     description: "150 porsi mie dengan 2 topping reguler pilihan",
+    image: "/images/paket-wedding-3.jpg"
   },
   {
     id: "pkg-mie-topping-odeng",
@@ -77,6 +81,7 @@ export const cateringPackages: CateringPackage[] = [
     portions: 150,
     category: "wedding",
     description: "150 porsi mie dengan topping Odeng premium",
+    image: "/images/paket-wedding-4.jpg"
   },
   {
     id: "pkg-mie-topping-super",
@@ -85,6 +90,16 @@ export const cateringPackages: CateringPackage[] = [
     portions: 100,
     category: "wedding",
     description: "100 porsi mie dengan topping super premium (Katsu/Grill/Enoki)",
+    image: "/images/paket-wedding-5.png"
+  },
+  {
+    id: "pkg-mie-topping-premium",
+    name: "Mie Topping Premium",
+    price: 1500000,
+    portions: 100,
+    category: "wedding",
+    description: "100 porsi mie dengan pilihan topping premium (Odeng/Telor)",
+    image: "/images/paket-wedding-6.jpg"
   },
   {
     id: "pkg-mie-topping-komplit",
@@ -93,14 +108,16 @@ export const cateringPackages: CateringPackage[] = [
     portions: 100,
     category: "wedding",
     description: "100 porsi mie dengan topping lengkap dari reguler hingga super",
+    image: "/images/paket-wedding-7.jpg"
   },
   {
     id: "pkg-paket-odeng",
     name: "Paket Odeng",
-    price: 2200000,
+    price: 2250000,
     portions: 150,
     category: "wedding",
     description: "150 porsi Odeng spesial — tanpa mie, cocok buat snack corner",
+    image: "/images/paket-wedding-8.jpg"
   },
   {
     id: "pkg-corporate-basic",

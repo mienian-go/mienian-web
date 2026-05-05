@@ -123,8 +123,8 @@ export function Step3Stall() {
                    <div className="flex items-center h-5">
                       <input 
                         type="checkbox" 
-                        checked={state.addTable}
-                        onChange={(e) => dispatch({ type: "SET_FIELD", payload: { field: "addTable", value: e.target.checked } })}
+                        checked={state.tableCount > 0}
+                        onChange={(e) => dispatch({ type: "SET_FIELD", payload: { field: "tableCount", value: e.target.checked ? 1 : 0 } })}
                         className="w-5 h-5 rounded border-card-border accent-primary focus:ring-primary focus:ring-2" 
                       />
                    </div>
