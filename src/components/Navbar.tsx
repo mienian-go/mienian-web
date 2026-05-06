@@ -115,7 +115,7 @@ export function Navbar() {
           <div className="flex items-center gap-3">
             <ThemeToggle />
             
-            {user && (
+            {user ? (
               <Link
                 href="/dashboard"
                 className={`hidden lg:flex items-center justify-center w-10 h-10 rounded-full transition-all border ${
@@ -126,6 +126,17 @@ export function Navbar() {
                 title="Customer Dashboard"
               >
                 <User className="w-5 h-5" />
+              </Link>
+            ) : (
+              <Link
+                href="/dashboard"
+                className={`hidden lg:flex items-center justify-center px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
+                  scrolled || !isHomePage
+                    ? "bg-primary text-white hover:bg-primary/90 shadow-sm"
+                    : "bg-white text-primary hover:bg-white/90"
+                }`}
+              >
+                Login / Daftar
               </Link>
             )}
             
@@ -197,7 +208,7 @@ export function Navbar() {
                 );
               })}
 
-              {user && (
+              {user ? (
                 <Link
                   href="/dashboard"
                   className={`px-4 py-3 rounded-xl text-lg font-bold transition-all ${
@@ -207,6 +218,17 @@ export function Navbar() {
                   }`}
                 >
                   Dashboard
+                </Link>
+              ) : (
+                <Link
+                  href="/dashboard"
+                  className={`px-4 py-3 rounded-xl text-lg font-bold transition-all ${
+                    pathname.startsWith("/dashboard")
+                      ? "text-primary bg-background shadow-sm border border-black/5"
+                      : "text-foreground/70 hover:bg-black/5 dark:hover:bg-white/5"
+                  }`}
+                >
+                  Login / Daftar
                 </Link>
               )}
             </nav>

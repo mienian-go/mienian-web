@@ -19,6 +19,7 @@ export default function SettingsPage() {
     whatsappNumber: "",
     instagramHandle: "",
     tiktokHandle: "",
+    enableManualPayment: false,
   });
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export default function SettingsPage() {
             whatsappNumber: data.whatsappNumber || "6285216706922",
             instagramHandle: data.instagramHandle || "@mienian_id",
             tiktokHandle: data.tiktokHandle || "@mienian_id",
+            enableManualPayment: data.enableManualPayment || false,
           });
         }
       } catch (err) {
@@ -137,6 +139,22 @@ export default function SettingsPage() {
                   className="w-full px-4 py-2.5 bg-muted/50 border border-white/10 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-sm"
                   placeholder="PT Mie Kekinian Sukses"
                 />
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={formData.enableManualPayment}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, enableManualPayment: e.target.checked }))}
+                  />
+                  <div className="w-11 h-6 bg-muted border border-card-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+                <div className="text-sm">
+                  <p className="font-bold">Aktifkan Pembayaran Manual</p>
+                  <p className="text-xs text-foreground/50">Tampilkan opsi transfer bank & QRIS di halaman checkout.</p>
+                </div>
               </div>
             </div>
 

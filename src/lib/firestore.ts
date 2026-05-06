@@ -101,6 +101,7 @@ export const getSettings = async () => {
     bankAccount: "1234567890",
     bankHolder: "PT Mie Kekinian Sukses",
     whatsappNumber: "6285216706922",
+    enableManualPayment: false,
   };
 };
 

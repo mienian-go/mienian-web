@@ -4,6 +4,7 @@ import { useEffect, useState, use } from "react";
 import { Copy, UploadCloud, CheckCircle2, AlertCircle, ReceiptText, MapPin, Calendar, Clock, Phone, User, Download } from "lucide-react";
 import { getDoc, doc, updateDoc } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
+import { getSettings } from "@/lib/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import Link from "next/link";
 import Image from "next/image";
@@ -16,6 +17,9 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [globalSettings, setGlobalSettings] = useState<any>(null);
+  const [isDokuError, setIsDokuError] = useState(false);
+
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -23,12 +27,18 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
   useEffect(() => {
     async function fetchOrder() {
       try {
-        const docSnap = await getDoc(doc(db, "orders", orderId));
+        const [docSnap, settings] = await Promise.all([
+          getDoc(doc(db, "orders", orderId)),
+          getSettings()
+        ]);
+        
         if (docSnap.exists()) {
           setOrder(docSnap.data());
         } else {
           setError("Pesanan tidak ditemukan.");
         }
+
+        setGlobalSettings(settings);
       } catch (err: any) {
         setError(err.message || "Gagal memuat detail pesanan.");
       } finally {
@@ -67,7 +77,9 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
         throw new Error("URL pembayaran tidak ditemukan");
       }
     } catch (err: any) {
-      alert("Gagal memproses Doku: " + err.message);
+      alert("Gagal memproses Doku. Anda bisa menggunakan metode Transfer Manual.");
+      setIsDokuError(true); // Fallback to manual if Doku fails
+    } finally {
       setDokuLoading(false);
     }
   };
@@ -270,65 +282,70 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
                    </div>
                 </div>
 
-                <div className="flex items-center gap-4 py-2">
-                  <div className="h-px bg-card-border flex-1"></div>
-                  <span className="text-xs font-bold text-foreground/40 uppercase tracking-widest">ATAU TRANSFER MANUAL</span>
-                  <div className="h-px bg-card-border flex-1"></div>
-                </div>
+                {/* Conditionally show manual payment if enabled in settings OR if Doku throws an error */}
+                {(globalSettings?.enableManualPayment || isDokuError) && (
+                  <>
+                    <div className="flex items-center gap-4 py-2">
+                      <div className="h-px bg-card-border flex-1"></div>
+                      <span className="text-xs font-bold text-foreground/40 uppercase tracking-widest">ATAU TRANSFER MANUAL</span>
+                      <div className="h-px bg-card-border flex-1"></div>
+                    </div>
 
-                {/* Manual Bank Transfer */}
-                <div>
-                   <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">2</div>
-                     Transfer Bank Manual
-                   </h3>
-                   <div className="bg-muted p-4 rounded-xl border border-card-border">
-                      <p className="text-xs text-foreground/60 mb-1">Bank Syariah Indonesia (BSI)</p>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xl font-bold tracking-widest text-primary">8777767896</span>
-                        <button onClick={() => copyToClipboard("8777767896")} className="p-2 bg-card hover:bg-card-border rounded-lg text-foreground/50 transition-colors">
-                           <Copy className="w-4 h-4"/>
-                        </button>
-                      </div>
-                      <p className="text-sm font-bold text-foreground">a/n PT Mie Kekinian Sukses</p>
-                   </div>
-                </div>
-
-                {/* QRIS */}
-                <div>
-                   <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">3</div>
-                     Via QRIS Manual (Semua E-Wallet/M-Banking)
-                   </h3>
-                   <div className="bg-white p-6 rounded-xl border border-card-border flex flex-col items-center">
-                      <div className="w-full max-w-[250px] aspect-square relative mb-3 bg-muted/30 rounded-lg overflow-hidden border">
-                         <Image src="/qris.jpg" alt="QRIS Mienian" fill className="object-contain" onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/250?text=QRIS+Not+Found+in+/public'; }} />
-                      </div>
-                      <p className="text-[10px] text-center text-black/40">Pastikan atas nama PT Mie Kekinian Sukses saat melakukan scan.</p>
-                   </div>
-                </div>
-
-                {/* Upload Bukti */}
-                <div className="pt-4 border-t border-dashed border-card-border">
-                   <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">4</div>
-                     Unggah Bukti Transfer Manual
-                   </h3>
-                   <div className="space-y-4">
-                      <label className="flex items-center justify-center w-full h-32 px-4 transition bg-card border-2 border-primary/20 border-dashed rounded-xl appearance-none cursor-pointer hover:border-primary/50 focus:outline-none">
-                          <div className="flex flex-col items-center space-y-2">
-                            <UploadCloud className="w-6 h-6 text-foreground/40" />
-                            <span className="font-medium text-foreground/60 text-sm">
-                              {file ? file.name : "Klik untuk memilih foto (JPG/PNG/PDF)"}
-                            </span>
+                    {/* Manual Bank Transfer */}
+                    <div>
+                       <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+                         <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">2</div>
+                         Transfer Bank Manual
+                       </h3>
+                       <div className="bg-muted p-4 rounded-xl border border-card-border">
+                          <p className="text-xs text-foreground/60 mb-1">{globalSettings?.bankName || "Bank Syariah Indonesia (BSI)"}</p>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xl font-bold tracking-widest text-primary">{globalSettings?.bankAccount || "8777767896"}</span>
+                            <button onClick={() => copyToClipboard(globalSettings?.bankAccount || "8777767896")} className="p-2 bg-card hover:bg-card-border rounded-lg text-foreground/50 transition-colors">
+                               <Copy className="w-4 h-4"/>
+                            </button>
                           </div>
-                          <input type="file" name="file_upload" className="hidden" accept="image/*,.pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-                      </label>
-                      <button onClick={handleUpload} disabled={!file || uploading} className="w-full py-3 bg-primary text-white font-bold rounded-xl disabled:opacity-50 hover:bg-primary/90 transition-all flex justify-center items-center gap-2">
-                         {uploading ? "Sedang Mengunggah..." : "Konfirmasi Pembayaran"}
-                      </button>
-                   </div>
-                </div>
+                          <p className="text-sm font-bold text-foreground">a/n {globalSettings?.bankHolder || "PT Mie Kekinian Sukses"}</p>
+                       </div>
+                    </div>
+
+                    {/* QRIS */}
+                    <div>
+                       <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+                         <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">3</div>
+                         Via QRIS Manual (Semua E-Wallet/M-Banking)
+                       </h3>
+                       <div className="bg-white p-6 rounded-xl border border-card-border flex flex-col items-center">
+                          <div className="w-full max-w-[250px] aspect-square relative mb-3 bg-muted/30 rounded-lg overflow-hidden border">
+                             <Image src={globalSettings?.qrisImageUrl || "/qris.jpg"} alt="QRIS Mienian" fill className="object-contain" onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/250?text=QRIS+Not+Found+in+/public'; }} />
+                          </div>
+                          <p className="text-[10px] text-center text-black/40">Pastikan atas nama {globalSettings?.bankHolder || "PT Mie Kekinian Sukses"} saat melakukan scan.</p>
+                       </div>
+                    </div>
+
+                    {/* Upload Bukti */}
+                    <div className="pt-4 border-t border-dashed border-card-border">
+                       <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+                         <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">4</div>
+                         Unggah Bukti Transfer Manual
+                       </h3>
+                       <div className="space-y-4">
+                          <label className="flex items-center justify-center w-full h-32 px-4 transition bg-card border-2 border-primary/20 border-dashed rounded-xl appearance-none cursor-pointer hover:border-primary/50 focus:outline-none">
+                              <div className="flex flex-col items-center space-y-2">
+                                <UploadCloud className="w-6 h-6 text-foreground/40" />
+                                <span className="font-medium text-foreground/60 text-sm">
+                                  {file ? file.name : "Klik untuk memilih foto (JPG/PNG/PDF)"}
+                                </span>
+                              </div>
+                              <input type="file" name="file_upload" className="hidden" accept="image/*,.pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                          </label>
+                          <button onClick={handleUpload} disabled={!file || uploading} className="w-full py-3 bg-primary text-white font-bold rounded-xl disabled:opacity-50 hover:bg-primary/90 transition-all flex justify-center items-center gap-2">
+                             {uploading ? "Sedang Mengunggah..." : "Konfirmasi Pembayaran"}
+                          </button>
+                       </div>
+                    </div>
+                  </>
+                )}
              </div>
           </div>
         )}
