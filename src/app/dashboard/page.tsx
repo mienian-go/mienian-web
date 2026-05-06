@@ -18,7 +18,7 @@ import {
   Calendar as CalendarIcon
 } from "lucide-react";
 import Link from "next/link";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { formatRupiah } from "@/data/menu";
 import { useRouter } from "next/navigation";
@@ -29,11 +29,12 @@ export default function CustomerDashboard() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Login states
+  // Login/Register states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   useEffect(() => {
     // Admin users should be redirected to admin dashboard
@@ -78,14 +79,24 @@ export default function CustomerDashboard() {
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
     setIsLoggingIn(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      if (isRegistering) {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
     } catch (err: any) {
-      setAuthError("Email atau password salah.");
+      if (err.code === 'auth/email-already-in-use') {
+        setAuthError("Email sudah terdaftar. Silakan login.");
+      } else if (err.code === 'auth/weak-password') {
+        setAuthError("Password terlalu lemah. Minimal 6 karakter.");
+      } else {
+        setAuthError(isRegistering ? "Gagal mendaftar. Silakan coba lagi." : "Email atau password salah.");
+      }
     } finally {
       setIsLoggingIn(false);
     }
@@ -138,11 +149,13 @@ export default function CustomerDashboard() {
             <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <ShoppingBag className="w-8 h-8 text-primary" />
             </div>
-            <h1 className="text-2xl font-extrabold">Dashboard Pelanggan</h1>
-            <p className="text-foreground/50 text-sm mt-1">Masuk untuk melihat riwayat pesanan Anda.</p>
+            <h1 className="text-2xl font-extrabold">{isRegistering ? "Daftar Akun" : "Dashboard Pelanggan"}</h1>
+            <p className="text-foreground/50 text-sm mt-1">
+              {isRegistering ? "Buat akun untuk melacak pesanan Anda." : "Masuk untuk melihat riwayat pesanan Anda."}
+            </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleAuth} className="space-y-4">
             {authError && (
               <div className="p-3 bg-red-500/10 text-red-500 text-xs font-bold rounded-lg border border-red-500/20 text-center">
                 {authError}
@@ -175,12 +188,23 @@ export default function CustomerDashboard() {
               disabled={isLoggingIn}
               className="w-full py-4 bg-primary text-white font-extrabold rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-all shadow-lg shadow-primary/20 uppercase tracking-widest text-xs"
             >
-              {isLoggingIn ? "Memverifikasi..." : "Masuk"}
+              {isLoggingIn ? "Memproses..." : isRegistering ? "Daftar Sekarang" : "Masuk"}
             </button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-foreground/40">
-            Belum punya akun? Pesan katering dulu ya!
+          <div className="mt-6 text-center text-sm">
+            <span className="text-foreground/50">
+              {isRegistering ? "Sudah punya akun?" : "Belum punya akun?"}
+            </span>{" "}
+            <button
+              onClick={() => {
+                setIsRegistering(!isRegistering);
+                setAuthError("");
+              }}
+              className="text-primary font-bold hover:underline"
+            >
+              {isRegistering ? "Masuk di sini" : "Daftar"}
+            </button>
           </div>
         </motion.div>
       </div>
