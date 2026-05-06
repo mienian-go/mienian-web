@@ -12,10 +12,11 @@ import {
   ChevronRight, 
   LogOut, 
   User as UserIcon,
-  ShoppingBag,
   CreditCard,
   MapPin,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Target,
+  ShoppingBag
 } from "lucide-react";
 import Link from "next/link";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
@@ -227,12 +228,20 @@ export default function CustomerDashboard() {
               <p className="text-foreground/50 font-medium">{user.email}</p>
             </div>
           </div>
-          <button 
-            onClick={() => logout()}
-            className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-bold text-foreground/60 hover:text-white hover:bg-red-500/10 hover:border-red-500/20 transition-all self-start"
-          >
-            <LogOut className="w-4 h-4" /> Keluar
-          </button>
+          <div className="flex flex-wrap items-center gap-3 self-start md:self-auto">
+            <Link 
+              href="/affiliate/dashboard"
+              className="flex items-center gap-2 px-6 py-3 bg-primary/10 border border-primary/20 rounded-xl text-sm font-bold text-primary hover:bg-primary/20 transition-all"
+            >
+              <Target className="w-4 h-4" /> Dashboard Affiliate
+            </Link>
+            <button 
+              onClick={() => logout()}
+              className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-bold text-foreground/60 hover:text-white hover:bg-red-500/10 hover:border-red-500/20 transition-all"
+            >
+              <LogOut className="w-4 h-4" /> Keluar
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

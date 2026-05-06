@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getAffiliateByEmail, getOrdersByAffiliateCode } from "@/lib/firestore";
+import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 import { LogIn, Link2, Copy, Check, TrendingUp, Package, DollarSign, Clock, ExternalLink, LogOut } from "lucide-react";
 import Link from "next/link";
@@ -39,6 +40,41 @@ export default function AffiliateDashboardPage() {
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const { user, logout: signOutUser } = useAuth();
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Auto login if already authenticated
+  useEffect(() => {
+    async function checkAffiliate() {
+      if (user?.email) {
+        try {
+          const affData = await getAffiliateByEmail(user.email);
+          if (affData) {
+            const aff = affData as AffiliateData;
+            if (aff.status === "approved") {
+              const orderData = await getOrdersByAffiliateCode(aff.approvedCode);
+              setAffiliate(aff);
+              setOrders(orderData as OrderData[]);
+              setIsLoggedIn(true);
+            } else {
+              setAuthError(
+                aff.status === "pending"
+                  ? "Akun Anda masih dalam proses review oleh tim kami. Mohon tunggu 1-2 hari kerja."
+                  : "Pendaftaran Anda ditolak. Silakan hubungi admin."
+              );
+              // We don't sign them out of Firebase, just block dashboard access
+            }
+          }
+        } catch (err) {
+          console.error("Error checking affiliate status:", err);
+        }
+      }
+      setCheckingAuth(false);
+    }
+    
+    checkAffiliate();
+  }, [user]);
 
   const handleForgotPassword = async () => {
     if (!email) {
@@ -98,12 +134,13 @@ export default function AffiliateDashboardPage() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsLoggedIn(false);
     setAffiliate(null);
     setOrders([]);
     setEmail("");
     setPassword("");
+    await signOutUser();
   };
 
   const copyLink = (path: string) => {
@@ -113,6 +150,14 @@ export default function AffiliateDashboardPage() {
   };
 
   // ========== LOGIN SCREEN ==========
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4 pt-32">
@@ -202,12 +247,20 @@ export default function AffiliateDashboardPage() {
             <h1 className="text-3xl font-extrabold">Halo, {affiliate?.name?.split(" ")[0]}! 👋</h1>
             <p className="text-foreground/50 mt-1">Pantau performa affiliate Anda secara real-time.</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 bg-card border border-card-border rounded-xl text-sm font-bold text-foreground/60 hover:text-foreground hover:border-primary/40 transition-all self-start"
-          >
-            <LogOut className="w-4 h-4" /> Keluar
-          </button>
+          <div className="flex items-center gap-3 self-start sm:self-auto">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-xl text-sm font-bold text-primary hover:bg-primary/20 transition-all"
+            >
+              <Package className="w-4 h-4" /> Dashboard Pelanggan
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 bg-card border border-card-border rounded-xl text-sm font-bold text-foreground/60 hover:text-foreground hover:border-primary/40 transition-all"
+            >
+              <LogOut className="w-4 h-4" /> Keluar
+            </button>
+          </div>
         </div>
 
         {/* Affiliate Link Card */}
