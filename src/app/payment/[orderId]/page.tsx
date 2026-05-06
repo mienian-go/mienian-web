@@ -43,6 +43,35 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
     alert("Berhasil disalin ke clipboard!");
   };
 
+  const [dokuLoading, setDokuLoading] = useState(false);
+
+  const handleDokuPayment = async () => {
+    setDokuLoading(true);
+    try {
+      const res = await fetch("/api/doku/create-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: orderId,
+          amount: order.costs?.grandTotal || 0,
+          customerName: order.customerName || "Customer",
+          customerEmail: order.email || "no-email@mienian.id",
+          invoiceNumber: `INV-${orderId}-${Date.now().toString().slice(-6)}`
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal membuat pembayaran Doku");
+      if (data.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      } else {
+        throw new Error("URL pembayaran tidak ditemukan");
+      }
+    } catch (err: any) {
+      alert("Gagal memproses Doku: " + err.message);
+      setDokuLoading(false);
+    }
+  };
+
   const handleUpload = async () => {
     if (!file) return alert("Pilih file bukti pembayaran terlebih dahulu.");
     setUploading(true);
@@ -226,10 +255,31 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
              </div>
 
              <div className="p-6 sm:p-8 space-y-8">
-                {/* Manual Bank Transfer */}
+                {/* Doku Payment */}
                 <div>
                    <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">1</div>
+                     Pembayaran Otomatis (Virtual Account / E-Wallet / CC)
+                   </h3>
+                   <div className="bg-muted p-6 rounded-xl border border-card-border flex flex-col items-center justify-center text-center">
+                      <p className="text-sm font-bold text-foreground mb-2">DOKU Payment Gateway</p>
+                      <p className="text-xs text-foreground/60 mb-4">Bayar praktis tanpa perlu upload bukti transfer. Konfirmasi otomatis.</p>
+                      <button onClick={handleDokuPayment} disabled={dokuLoading} className="w-full py-3 bg-[#E32526] text-white font-bold rounded-xl disabled:opacity-50 hover:opacity-90 transition-all flex justify-center items-center gap-2 shadow-lg">
+                         {dokuLoading ? "Memproses..." : "Bayar via Doku Sekarang"}
+                      </button>
+                   </div>
+                </div>
+
+                <div className="flex items-center gap-4 py-2">
+                  <div className="h-px bg-card-border flex-1"></div>
+                  <span className="text-xs font-bold text-foreground/40 uppercase tracking-widest">ATAU TRANSFER MANUAL</span>
+                  <div className="h-px bg-card-border flex-1"></div>
+                </div>
+
+                {/* Manual Bank Transfer */}
+                <div>
+                   <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">2</div>
                      Transfer Bank Manual
                    </h3>
                    <div className="bg-muted p-4 rounded-xl border border-card-border">
@@ -247,8 +297,8 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
                 {/* QRIS */}
                 <div>
                    <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">2</div>
-                     Atau via QRIS (Semua E-Wallet/M-Banking)
+                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">3</div>
+                     Via QRIS Manual (Semua E-Wallet/M-Banking)
                    </h3>
                    <div className="bg-white p-6 rounded-xl border border-card-border flex flex-col items-center">
                       <div className="w-full max-w-[250px] aspect-square relative mb-3 bg-muted/30 rounded-lg overflow-hidden border">
@@ -261,8 +311,8 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
                 {/* Upload Bukti */}
                 <div className="pt-4 border-t border-dashed border-card-border">
                    <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">3</div>
-                     Unggah Bukti Transfer
+                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">4</div>
+                     Unggah Bukti Transfer Manual
                    </h3>
                    <div className="space-y-4">
                       <label className="flex items-center justify-center w-full h-32 px-4 transition bg-card border-2 border-primary/20 border-dashed rounded-xl appearance-none cursor-pointer hover:border-primary/50 focus:outline-none">
