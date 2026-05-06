@@ -315,7 +315,7 @@ export default function CustomerDashboard() {
                         </div>
                         <div className="text-right flex flex-col justify-center">
                           <p className="text-xs text-foreground/40 font-bold uppercase mb-1">Total Pembayaran</p>
-                          <p className="text-xl font-black text-primary">{formatRupiah(order.totalPrice)}</p>
+                          <p className="text-xl font-black text-primary">{formatRupiah(order.costs?.grandTotal || order.totalPrice || 0)}</p>
                         </div>
                       </div>
                       
@@ -343,7 +343,7 @@ export default function CustomerDashboard() {
                         </div>
                         <div className="flex items-center justify-end">
                            <Link 
-                            href={`/payment?orderId=${order.id}`}
+                            href={`/payment/${order.id}`}
                             className="flex items-center gap-1.5 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-xs font-bold hover:bg-primary hover:text-white hover:border-transparent transition-all group/btn"
                            >
                             Detail <ChevronRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
