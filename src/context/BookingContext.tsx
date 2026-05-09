@@ -214,7 +214,7 @@ function calculateTotals(state: BookingState): BookingState["calculations"] {
     }
     staffFee = (staffCount - 1) * STAFF_FEE_PER; // Tambahan petugas 75rb
   } else if (totalPorsi > 0) {
-    staffCount = totalPorsi <= 200 ? 2 : 2 + Math.ceil((totalPorsi - 200) / 50);
+    staffCount = Math.ceil(totalPorsi / 75);
     staffFee = staffCount * STAFF_FEE_PER;
   }
   
