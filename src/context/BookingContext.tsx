@@ -65,6 +65,7 @@ export interface BookingState {
     extraPackagePorsi: number;
     extraPackagePrice: number;
     extraToppingPrice: number;
+    serviceFee: number;
   };
   
   // Dynamic Packages Data
@@ -116,6 +117,7 @@ const initialState: BookingState = {
     extraPackagePorsi: 0,
     extraPackagePrice: 0,
     extraToppingPrice: 0,
+    serviceFee: 0,
   },
   packages: [],
 };
@@ -238,8 +240,10 @@ function calculateTotals(state: BookingState): BookingState["calculations"] {
   }
 
   // 5. Final Totals
-  const grandTotal = basePrice + extraPrice + staffFee + extraFee + transportFee;
-  const payNow = state.paymentType === "dp" ? grandTotal * 0.5 : grandTotal;
+  const SERVICE_FEE = 5000;
+  const serviceFee = (basePrice + extraPrice) > 0 ? SERVICE_FEE : 0;
+  const grandTotal = basePrice + extraPrice + staffFee + extraFee + transportFee + serviceFee;
+  const payNow = state.paymentType === "dp" ? Math.ceil(grandTotal * 0.5) : grandTotal;
 
   // validations
   // total order exclude transport, staff, and extra fees (only food)
@@ -269,7 +273,8 @@ function calculateTotals(state: BookingState): BookingState["calculations"] {
     isDpAllowed,
     extraPackagePorsi,
     extraPackagePrice,
-    extraToppingPrice
+    extraToppingPrice,
+    serviceFee
   };
 }
 

@@ -70,6 +70,13 @@ export function OrderSummary() {
                 <span className="font-semibold">{formatRupiah(c.transportFee)}</span>
               </motion.div>
             )}
+
+            {c.serviceFee > 0 && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="flex justify-between">
+                <span className="text-foreground/70">Biaya Layanan</span>
+                <span className="font-semibold">{formatRupiah(c.serviceFee)}</span>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
 

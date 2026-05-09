@@ -605,6 +605,12 @@ function RegulerBookingContent() {
                 <span>Ongkos Kirim PP ({state.distanceKm.toFixed(1)} KM)</span>
                 <span>Rp {state.calculations.transportFee.toLocaleString("id-ID")}</span>
               </div>
+              {state.calculations.serviceFee > 0 && (
+                <div className="flex justify-between items-center text-foreground/60">
+                  <span>Biaya Layanan</span>
+                  <span>Rp {state.calculations.serviceFee.toLocaleString("id-ID")}</span>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-8 relative z-10">
