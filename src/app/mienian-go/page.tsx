@@ -1,10 +1,13 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Sparkles, ShieldCheck, Clock, Utensils, ArrowRight } from "lucide-react";
+import { MapPin, Sparkles, ShieldCheck, Clock, Utensils, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { menuItems, categoryLabels, categoryPrices, formatRupiah } from "@/data/menu";
+import { formatRupiah } from "@/data/menu";
 import { PackageShowcase } from "@/components/PackageShowcase";
+import { collection, query, orderBy, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const container = {
   hidden: { opacity: 0 },
@@ -15,8 +18,6 @@ const item = {
   show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } },
 };
 
-const mieItems = menuItems.filter((m) => m.category === "mie");
-
 const scheduleData = [
   { day: "Senin - Rabu", area: "Jakarta Selatan — Kemang, Blok M, Tebet", time: "17:00 - 23:00" },
   { day: "Kamis - Jumat", area: "Jakarta Pusat — Sudirman, Menteng", time: "17:00 - 23:00" },
@@ -24,6 +25,31 @@ const scheduleData = [
 ];
 
 export default function MienianGO() {
+  const [dbMenuItems, setDbMenuItems] = useState<any[]>([]);
+  const [isLoadingMenu, setIsLoadingMenu] = useState(true);
+
+  useEffect(() => {
+    async function fetchMenu() {
+      try {
+        const q = query(collection(db, "menu_items"), orderBy("sortOrder", "asc"));
+        const snapshot = await getDocs(q);
+        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter((item: any) => item.isActive);
+        setDbMenuItems(items);
+      } catch (error) {
+        console.error("Error fetching menu:", error);
+      } finally {
+        setIsLoadingMenu(false);
+      }
+    }
+    fetchMenu();
+  }, []);
+
+  const categoriesToShow = [
+    { id: "mie", title: "Pilihan Mie", emoji: "🍜" },
+    { id: "topping-reguler", title: "Pilihan Topping Reguler", emoji: "🥚" },
+    { id: "topping-premium", title: "Pilihan Topping Premium", emoji: "🥩" },
+  ];
+
   return (
     <div className="flex flex-col overflow-hidden">
       {/* ============ HERO ============ */}
@@ -125,44 +151,48 @@ export default function MienianGO() {
             </p>
           </motion.div>
 
-          {/* Horizontal Scroll Carousel */}
-          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
-            {mieItems.map((mie, i) => (
-              <motion.div
-                key={mie.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                className="snap-center shrink-0 w-64"
-              >
-                <div className="card p-6 h-full">
-                  <div className="w-full h-36 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center mb-4">
-                    <span className="text-5xl">🍜</span>
-                  </div>
-                  <h4 className="font-bold text-sm mb-1">{mie.name}</h4>
-                  <p className="text-secondary font-bold text-lg">{formatRupiah(mie.price)}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          {isLoadingMenu ? (
+            <div className="flex justify-center p-12">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+          ) : (
+            <div className="space-y-12">
+              {categoriesToShow.map(cat => {
+                const items = dbMenuItems.filter(m => m.category === cat.id);
+                if (items.length === 0) return null;
 
-          {/* Topping Quick List */}
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {(["topping-reguler", "topping-premium", "topping-super"] as const).map((cat) => (
-              <div key={cat} className="card p-6">
-                <h4 className="font-bold mb-2 flex items-center justify-between">
-                  {categoryLabels[cat]}
-                  <span className="text-primary text-sm">{formatRupiah(categoryPrices[cat])}</span>
-                </h4>
-                <ul className="space-y-1 text-sm text-foreground/60">
-                  {menuItems.filter((m) => m.category === cat).map((m) => (
-                    <li key={m.id}>• {m.name}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </motion.div>
+                return (
+                  <div key={cat.id}>
+                    <h3 className="text-xl sm:text-2xl font-bold mb-6 flex items-center gap-3">
+                      <span className="text-2xl sm:text-3xl">{cat.emoji}</span> {cat.title}
+                    </h3>
+                    <div className="flex gap-4 overflow-x-auto pb-6 snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
+                      {items.map((item, i) => (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          whileInView={{ opacity: 1, scale: 1 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: i * 0.05 }}
+                          className="snap-center shrink-0 w-64"
+                        >
+                          <div className="card p-6 h-full flex flex-col justify-between hover:border-primary/50 transition-colors">
+                            <div>
+                              <div className="w-full h-32 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center mb-4 text-5xl">
+                                {cat.emoji}
+                              </div>
+                              <h4 className="font-bold text-sm mb-1">{item.name}</h4>
+                            </div>
+                            <p className="text-secondary font-bold text-lg mt-4">{formatRupiah(item.price)}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
