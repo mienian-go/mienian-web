@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { getAffiliateByEmail, getOrdersByAffiliateCode, getAffiliateAssets, AffiliateAsset } from "@/lib/firestore";
+import { getAffiliateByEmail, getOrdersByAffiliateCode, getAffiliateAssets, AffiliateAsset, updateAffiliateProfile } from "@/lib/firestore";
 import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
-import { LogIn, Link2, Copy, Check, TrendingUp, Package, DollarSign, Clock, ExternalLink, LogOut, Video, Download } from "lucide-react";
+import { LogIn, Link2, Copy, Check, TrendingUp, Package, DollarSign, Clock, ExternalLink, LogOut, Video, Download, Settings, Save, AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
 interface AffiliateData {
@@ -43,6 +43,12 @@ export default function AffiliateDashboardPage() {
   const [copied, setCopied] = useState(false);
   const [copiedCaptionId, setCopiedCaptionId] = useState<string | null>(null);
 
+  // Tabs & Profile State
+  const [activeTab, setActiveTab] = useState<"ringkasan" | "profil">("ringkasan");
+  const [profileData, setProfileData] = useState({ name: "", whatsapp: "", bankName: "", bankAccount: "", bankAccountName: "" });
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState({ type: "", text: "" });
+
   const { user, logout: signOutUser } = useAuth();
   const [checkingAuth, setCheckingAuth] = useState(true);
 
@@ -60,6 +66,13 @@ export default function AffiliateDashboardPage() {
                 getAffiliateAssets()
               ]);
               setAffiliate(aff);
+              setProfileData({
+                name: aff.name || "",
+                whatsapp: aff.whatsapp || "",
+                bankName: aff.bankName || "",
+                bankAccount: aff.bankAccount || "",
+                bankAccountName: aff.bankAccountName || ""
+              });
               setOrders(orderData as OrderData[]);
               setAssets(assetData);
               setIsLoggedIn(true);
@@ -130,6 +143,13 @@ export default function AffiliateDashboardPage() {
         getAffiliateAssets()
       ]);
       setAffiliate(aff);
+      setProfileData({
+        name: aff.name || "",
+        whatsapp: aff.whatsapp || "",
+        bankName: aff.bankName || "",
+        bankAccount: aff.bankAccount || "",
+        bankAccountName: aff.bankAccountName || ""
+      });
       setOrders(orderData as OrderData[]);
       setAssets(assetData);
       setIsLoggedIn(true);
@@ -152,6 +172,23 @@ export default function AffiliateDashboardPage() {
     setEmail("");
     setPassword("");
     await signOutUser();
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!affiliate?.id) return;
+    setIsUpdatingProfile(true);
+    setProfileMessage({ type: "", text: "" });
+
+    try {
+      await updateAffiliateProfile(affiliate.id, profileData);
+      setProfileMessage({ type: "success", text: "Profil berhasil diperbarui!" });
+      setAffiliate({ ...affiliate, ...profileData });
+    } catch (err: any) {
+      setProfileMessage({ type: "error", text: "Gagal memperbarui profil: " + err.message });
+    } finally {
+      setIsUpdatingProfile(false);
+    }
   };
 
   const copyLink = (path: string) => {
@@ -289,6 +326,24 @@ export default function AffiliateDashboardPage() {
           </div>
         </div>
 
+        {/* Tab Navigation */}
+        <div className="flex overflow-x-auto hide-scrollbar gap-2 mb-8 bg-card p-1.5 rounded-2xl border border-white/5 shadow-sm">
+          <button 
+            onClick={() => setActiveTab("ringkasan")}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${activeTab === "ringkasan" ? "bg-primary text-white shadow-md" : "text-foreground/60 hover:text-foreground hover:bg-white/5"}`}
+          >
+            <TrendingUp className="w-4 h-4" /> Ringkasan
+          </button>
+          <button 
+            onClick={() => setActiveTab("profil")}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${activeTab === "profil" ? "bg-primary text-white shadow-md" : "text-foreground/60 hover:text-foreground hover:bg-white/5"}`}
+          >
+            <Settings className="w-4 h-4" /> Pengaturan Profil
+          </button>
+        </div>
+
+        {activeTab === "ringkasan" ? (
+          <>
         {/* Affiliate Link Card */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -446,6 +501,68 @@ export default function AffiliateDashboardPage() {
             </div>
           )}
         </motion.div>
+          </>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card border border-white/5 rounded-3xl p-6 sm:p-8"
+          >
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Settings className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Pengaturan Profil</h2>
+                <p className="text-sm text-foreground/50">Perbarui data diri dan informasi rekening bank Anda.</p>
+              </div>
+            </div>
+
+            {profileMessage.text && (
+              <div className={`p-4 rounded-xl mb-6 flex items-start gap-3 border ${profileMessage.type === "success" ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"}`}>
+                {profileMessage.type === "success" ? <CheckCircle2 className="w-5 h-5 mt-0.5 shrink-0" /> : <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />}
+                <p className="text-sm font-bold leading-relaxed">{profileMessage.text}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateProfile} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-foreground/70 uppercase tracking-wider">Nama Lengkap</label>
+                  <input type="text" value={profileData.name} onChange={e => setProfileData({...profileData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border bg-background focus:border-primary focus:outline-none text-sm transition-all" required />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-foreground/70 uppercase tracking-wider">Nomor WhatsApp</label>
+                  <input type="tel" value={profileData.whatsapp} onChange={e => setProfileData({...profileData, whatsapp: e.target.value})} className="w-full px-4 py-3 rounded-xl border bg-background focus:border-primary focus:outline-none text-sm transition-all" required />
+                </div>
+                <div className="md:col-span-2 border-t border-white/5 pt-6 mt-2">
+                  <h3 className="text-sm font-bold text-foreground/80 mb-4 uppercase tracking-wider">Informasi Rekening (Untuk Komisi)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-foreground/70 uppercase">Nama Bank / E-Wallet</label>
+                      <input type="text" placeholder="BCA / GoPay / OVO" value={profileData.bankName} onChange={e => setProfileData({...profileData, bankName: e.target.value})} className="w-full px-4 py-3 rounded-xl border bg-background focus:border-primary focus:outline-none text-sm transition-all" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-foreground/70 uppercase">Nomor Rekening</label>
+                      <input type="text" placeholder="123456789" value={profileData.bankAccount} onChange={e => setProfileData({...profileData, bankAccount: e.target.value})} className="w-full px-4 py-3 rounded-xl border bg-background focus:border-primary focus:outline-none text-sm transition-all" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-foreground/70 uppercase">Atas Nama</label>
+                      <input type="text" placeholder="Budi Santoso" value={profileData.bankAccountName} onChange={e => setProfileData({...profileData, bankAccountName: e.target.value})} className="w-full px-4 py-3 rounded-xl border bg-background focus:border-primary focus:outline-none text-sm transition-all" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <button type="submit" disabled={isUpdatingProfile} className="flex items-center gap-2 px-8 py-3.5 bg-primary text-white font-extrabold rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50">
+                  <Save className="w-4 h-4" />
+                  {isUpdatingProfile ? "Menyimpan..." : "Simpan Perubahan"}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        )}
 
       </div>
     </div>

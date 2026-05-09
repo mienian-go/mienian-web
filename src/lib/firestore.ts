@@ -162,6 +162,14 @@ export const getAffiliateByEmail = async (email: string) => {
   return { id: d.id, ...d.data() };
 };
 
+export const updateAffiliateProfile = async (id: string, data: any) => {
+  const ref = doc(db, "affiliates", id);
+  await updateDoc(ref, {
+    ...data,
+    updatedAt: Timestamp.now()
+  });
+};
+
 export const getOrdersByAffiliateCode = async (code: string): Promise<Order[]> => {
   const q = query(collection(db, "orders"), where("affiliateCode", "==", code));
   const snapshot = await getDocs(q);
