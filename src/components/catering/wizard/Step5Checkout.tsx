@@ -107,7 +107,7 @@ export function Step5Checkout() {
                 <Send className="w-5 h-5 ml-1" />
              </button>
              <p className="mt-4 text-xs text-foreground/40 max-w-sm mx-auto">
-               Dengan menekan tombol, lo setuju sama T&C Mienian Catering. 
+               Dengan menekan tombol, lo setuju sama T&C Mienian Stall. 
                Data event lo udah direkam otomatis secara draft oleh sistem Mienian.
              </p>
         </div>

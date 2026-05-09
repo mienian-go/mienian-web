@@ -400,7 +400,7 @@ function RegulerBookingContent() {
 
         {/* Info T&C & Stall */}
         <div className="bg-primary/10 border border-primary/30 p-5 sm:p-6 rounded-2xl mb-8">
-          <h2 className="font-bold text-primary mb-3">Ketentuan Pemesanan Reguler Mienian Catering</h2>
+          <h2 className="font-bold text-primary mb-3">Ketentuan Pemesanan Reguler Mienian Stall</h2>
           <ul className="text-sm space-y-2 text-foreground/80 list-disc pl-4 mb-5">
             <li>Nilai minimum transaksi (Minimum Order Value) sebesar <b>Rp 700.000</b> di luar biaya transport ke lokasi acara.</li>
             <li>Menggunakan <b>Stall Portable</b> (seperti pada gambar).</li>

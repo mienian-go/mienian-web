@@ -223,7 +223,7 @@ export default function AffiliateRegisterPage() {
             </button>
             
             <p className="text-[10px] text-center text-foreground/40 mt-4 leading-relaxed">
-              Dengan mendaftar, Anda setuju dengan syarat dan ketentuan program afiliasi Mienian Catering.
+              Dengan mendaftar, Anda setuju dengan syarat dan ketentuan program afiliasi Mienian Stall.
             </p>
           </form>
         </motion.div>

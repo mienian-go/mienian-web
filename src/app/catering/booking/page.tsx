@@ -79,7 +79,7 @@ function BookingWizard() {
         
         {/* Header Title */}
         <div className="mb-10 text-center">
-          <h1 className="text-3xl font-extrabold mb-3">Booking Mienian Catering ✨</h1>
+          <h1 className="text-3xl font-extrabold mb-3">Booking Mienian Stall ✨</h1>
           <p className="text-foreground/60 max-w-xl mx-auto">
             Isi form step-by-step di bawah ini. Tenang, total biayanya kelihatan transparan di sebelah kanan.
           </p>

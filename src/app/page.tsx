@@ -32,7 +32,7 @@ export default function Home() {
       <section className="relative min-h-[110vh] sm:min-h-screen flex items-center justify-center pt-32 pb-24 overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0">
-          <img src="/images/bg-hero-banner-catering.gif" alt="Mienian Catering" className="absolute inset-0 w-full h-full object-cover" />
+          <img src="/images/bg-hero-banner-catering.gif" alt="Mienian Stall" className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-dark-maroon/80 via-dark-maroon/60 to-dark-maroon/90" />
         </div>
         <div className="absolute inset-0 bg-[url('/images/pattern.svg')] opacity-5" />
@@ -188,7 +188,7 @@ export default function Home() {
               </Link>
             </motion.div>
 
-            {/* Mienian Catering Card */}
+            {/* Mienian Stall Card */}
             <motion.div
               initial={{ opacity: 0, x: 40 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -206,7 +206,7 @@ export default function Home() {
                       <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                         <PartyPopper className="w-8 h-8 text-primary" />
                       </div>
-                      <h3 className="text-2xl sm:text-3xl font-extrabold mb-3">Mienian Catering</h3>
+                      <h3 className="text-2xl sm:text-3xl font-extrabold mb-3">Mienian Stall</h3>
                       <p className="text-foreground/60 text-lg leading-relaxed">
                         Bikin acara lo makin pecah pakai live cooking katering kita. Wedding, birthday, corporate — kita handle semua! 🎉
                       </p>

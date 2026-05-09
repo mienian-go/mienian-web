@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/mienian-go", label: "Mienian GO" },
-  { href: "/catering", label: "Mienian Catering" },
+  { href: "/catering", label: "Mienian Stall" },
   { href: "/blog", label: "Blog" },
   { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact Us" },

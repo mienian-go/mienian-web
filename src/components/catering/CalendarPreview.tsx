@@ -50,7 +50,7 @@ export function CalendarPreview() {
             Booking Calendar Info
           </h3>
           <p className="text-foreground/60 text-sm mb-6">
-            Jadwal Mienian Catering emang cepet banget sold out!.
+            Jadwal Mienian Stall emang cepet banget sold out!.
           </p>
 
           <div className="space-y-2 mb-6 text-sm">

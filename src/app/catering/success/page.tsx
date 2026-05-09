@@ -99,7 +99,7 @@ export default function SuccessPage() {
     if (!stateBooking.name) return "https://wa.me/6285216706922"; // Fallback if refreshed
     
     const c = stateBooking.calculations;
-    const pesan = `Halo Mienian Catering ✨\nSaya sudah input dan upload pembayaran di web dengan detail berikut:\n\n▪️ Order ID: ${orderId}\n▪️ Nama: ${stateBooking.name}\n▪️ Acara: ${stateBooking.eventType}\n▪️ Tanggal: ${stateBooking.date}\n▪️ Jam: ${stateBooking.time}\n\nTotal Tagihan: Rp ${c.grandTotal.toLocaleString("id-ID")}\nSistem Bayar: ${stateBooking.paymentType === "dp" ? "DP 50%" : "Full Payment"}\n\nMohon diverifikasi. Terima kasih!`;
+    const pesan = `Halo Mienian Stall ✨\nSaya sudah input dan upload pembayaran di web dengan detail berikut:\n\n▪️ Order ID: ${orderId}\n▪️ Nama: ${stateBooking.name}\n▪️ Acara: ${stateBooking.eventType}\n▪️ Tanggal: ${stateBooking.date}\n▪️ Jam: ${stateBooking.time}\n\nTotal Tagihan: Rp ${c.grandTotal.toLocaleString("id-ID")}\nSistem Bayar: ${stateBooking.paymentType === "dp" ? "DP 50%" : "Full Payment"}\n\nMohon diverifikasi. Terima kasih!`;
     return `https://wa.me/6285216706922?text=${encodeURIComponent(pesan)}`;
   };
 
