@@ -306,12 +306,7 @@ export default function CustomerDashboard() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3 self-start md:self-auto">
-            <Link 
-              href="/affiliate/dashboard"
-              className="flex items-center gap-2 px-6 py-3 bg-primary/10 border border-primary/20 rounded-xl text-sm font-bold text-primary hover:bg-primary/20 transition-all"
-            >
-              <Target className="w-4 h-4" /> Dashboard Affiliate
-            </Link>
+
             <button 
               onClick={() => logout()}
               className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-bold text-foreground/60 hover:text-white hover:bg-red-500/10 hover:border-red-500/20 transition-all"

@@ -96,10 +96,10 @@ export default function AffiliateLandingPage() {
             </Link>
             
             <Link 
-              href="/affiliate/dashboard" 
+              href="/affiliate/login" 
               className="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/10 text-foreground font-bold rounded-2xl hover:bg-white/10 transition-all"
             >
-              Login Dashboard
+              Login Affiliate
             </Link>
           </motion.div>
         </div>
