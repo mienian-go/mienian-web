@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { getAffiliateByEmail, getOrdersByAffiliateCode } from "@/lib/firestore";
+import { getAffiliateByEmail, getOrdersByAffiliateCode, getAffiliateAssets, AffiliateAsset } from "@/lib/firestore";
 import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
-import { LogIn, Link2, Copy, Check, TrendingUp, Package, DollarSign, Clock, ExternalLink, LogOut } from "lucide-react";
+import { LogIn, Link2, Copy, Check, TrendingUp, Package, DollarSign, Clock, ExternalLink, LogOut, Video, Download } from "lucide-react";
 import Link from "next/link";
 
 interface AffiliateData {
@@ -38,8 +38,10 @@ export default function AffiliateDashboardPage() {
   // Dashboard State
   const [affiliate, setAffiliate] = useState<AffiliateData | null>(null);
   const [orders, setOrders] = useState<OrderData[]>([]);
+  const [assets, setAssets] = useState<AffiliateAsset[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedCaptionId, setCopiedCaptionId] = useState<string | null>(null);
 
   const { user, logout: signOutUser } = useAuth();
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -53,9 +55,13 @@ export default function AffiliateDashboardPage() {
           if (affData) {
             const aff = affData as AffiliateData;
             if (aff.status === "approved") {
-              const orderData = await getOrdersByAffiliateCode(aff.approvedCode);
+              const [orderData, assetData] = await Promise.all([
+                getOrdersByAffiliateCode(aff.approvedCode),
+                getAffiliateAssets()
+              ]);
               setAffiliate(aff);
               setOrders(orderData as OrderData[]);
+              setAssets(assetData);
               setIsLoggedIn(true);
             } else {
               setAuthError(
@@ -118,10 +124,14 @@ export default function AffiliateDashboardPage() {
         return;
       }
 
-      // 3. Fetch orders with this affiliate code
-      const orderData = await getOrdersByAffiliateCode(aff.approvedCode);
+      // 3. Fetch orders and assets
+      const [orderData, assetData] = await Promise.all([
+        getOrdersByAffiliateCode(aff.approvedCode),
+        getAffiliateAssets()
+      ]);
       setAffiliate(aff);
       setOrders(orderData as OrderData[]);
+      setAssets(assetData);
       setIsLoggedIn(true);
     } catch (err: any) {
       if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
@@ -138,6 +148,7 @@ export default function AffiliateDashboardPage() {
     setIsLoggedIn(false);
     setAffiliate(null);
     setOrders([]);
+    setAssets([]);
     setEmail("");
     setPassword("");
     await signOutUser();
@@ -147,6 +158,21 @@ export default function AffiliateDashboardPage() {
     navigator.clipboard.writeText(`${window.location.origin}${path}?aff=${affiliate?.approvedCode}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const getAffiliateLink = () => {
+    if (typeof window !== "undefined" && affiliate?.approvedCode) {
+      return `${window.location.origin}/menu/wedding?aff=${affiliate.approvedCode}`;
+    }
+    return "";
+  };
+
+  const copyCaption = (captionTemplate: string, id: string) => {
+    const link = getAffiliateLink();
+    const finalCaption = captionTemplate.replace(/{LINK}/g, link);
+    navigator.clipboard.writeText(finalCaption);
+    setCopiedCaptionId(id);
+    setTimeout(() => setCopiedCaptionId(null), 2000);
   };
 
   // ========== LOGIN SCREEN ==========
@@ -320,6 +346,48 @@ export default function AffiliateDashboardPage() {
             </motion.div>
           ))}
         </div>
+
+        {/* Marketing Assets */}
+        {assets.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-extrabold mb-2">Materi Promosi Siap Share</h2>
+            <p className="text-foreground/50 text-sm mb-6">Download video ke HP Anda, lalu copy teks di bawah untuk diposting di WhatsApp atau sosmed Anda.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {assets.map(asset => (
+                <div key={asset.id} className="card overflow-hidden shadow-xl border-white/5 flex flex-col">
+                  <div className="aspect-video bg-black relative">
+                    <video src={asset.videoUrl} controls className="w-full h-full object-contain" />
+                  </div>
+                  <div className="p-5 flex flex-col flex-1">
+                    <h3 className="font-bold text-lg mb-3">{asset.title}</h3>
+                    <div className="bg-background rounded-xl border border-white/5 p-3 mb-4 flex-1">
+                      <p className="text-xs text-foreground/60 whitespace-pre-wrap font-mono">
+                        {asset.captionTemplate.replace(/{LINK}/g, getAffiliateLink())}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 mt-auto">
+                      <a
+                        href={asset.videoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        download
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-card border border-card-border rounded-lg text-sm font-bold hover:border-primary/40 transition-colors"
+                      >
+                        <Download className="w-4 h-4" /> Download
+                      </a>
+                      <button
+                        onClick={() => copyCaption(asset.captionTemplate, asset.id)}
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-all"
+                      >
+                        {copiedCaptionId === asset.id ? <><Check className="w-4 h-4" /> Copied!</> : <><Copy className="w-4 h-4" /> Copy Text</>}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Order List */}
         <motion.div

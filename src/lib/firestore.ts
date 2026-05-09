@@ -159,6 +159,37 @@ export const getOrdersByAffiliateCode = async (code: string): Promise<Order[]> =
   });
 };
 
+// ==========================================
+// AFFILIATE MARKETING ASSETS
+// ==========================================
+
+export interface AffiliateAsset {
+  id: string;
+  title: string;
+  videoUrl: string;
+  captionTemplate: string;
+  createdAt: any;
+}
+
+export const getAffiliateAssets = async (): Promise<AffiliateAsset[]> => {
+  const q = query(collection(db, "affiliate_assets"), orderBy("createdAt", "desc"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as AffiliateAsset));
+};
+
+export const addAffiliateAsset = async (data: Omit<AffiliateAsset, "id" | "createdAt">) => {
+  const docRef = await addDoc(collection(db, "affiliate_assets"), {
+    ...data,
+    createdAt: Timestamp.now()
+  });
+  return docRef.id;
+};
+
+export const deleteAffiliateAsset = async (id: string) => {
+  await deleteDoc(doc(db, "affiliate_assets", id));
+};
+
+
 export const getOrdersByUserId = async (userId: string): Promise<Order[]> => {
   const q = query(collection(db, "orders"), where("userId", "==", userId));
   const snapshot = await getDocs(q);

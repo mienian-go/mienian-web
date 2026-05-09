@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAffiliates, updateAffiliateStatus, deleteAffiliate } from "@/lib/firestore";
+import { getAffiliates, updateAffiliateStatus, deleteAffiliate, getAffiliateAssets, addAffiliateAsset, deleteAffiliateAsset, AffiliateAsset } from "@/lib/firestore";
+import { uploadFile } from "@/lib/storage";
 import { motion } from "framer-motion";
-import { CheckCircle2, XCircle, Clock, Users, Copy, Check, Trash2 } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Users, Copy, Check, Trash2, Video, Upload, Play, Link as LinkIcon } from "lucide-react";
 
 interface Affiliate {
   id: string;
@@ -26,6 +27,14 @@ export default function AdminAffiliatesPage() {
   const [codeInput, setCodeInput] = useState("");
   const [processing, setProcessing] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  
+  // Marketing Assets States
+  const [mainTab, setMainTab] = useState<"data" | "assets">("data");
+  const [assets, setAssets] = useState<AffiliateAsset[]>([]);
+  const [uploadingAsset, setUploadingAsset] = useState(false);
+  const [assetFile, setAssetFile] = useState<File | null>(null);
+  const [assetTitle, setAssetTitle] = useState("");
+  const [assetCaption, setAssetCaption] = useState("Halo! Cobain Mienian yuk! Pesan di sini: {LINK}");
 
   const fetchData = async () => {
     try {
@@ -38,7 +47,19 @@ export default function AdminAffiliatesPage() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  const fetchAssets = async () => {
+    try {
+      const data = await getAffiliateAssets();
+      setAssets(data);
+    } catch (err) {
+      console.error("Error fetching assets", err);
+    }
+  };
+
+  useEffect(() => { 
+    fetchData(); 
+    fetchAssets();
+  }, []);
 
   const handleApprove = async (aff: Affiliate) => {
     const code = codeInput.trim().toUpperCase() || aff.requestedCode?.toUpperCase() || aff.name.split(" ")[0].toUpperCase();
@@ -88,6 +109,41 @@ export default function AdminAffiliatesPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleUploadAsset = async () => {
+    if (!assetFile || !assetTitle || !assetCaption) return alert("Lengkapi form aset!");
+    if (!assetFile.type.startsWith("video/")) return alert("File harus berupa video (MP4).");
+    
+    setUploadingAsset(true);
+    try {
+      const { url } = await uploadFile(assetFile, "affiliate_assets");
+      await addAffiliateAsset({
+        title: assetTitle,
+        videoUrl: url,
+        captionTemplate: assetCaption
+      });
+      await fetchAssets();
+      setAssetFile(null);
+      setAssetTitle("");
+      setAssetCaption("Halo! Cobain Mienian yuk! Pesan di sini: {LINK}");
+      alert("Berhasil mengunggah video promosi!");
+    } catch (err) {
+      console.error(err);
+      alert("Gagal mengunggah video. Pastikan ukuran file tidak terlalu besar.");
+    } finally {
+      setUploadingAsset(false);
+    }
+  };
+
+  const handleDeleteAsset = async (id: string) => {
+    if (!confirm("Hapus aset ini secara permanen?")) return;
+    try {
+      await deleteAffiliateAsset(id);
+      await fetchAssets();
+    } catch (err) {
+      alert("Gagal menghapus aset.");
+    }
+  };
+
   const filtered = filter === "all" ? affiliates : affiliates.filter(a => a.status === filter);
 
   const counts = {
@@ -110,34 +166,54 @@ export default function AdminAffiliatesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Kelola Affiliator</h1>
-          <p className="text-foreground/50 mt-1">Review dan approve pendaftaran partner affiliate.</p>
+          <p className="text-foreground/50 mt-1">Review partner dan kelola materi promosi.</p>
         </div>
-        <div className="flex items-center gap-2 text-sm">
-          <Users className="w-5 h-5 text-primary" />
-          <span className="font-bold text-lg">{counts.approved}</span>
-          <span className="text-foreground/50">aktif</span>
-        </div>
+        {mainTab === "data" && (
+          <div className="flex items-center gap-2 text-sm">
+            <Users className="w-5 h-5 text-primary" />
+            <span className="font-bold text-lg">{counts.approved}</span>
+            <span className="text-foreground/50">aktif</span>
+          </div>
+        )}
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2 flex-wrap">
-        {(["all", "pending", "approved", "rejected"] as const).map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-              filter === f
-                ? "bg-primary text-white shadow-lg shadow-primary/20"
-                : "bg-card border border-card-border text-foreground/60 hover:border-primary/40"
-            }`}
-          >
-            {f === "all" ? "Semua" : f === "pending" ? "⏳ Menunggu" : f === "approved" ? "✅ Disetujui" : "❌ Ditolak"}
-            <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] bg-white/10">{counts[f]}</span>
-          </button>
-        ))}
+      {/* Main Tabs */}
+      <div className="flex gap-4 border-b border-white/10 pb-2">
+        <button 
+          onClick={() => setMainTab("data")} 
+          className={`font-bold pb-2 border-b-2 transition-all ${mainTab === "data" ? "border-primary text-primary" : "border-transparent text-foreground/50 hover:text-foreground"}`}
+        >
+          Data Affiliator
+        </button>
+        <button 
+          onClick={() => setMainTab("assets")} 
+          className={`font-bold pb-2 border-b-2 transition-all ${mainTab === "assets" ? "border-primary text-primary" : "border-transparent text-foreground/50 hover:text-foreground"}`}
+        >
+          Materi Promosi (Video)
+        </button>
       </div>
 
-      {/* List */}
+      {mainTab === "data" ? (
+        <>
+          {/* Filter Tabs */}
+          <div className="flex gap-2 flex-wrap">
+            {(["all", "pending", "approved", "rejected"] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                  filter === f
+                    ? "bg-primary text-white shadow-lg shadow-primary/20"
+                    : "bg-card border border-card-border text-foreground/60 hover:border-primary/40"
+                }`}
+              >
+                {f === "all" ? "Semua" : f === "pending" ? "⏳ Menunggu" : f === "approved" ? "✅ Disetujui" : "❌ Ditolak"}
+                <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] bg-white/10">{counts[f]}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* List */}
       {filtered.length === 0 ? (
         <div className="card p-12 text-center text-foreground/40">
           <Users className="w-12 h-12 mx-auto mb-4 opacity-30" />
@@ -248,6 +324,90 @@ export default function AdminAffiliatesPage() {
               </div>
             </motion.div>
           ))}
+        </div>
+      )}
+        </>
+      ) : (
+        <div className="space-y-8">
+          <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl text-sm text-amber-600 mb-6">
+            <strong>Catatan:</strong> Gunakan placeholder <code>{'{LINK}'}</code> pada kolom caption. Teks tersebut akan otomatis diganti dengan URL afiliasi unik masing-masing affiliator di dashboard mereka.
+          </div>
+
+          <div className="card p-6 border-white/10 shadow-xl">
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Upload className="w-5 h-5" /> Upload Video Promosi Baru</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-foreground/50 uppercase mb-2">Judul Video</label>
+                  <input
+                    type="text"
+                    value={assetTitle}
+                    onChange={e => setAssetTitle(e.target.value)}
+                    placeholder="Contoh: Video Testimoni Artis"
+                    className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-primary focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-foreground/50 uppercase mb-2">File Video (MP4)</label>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={e => setAssetFile(e.target.files?.[0] || null)}
+                    className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-primary focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-primary/20 file:text-primary"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-foreground/50 uppercase mb-2">Template Caption (WA/Sosmed)</label>
+                <textarea
+                  value={assetCaption}
+                  onChange={e => setAssetCaption(e.target.value)}
+                  className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-primary focus:outline-none min-h-[140px]"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={handleUploadAsset}
+                disabled={uploadingAsset || !assetFile || !assetTitle || !assetCaption}
+                className="btn btn-primary shadow-lg flex items-center gap-2 disabled:opacity-50"
+              >
+                {uploadingAsset ? <span className="animate-pulse">Mengunggah...</span> : <><Upload className="w-4 h-4" /> Simpan Materi</>}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="font-bold text-xl mb-4">Daftar Materi Tersedia</h3>
+            {assets.length === 0 ? (
+              <div className="text-center py-12 text-foreground/40 card">
+                <Video className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>Belum ada materi promosi video.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {assets.map((asset) => (
+                  <div key={asset.id} className="card overflow-hidden shadow-lg border-white/10 flex flex-col">
+                    <div className="aspect-video bg-black relative">
+                      <video src={asset.videoUrl} controls className="w-full h-full object-contain" />
+                    </div>
+                    <div className="p-4 flex flex-col flex-1">
+                      <h4 className="font-bold text-lg mb-2">{asset.title}</h4>
+                      <p className="text-xs text-foreground/60 whitespace-pre-wrap bg-background p-3 rounded-lg border border-white/5 flex-1 font-mono">
+                        {asset.captionTemplate}
+                      </p>
+                      <button
+                        onClick={() => handleDeleteAsset(asset.id)}
+                        className="mt-4 flex items-center justify-center gap-2 w-full py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-sm font-bold transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" /> Hapus
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
