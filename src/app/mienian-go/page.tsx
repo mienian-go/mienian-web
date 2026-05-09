@@ -229,7 +229,7 @@ export default function MienianGO() {
           <p className="text-foreground/60 text-lg max-w-lg mx-auto mb-8">
             Kalau nemu gerobak aja udah gini enaknya, bayangin live cooking buat acara lo gimana.
           </p>
-          <Link href="/catering" className="btn btn-primary btn-lg">
+          <Link href="/stall" className="btn btn-primary btn-lg">
             Cek Paket Catering
             <ArrowRight className="w-5 h-5" />
           </Link>

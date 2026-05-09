@@ -85,7 +85,7 @@ export default function Home() {
           {/* CTA Buttons */}
           <motion.div variants={item} className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/catering"
+              href="/stall"
               className="btn btn-primary btn-lg group"
             >
               Pesen Catering
@@ -195,7 +195,7 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <Link href="/catering" className="block group">
+              <Link href="/stall" className="block group">
                 <div className="relative h-[440px] rounded-3xl overflow-hidden card border-2 border-transparent hover:border-primary/40">
                   {/* Background */}
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent to-background" />
@@ -388,7 +388,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="/catering/menu"
+                href="/stall/menu"
                 className="btn btn-secondary btn-lg"
               >
                 Lihat Paket & Pesen Sekarang

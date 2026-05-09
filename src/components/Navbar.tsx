@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/mienian-go", label: "Mienian GO" },
-  { href: "/catering", label: "Mienian Stall" },
+  { href: "/stall", label: "Mienian Stall" },
   { href: "/blog", label: "Blog" },
   { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact Us" },
@@ -142,7 +142,7 @@ export function Navbar() {
             
             {/* Cart Button */}
             <Link
-              href="/catering/cart"
+              href="/stall/cart"
               className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all ${
                 scrolled || !isHomePage
                   ? "bg-muted hover:bg-accent text-foreground" 

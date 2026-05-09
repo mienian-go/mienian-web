@@ -278,7 +278,7 @@ export default function CateringMenu() {
                   <p className="text-xl font-extrabold text-primary">{formatRupiah(totalPrice)}</p>
                 </div>
               </div>
-              <Link href="/catering/cart" className="btn btn-primary btn-md">
+              <Link href="/stall/cart" className="btn btn-primary btn-md">
                 Checkout
                 <ArrowRight className="w-4 h-4" />
               </Link>

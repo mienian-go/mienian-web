@@ -22,7 +22,7 @@ export function Step5Checkout() {
     // For now, we will simply proceed to the confirmation page to upload the receipt.
     // The ConfirmPage will read from BookingContext instead of CartContext.
     setTimeout(() => {
-       router.push("/catering/confirm");
+       router.push("/stall/confirm");
     }, 600);
   };
 

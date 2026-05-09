@@ -47,7 +47,7 @@ export default function CartPage() {
       type: "SET_EVENT_DETAILS",
       payload: formData,
     });
-    router.push("/catering/payment");
+    router.push("/stall/payment");
   };
 
   if (totalItems === 0) {
@@ -63,7 +63,7 @@ export default function CartPage() {
           </div>
           <h2 className="text-2xl font-bold mb-3">Keranjang Masih Kosong</h2>
           <p className="text-foreground/50 mb-8">Belum ada paket yang dipilih. Yuk pilih paket catering dulu!</p>
-          <Link href="/catering/menu" className="btn btn-primary btn-lg">
+          <Link href="/stall/menu" className="btn btn-primary btn-lg">
             <ArrowLeft className="w-4 h-4" />
             Lihat Menu & Paket
           </Link>

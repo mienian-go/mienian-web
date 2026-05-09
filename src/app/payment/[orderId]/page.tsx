@@ -240,7 +240,7 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
 
                 {/* Actions */}
                 <div className="mt-8 flex flex-col sm:flex-row gap-3">
-                   <Link href="/catering" className="flex-1 btn btn-outlined bg-card hover:bg-muted py-3 justify-center text-sm">
+                   <Link href="/stall" className="flex-1 btn btn-outlined bg-card hover:bg-muted py-3 justify-center text-sm">
                       Kembali ke Beranda
                    </Link>
                    <button onClick={() => window.print()} className="flex-1 btn btn-primary py-3 justify-center text-sm gap-2">

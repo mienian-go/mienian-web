@@ -126,7 +126,7 @@ export default function ConfirmPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-md">
           <h2 className="text-2xl font-bold mb-3">Belum Ada Pesanan</h2>
           <p className="text-foreground/50 mb-8">Pilih paket catering dulu ya!</p>
-          <Link href="/catering/menu" className="btn btn-primary btn-lg">
+          <Link href="/stall/menu" className="btn btn-primary btn-lg">
             <ArrowLeft className="w-4 h-4" /> Lihat Menu
           </Link>
         </motion.div>

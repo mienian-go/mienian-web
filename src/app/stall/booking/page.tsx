@@ -140,7 +140,7 @@ function BookingWizard() {
                   Kembali
                 </button>
               ) : (
-                <Link href="/catering" className="btn btn-outlined btn-md text-foreground/50 hover:text-foreground">
+                <Link href="/stall" className="btn btn-outlined btn-md text-foreground/50 hover:text-foreground">
                   <ArrowLeft className="w-4 h-4" /> Back to Info
                 </Link>
               )}

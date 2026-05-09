@@ -54,7 +54,7 @@ export function Footer() {
             <ul className="space-y-3 text-sm text-white/60">
               <li><Link href="/" className="hover:text-secondary transition-colors">Home</Link></li>
               <li><Link href="/mienian-go" className="hover:text-secondary transition-colors">Mienian GO</Link></li>
-              <li><Link href="/catering" className="hover:text-secondary transition-colors">Mienian Stall</Link></li>
+              <li><Link href="/stall" className="hover:text-secondary transition-colors">Mienian Stall</Link></li>
               <li><Link href="/about" className="hover:text-secondary transition-colors">About Us</Link></li>
               <li><Link href="/contact" className="hover:text-secondary transition-colors">Contact Us</Link></li>
               <li><Link href="/affiliate/register" className="font-bold text-secondary hover:text-white transition-colors animate-pulse">Gabung Affiliator 🔥</Link></li>
@@ -65,8 +65,8 @@ export function Footer() {
           <div>
             <h4 className="font-bold mb-4 text-white">Catering</h4>
             <ul className="space-y-3 text-sm text-white/60">
-              <li><Link href="/catering/menu" className="hover:text-secondary transition-colors">Menu & Paket</Link></li>
-              <li><Link href="/catering/cart" className="hover:text-secondary transition-colors">Keranjang</Link></li>
+              <li><Link href="/stall/menu" className="hover:text-secondary transition-colors">Menu & Paket</Link></li>
+              <li><Link href="/stall/cart" className="hover:text-secondary transition-colors">Keranjang</Link></li>
               <li>
                 <a href="https://wa.me/6285216706922" target="_blank" rel="noopener noreferrer" className="hover:text-secondary transition-colors">
                   Chat Admin

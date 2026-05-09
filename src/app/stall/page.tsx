@@ -65,7 +65,7 @@ export default function CateringLanding() {
           </motion.p>
 
           <motion.div variants={item}>
-            <Link href="/catering/booking" className="btn btn-secondary btn-lg shadow-xl hover:-translate-y-1 transition-all">
+            <Link href="/stall/booking" className="btn btn-secondary btn-lg shadow-xl hover:-translate-y-1 transition-all">
               Booking Sekarang
               <ArrowRight className="w-5 h-5" />
             </Link>
@@ -120,7 +120,7 @@ export default function CateringLanding() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mt-12">
-          <Link href="/catering/booking" className="btn btn-primary btn-lg shadow-xl hover:-translate-y-0.5 transition-all text-lg px-8 py-4">
+          <Link href="/stall/booking" className="btn btn-primary btn-lg shadow-xl hover:-translate-y-0.5 transition-all text-lg px-8 py-4">
             Booking Sekarang
             <ArrowRight className="w-5 h-5" />
           </Link>
@@ -223,7 +223,7 @@ export default function CateringLanding() {
             <p className="text-white/60 text-lg max-w-lg mx-auto mb-8">
               Jangan sampai slot habis diambil orang
             </p>
-            <Link href="/catering/booking" className="btn btn-secondary btn-lg">
+            <Link href="/stall/booking" className="btn btn-secondary btn-lg">
               Booking sekarang
               <ArrowRight className="w-5 h-5" />
             </Link>

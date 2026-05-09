@@ -64,7 +64,7 @@ export default function PaymentPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-md">
           <h2 className="text-2xl font-bold mb-3">Belum Ada Pesanan</h2>
           <p className="text-foreground/50 mb-8">Pilih paket catering dan isi detail acara dulu ya!</p>
-          <Link href="/catering/menu" className="btn btn-primary btn-lg">
+          <Link href="/stall/menu" className="btn btn-primary btn-lg">
             <ArrowLeft className="w-4 h-4" />
             Lihat Menu
           </Link>
@@ -207,7 +207,7 @@ export default function PaymentPage() {
           className="text-center"
         >
           <button
-            onClick={() => router.push("/catering/confirm")}
+            onClick={() => router.push("/stall/confirm")}
             className="btn btn-primary btn-lg"
           >
             Gue Udah Bayar! 🔥
