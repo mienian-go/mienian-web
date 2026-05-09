@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { getOrdersByUserId } from "@/lib/firestore";
+import { getOrdersByUserId, getUserProfile, updateUserProfile, uploadProfilePhoto } from "@/lib/firestore";
+import { updateProfile } from "firebase/auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Package, 
@@ -16,7 +17,10 @@ import {
   MapPin,
   Calendar as CalendarIcon,
   Target,
-  ShoppingBag
+  ShoppingBag,
+  Settings,
+  Camera,
+  Save
 } from "lucide-react";
 import Link from "next/link";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
@@ -29,6 +33,14 @@ export default function CustomerDashboard() {
   const router = useRouter();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"orders" | "profile">("orders");
+  
+  // Profile states
+  const [profileData, setProfileData] = useState({ name: "", whatsapp: "", address: "", photoURL: "" });
+  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string>("");
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState({ type: "", text: "" });
   
   // Login/Register states
   const [email, setEmail] = useState("");
@@ -55,7 +67,7 @@ export default function CustomerDashboard() {
     }, 3000);
 
     if (user) {
-      fetchOrders();
+      fetchData();
     } else if (!authLoading) {
       if (isMounted) setLoading(false);
     }
@@ -66,17 +78,78 @@ export default function CustomerDashboard() {
     };
   }, [user, authLoading, role]);
 
-  const fetchOrders = async () => {
+  const fetchData = async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const data = await getOrdersByUserId(user.uid);
-      setOrders(data || []);
+      const [ordersData, userProfile] = await Promise.all([
+        getOrdersByUserId(user.uid),
+        getUserProfile(user.uid)
+      ]);
+      setOrders(ordersData || []);
+      
+      if (userProfile) {
+        setProfileData({
+          name: userProfile.name || user.displayName || "",
+          whatsapp: userProfile.whatsapp || "",
+          address: userProfile.address || "",
+          photoURL: userProfile.photoURL || user.photoURL || ""
+        });
+        setProfilePhotoPreview(userProfile.photoURL || user.photoURL || "");
+      } else {
+        setProfileData(prev => ({ ...prev, name: user.displayName || "", photoURL: user.photoURL || "" }));
+        setProfilePhotoPreview(user.photoURL || "");
+      }
     } catch (err) {
-      console.error("Error fetching orders:", err);
-      setAuthError("Gagal mengambil data pesanan.");
+      console.error("Error fetching data:", err);
+      setAuthError("Gagal mengambil data.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setProfilePhoto(file);
+      setProfilePhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setIsUpdatingProfile(true);
+    setProfileMessage({ type: "", text: "" });
+
+    try {
+      let finalPhotoURL = profileData.photoURL;
+      if (profilePhoto) {
+        finalPhotoURL = await uploadProfilePhoto(profilePhoto, user.uid);
+      }
+
+      await updateUserProfile(user.uid, {
+        name: profileData.name,
+        whatsapp: profileData.whatsapp,
+        address: profileData.address,
+        photoURL: finalPhotoURL,
+        email: user.email
+      });
+
+      await updateProfile(user, {
+        displayName: profileData.name,
+        photoURL: finalPhotoURL
+      });
+
+      setProfileData(prev => ({ ...prev, photoURL: finalPhotoURL }));
+      setProfileMessage({ type: "success", text: "Profil berhasil diperbarui!" });
+      setTimeout(() => setProfileMessage({ type: "", text: "" }), 3000);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      setProfileMessage({ type: "error", text: "Gagal memperbarui profil." });
+    } finally {
+      setIsUpdatingProfile(true);
+      setIsUpdatingProfile(false);
     }
   };
 
@@ -220,11 +293,15 @@ export default function CustomerDashboard() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white shadow-xl shadow-primary/20">
-              <UserIcon className="w-8 h-8" />
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white shadow-xl shadow-primary/20 overflow-hidden relative">
+              {profileData.photoURL || user.photoURL ? (
+                 <img src={profileData.photoURL || user.photoURL || ""} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                 <UserIcon className="w-8 h-8" />
+              )}
             </div>
             <div>
-              <h1 className="text-3xl font-black tracking-tight">Halo, Pelanggan Setia!</h1>
+              <h1 className="text-3xl font-black tracking-tight">Halo, {profileData.name ? profileData.name.split(' ')[0] : 'Pelanggan'}!</h1>
               <p className="text-foreground/50 font-medium">{user.email}</p>
             </div>
           </div>
@@ -279,11 +356,30 @@ export default function CustomerDashboard() {
             </div>
           </div>
 
-          {/* Orders List */}
+          {/* Main Content Area */}
           <div className="lg:col-span-2 space-y-6">
-            <h2 className="text-xl font-extrabold flex items-center gap-2">
-              <Package className="w-5 h-5 text-primary" /> Riwayat Pesanan
-            </h2>
+            
+            {/* Tabs Navigation */}
+            <div className="flex space-x-2 border-b border-white/5 pb-2">
+              <button 
+                onClick={() => setActiveTab("orders")}
+                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === "orders" ? "bg-primary text-white" : "text-foreground/60 hover:bg-white/5"}`}
+              >
+                <Package className="w-4 h-4" /> Riwayat Pesanan
+              </button>
+              <button 
+                onClick={() => setActiveTab("profile")}
+                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === "profile" ? "bg-primary text-white" : "text-foreground/60 hover:bg-white/5"}`}
+              >
+                <Settings className="w-4 h-4" /> Pengaturan Profil
+              </button>
+            </div>
+
+            {activeTab === "orders" ? (
+              <div className="space-y-6">
+                <h2 className="text-xl font-extrabold flex items-center gap-2">
+                  <Package className="w-5 h-5 text-primary" /> Riwayat Pesanan
+                </h2>
 
             {orders.length === 0 ? (
               <div className="card p-12 text-center">
@@ -362,6 +458,81 @@ export default function CustomerDashboard() {
                     </motion.div>
                   ))}
                 </AnimatePresence>
+              </div>
+            )}
+            </div>
+            ) : (
+              <div className="space-y-6">
+                <h2 className="text-xl font-extrabold flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-primary" /> Pengaturan Profil
+                </h2>
+                
+                <form onSubmit={handleUpdateProfile} className="card p-6 md:p-8">
+                  {profileMessage.text && (
+                    <div className={`p-4 mb-6 text-sm font-bold rounded-xl border text-center ${profileMessage.type === "success" ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"}`}>
+                      {profileMessage.text}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row gap-8 items-start mb-8">
+                    <div className="relative group">
+                      <div className="w-24 h-24 rounded-full border-4 border-card bg-background overflow-hidden flex items-center justify-center relative">
+                        {profilePhotoPreview ? (
+                           <img src={profilePhotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                        ) : (
+                           <UserIcon className="w-10 h-10 text-foreground/30" />
+                        )}
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
+                           <Camera className="w-6 h-6 text-white" />
+                        </div>
+                        <input type="file" accept="image/*" onChange={handlePhotoChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-4 w-full">
+                      <div>
+                        <label className="block text-xs font-bold mb-1.5 text-foreground/70 uppercase">Nama Lengkap</label>
+                        <input 
+                          type="text" 
+                          required 
+                          value={profileData.name} 
+                          onChange={e => setProfileData(p => ({ ...p, name: e.target.value }))} 
+                          className="w-full px-4 py-3 rounded-xl border bg-background focus:border-primary focus:outline-none text-sm transition-all" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold mb-1.5 text-foreground/70 uppercase">Nomor Telepon / WhatsApp</label>
+                        <input 
+                          type="tel" 
+                          required 
+                          value={profileData.whatsapp} 
+                          onChange={e => setProfileData(p => ({ ...p, whatsapp: e.target.value }))} 
+                          placeholder="08123456789"
+                          className="w-full px-4 py-3 rounded-xl border bg-background focus:border-primary focus:outline-none text-sm transition-all" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-8">
+                    <label className="block text-xs font-bold mb-1.5 text-foreground/70 uppercase">Alamat Lengkap</label>
+                    <textarea 
+                      required 
+                      rows={4}
+                      value={profileData.address} 
+                      onChange={e => setProfileData(p => ({ ...p, address: e.target.value }))} 
+                      placeholder="Masukkan alamat pengiriman lengkap..."
+                      className="w-full px-4 py-3 rounded-xl border bg-background focus:border-primary focus:outline-none text-sm transition-all resize-none" 
+                    />
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={isUpdatingProfile}
+                    className="w-full md:w-auto px-8 py-3 bg-primary text-white font-extrabold rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50"
+                  >
+                    {isUpdatingProfile ? "Menyimpan..." : <><Save className="w-4 h-4" /> Simpan Perubahan</>}
+                  </button>
+                </form>
               </div>
             )}
           </div>

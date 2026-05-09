@@ -12,7 +12,8 @@ import {
   orderBy,
   Timestamp,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "./firebase";
 
 // MENU ITEMS
 export const getMenuItems = async (onlyActive = false) => {
@@ -222,6 +223,15 @@ export const getUsers = async (): Promise<any[]> => {
   return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 };
 
+export const getUserProfile = async (uid: string): Promise<any | null> => {
+  const userRef = doc(db, "users", uid);
+  const snapshot = await getDoc(userRef);
+  if (snapshot.exists()) {
+    return { id: snapshot.id, ...snapshot.data() };
+  }
+  return null;
+};
+
 export const updateUserProfile = async (uid: string, data: any) => {
   const userRef = doc(db, "users", uid);
   await setDoc(userRef, {
@@ -229,6 +239,12 @@ export const updateUserProfile = async (uid: string, data: any) => {
     updatedAt: Timestamp.now(),
     createdAt: data.createdAt || Timestamp.now(),
   }, { merge: true });
+};
+
+export const uploadProfilePhoto = async (file: File, userId: string): Promise<string> => {
+  const storageRef = ref(storage, `profiles/${userId}/${Date.now()}_${file.name}`);
+  await uploadBytes(storageRef, file);
+  return getDownloadURL(storageRef);
 };
 
 // ADMIN & ROLES
