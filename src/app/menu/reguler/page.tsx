@@ -6,7 +6,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useLoadScript, Autocomplete } from "@react-google-maps/api";
 import { auth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
-import { createOrder, updateUserProfile } from "@/lib/firestore";
+import { createOrder, updateUserProfile, getUserProfile } from "@/lib/firestore";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const libraries: "places"[] = ["places"];
@@ -155,7 +155,13 @@ function RegulerBookingContent() {
     setAuthError("");
     try {
       if (isLoginMode) {
-        await signInWithEmailAndPassword(auth, authEmail, authPassword);
+        const userCredential = await signInWithEmailAndPassword(auth, authEmail, authPassword);
+        const userProfile = await getUserProfile(userCredential.user.uid);
+        if (!userProfile) {
+          await auth.signOut();
+          setAuthError("Email ini terdaftar sebagai Affiliate. Silakan gunakan email lain untuk mendaftar sebagai Pelanggan.");
+          return;
+        }
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, authEmail, authPassword);
         // Sync user to Firestore

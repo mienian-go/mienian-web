@@ -159,13 +159,26 @@ export default function CustomerDashboard() {
     setIsLoggingIn(true);
     try {
       if (isRegistering) {
-        await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        // Initialize user profile for customer
+        await updateUserProfile(userCredential.user.uid, {
+          email: userCredential.user.email,
+          name: email.split('@')[0],
+          role: "customer",
+        });
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        // Verify they are actually a customer
+        const userProfile = await getUserProfile(userCredential.user.uid);
+        if (!userProfile) {
+          await auth.signOut();
+          setAuthError("Email ini terdaftar sebagai Affiliate, bukan Pelanggan. Silakan gunakan email lain untuk daftar Pelanggan.");
+          return;
+        }
       }
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
-        setAuthError("Email sudah terdaftar. Silakan login.");
+        setAuthError("Email sudah terdaftar di sistem kami (mungkin sebagai Affiliate). Silakan gunakan email lain atau login.");
       } else if (err.code === 'auth/weak-password') {
         setAuthError("Password terlalu lemah. Minimal 6 karakter.");
       } else {
