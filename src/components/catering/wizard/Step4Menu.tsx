@@ -1,7 +1,6 @@
 "use client";
 
 import { useBooking, LineItem } from "@/context/BookingContext";
-import { cateringPackages } from "@/data/menu";
 import { CopyPlus, Trash2, Soup, Gem, FishSymbol, UtensilsCrossed } from "lucide-react";
 import { useEffect } from "react";
 
@@ -18,7 +17,7 @@ export function Step4Menu() {
   const { state, dispatch } = useBooking();
   const isReguler = state.packageId === "reguler";
   
-  const pkgInfo = isReguler ? null : cateringPackages.find(p => p.id === state.packageId);
+  const pkgInfo = isReguler ? null : state.packages.find(p => p.id === state.packageId);
   const pkgName = pkgInfo?.name || "";
   const targetPorsi = pkgInfo?.portions || 0;
 
@@ -68,7 +67,7 @@ export function Step4Menu() {
       return;
     }
     
-    const pkg = cateringPackages.find(p => p.id === val);
+    const pkg = state.packages.find(p => p.id === val);
     if (!pkg) return;
     const tn = pkg.name;
 
@@ -236,7 +235,7 @@ export function Step4Menu() {
              className="w-full px-4 py-3 rounded-xl bg-muted border border-transparent focus:border-primary focus:outline-none transition-colors appearance-none text-sm font-bold"
            >
              <option value="">-- Pilih Paket --</option>
-             {cateringPackages.map(p => (
+             {state.packages.filter(p => p.category === "wedding" && !p.comingSoon).map(p => (
                 <option key={p.id} value={p.id}>{p.name} — Rp {p.price.toLocaleString("id-ID")} | {p.portions} Porsi</option>
              ))}
            </select>

@@ -6,16 +6,6 @@ export interface MenuItem {
   description?: string;
 }
 
-export interface CateringPackage {
-  id: string;
-  name: string;
-  price: number;
-  portions: number;
-  description?: string;
-  category: "wedding" | "corporate";
-  comingSoon?: boolean;
-  image?: string;
-}
 
 export const menuItems: MenuItem[] = [
   // Pilihan Mie - Rp 8.500
@@ -46,89 +36,6 @@ export const menuItems: MenuItem[] = [
   { id: "top-beef-enoki", name: "Beef Enoki", price: 11000, category: "topping-super" },
 ];
 
-export const cateringPackages: CateringPackage[] = [
-  {
-    id: "pkg-mie-tanpa-topping",
-    name: "Mie tanpa Topping",
-    price: 2125000,
-    portions: 250,
-    category: "wedding",
-    description: "250 porsi mie pilihan tanpa topping tambahan",
-    image: "/images/paket-wedding-1.jpg"
-  },
-  {
-    id: "pkg-mie-satu-topping",
-    name: "Mie Satu Topping",
-    price: 1800000,
-    portions: 150,
-    category: "wedding",
-    description: "150 porsi mie dengan 1 topping reguler pilihan",
-    image: "/images/paket-wedding-2.png"
-  },
-  {
-    id: "pkg-mie-dua-topping",
-    name: "Mie Dua Topping",
-    price: 2325000,
-    portions: 150,
-    category: "wedding",
-    description: "150 porsi mie dengan 2 topping reguler pilihan",
-    image: "/images/paket-wedding-3.jpg"
-  },
-  {
-    id: "pkg-mie-topping-odeng",
-    name: "Mie Topping Odeng",
-    price: 2250000,
-    portions: 150,
-    category: "wedding",
-    description: "150 porsi mie dengan topping Odeng premium",
-    image: "/images/paket-wedding-4.jpg"
-  },
-  {
-    id: "pkg-mie-topping-super",
-    name: "Mie Topping Super",
-    price: 1950000,
-    portions: 100,
-    category: "wedding",
-    description: "100 porsi mie dengan topping super premium (Katsu/Grill/Enoki)",
-    image: "/images/paket-wedding-5.png"
-  },
-  {
-    id: "pkg-mie-topping-premium",
-    name: "Mie Topping Premium",
-    price: 1500000,
-    portions: 100,
-    category: "wedding",
-    description: "100 porsi mie dengan pilihan topping premium (Odeng/Telor)",
-    image: "/images/paket-wedding-6.jpg"
-  },
-  {
-    id: "pkg-mie-topping-komplit",
-    name: "Mie Topping Komplit",
-    price: 2200000,
-    portions: 100,
-    category: "wedding",
-    description: "100 porsi mie dengan topping lengkap dari reguler hingga super",
-    image: "/images/paket-wedding-7.jpg"
-  },
-  {
-    id: "pkg-paket-odeng",
-    name: "Paket Odeng",
-    price: 2250000,
-    portions: 150,
-    category: "wedding",
-    description: "150 porsi Odeng spesial — tanpa mie, cocok buat snack corner",
-    image: "/images/paket-wedding-8.jpg"
-  },
-  {
-    id: "pkg-corporate-basic",
-    name: "Corporate Basic",
-    price: 0,
-    portions: 0,
-    category: "corporate",
-    comingSoon: true,
-    description: "Paket khusus corporate event — segera hadir!",
-  },
-];
 
 export const categoryLabels: Record<MenuItem["category"], string> = {
   mie: "Pilihan Mie",

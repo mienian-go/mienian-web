@@ -19,9 +19,7 @@ const KOTA_ORIGIN: Record<string, string> = {
 };
 
 // Menu lists & Packages
-import { cateringPackages, formatRupiah } from "@/data/menu";
-
-const weddingPackages = cateringPackages.filter(p => p.category === "wedding");
+import { formatRupiah } from "@/data/menu";
 
 const DAFTAR_MIE = [
   "Indomie Goreng Original", "Indomie Goreng Rendang", "Indomie Goreng Aceh", "Indomie Goreng Ayam Geprek",
@@ -34,6 +32,7 @@ const DAFTAR_TOPPING_SUPER = ["Slice Beef (50gr)", "Grill Chicken", "Beef Enoki"
 
 function WeddingBookingContent() {
   const { state, dispatch } = useBooking();
+  const weddingPackages = state.packages.filter(p => p.category === "wedding" && p.isActive && !p.comingSoon);
   const selectedPkg = weddingPackages.find(p => p.id === state.packageId) || null;
   const router = useRouter();
   const searchParams = useSearchParams();

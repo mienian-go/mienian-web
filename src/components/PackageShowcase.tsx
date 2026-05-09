@@ -4,7 +4,9 @@ import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { cateringPackages, formatRupiah } from "@/data/menu";
+import { useEffect, useState } from "react";
+import { formatRupiah } from "@/data/menu";
+import { getCateringPackages } from "@/lib/firestore";
 
 interface PackageCardProps {
   title: string;
@@ -66,7 +68,24 @@ const PackageCard = ({ title, price, portions, image, href, isComingSoon }: Pack
 };
 
 export function PackageShowcase() {
-  const weddingPkgs = cateringPackages.filter(p => p.category === "wedding");
+  const [weddingPkgs, setWeddingPkgs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchPkgs() {
+      try {
+        const pkgs = await getCateringPackages(true);
+        setWeddingPkgs(pkgs.filter(p => p.category === "wedding"));
+      } catch (err) {
+        console.error("Failed to load packages", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchPkgs();
+  }, []);
+
+  if (loading) return null;
 
   return (
     <section className="py-24 bg-muted/30 relative overflow-hidden">
@@ -101,8 +120,9 @@ export function PackageShowcase() {
                   title={pkg.name}
                   price={pkg.price}
                   portions={pkg.portions}
-                  image={pkg.image || `/images/paket-wedding-${index + 1}.jpg`}
+                  image={pkg.image || `/images/paket-wedding-${(index % 5) + 1}.jpg`}
                   href="/menu/wedding"
+                  isComingSoon={pkg.comingSoon}
                 />
               </motion.div>
             ))}

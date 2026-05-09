@@ -1,7 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from "react";
-import { menuItems, cateringPackages } from "@/data/menu";
+import { menuItems } from "@/data/menu";
+import { getCateringPackages } from "@/lib/firestore";
 
 // --- Types ---
 export type EventType = "Wedding" | "Gathering" | "Khitan" | "Pengajian" | "";
@@ -65,12 +66,16 @@ export interface BookingState {
     extraPackagePrice: number;
     extraToppingPrice: number;
   };
+  
+  // Dynamic Packages Data
+  packages: any[];
 }
 
 export type BookingAction = 
   | { type: "SET_FIELD"; payload: { field: keyof BookingState; value: any } }
   | { type: "SET_LINE_ITEM"; payload: { category: "mie"|"toppingReg"|"toppingReg2"|"toppingPrem"|"toppingSuper"|"odeng"; items: LineItem[] } }
   | { type: "SELECT_PACKAGE"; payload: { packageId: string } }
+  | { type: "SET_PACKAGES"; payload: { packages: any[] } }
   | { type: "RESET_WIZARD" };
 
 const initialState: BookingState = {
@@ -111,7 +116,8 @@ const initialState: BookingState = {
     extraPackagePorsi: 0,
     extraPackagePrice: 0,
     extraToppingPrice: 0,
-  }
+  },
+  packages: [],
 };
 
 // --- Core Pricing Constants (from vanilla JS) ---
@@ -124,7 +130,7 @@ const STAFF_FEE_PER = 75000;
 
 function calculateTotals(state: BookingState): BookingState["calculations"] {
   const isReguler = state.packageId === "reguler";
-  const pkg = isReguler ? null : cateringPackages.find(p => p.id === state.packageId);
+  const pkg = isReguler ? null : state.packages.find(p => p.id === state.packageId);
   const pkgName = pkg?.name || "";
 
   let basePrice = 0;
@@ -277,6 +283,9 @@ function reducer(state: BookingState, action: BookingAction): BookingState {
     case "SET_LINE_ITEM":
       newState = { ...state, [action.payload.category]: action.payload.items };
       break;
+    case "SET_PACKAGES":
+      newState = { ...state, packages: action.payload.packages };
+      break;
     case "SELECT_PACKAGE":
       newState = { 
         ...state, 
@@ -314,6 +323,19 @@ const BookingContext = createContext<{
 
 export function BookingProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  useEffect(() => {
+    // Fetch dynamic packages on mount
+    async function fetchPackages() {
+      try {
+        const pkgs = await getCateringPackages(true); // active only
+        dispatch({ type: "SET_PACKAGES", payload: { packages: pkgs } });
+      } catch (err) {
+        console.error("Failed to load catering packages", err);
+      }
+    }
+    fetchPackages();
+  }, []);
 
   return (
     <BookingContext.Provider value={{ state, dispatch }}>

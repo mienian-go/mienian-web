@@ -27,13 +27,27 @@ export const getMenuItems = async (onlyActive = false) => {
 };
 
 // CATERING PACKAGES
-export const getCateringPackages = async (onlyActive = false) => {
+export interface CateringPackage {
+  id: string;
+  name: string;
+  price: number;
+  portions: number;
+  description?: string;
+  category: "wedding" | "corporate";
+  isActive?: boolean;
+  comingSoon?: boolean;
+  image?: string;
+  sortOrder?: number;
+  [key: string]: any;
+}
+
+export const getCateringPackages = async (onlyActive = false): Promise<CateringPackage[]> => {
   const q = query(collection(db, "catering_packages"), orderBy("sortOrder", "asc"));
   const snapshot = await getDocs(q);
-  let packages = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  let packages = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as CateringPackage[];
   
   if (onlyActive) {
-    packages = packages.filter((pkg: any) => pkg.isActive === true);
+    packages = packages.filter((pkg) => pkg.isActive === true);
   }
   return packages;
 };
