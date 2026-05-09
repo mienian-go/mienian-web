@@ -16,6 +16,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/affiliate/login',
+        destination: '/affiliate/dashboard',
+        permanent: true,
+      },
+    ]
+  },
 };
 
 export default nextConfig;
