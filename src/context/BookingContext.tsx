@@ -236,7 +236,8 @@ function calculateTotals(state: BookingState): BookingState["calculations"] {
       const perKm = state.stallType === "booth" ? 6000 : 7000;
       perWay = T_BASE_FEE + Math.ceil(state.distanceKm - 11) * perKm;
     }
-    transportFee = perWay * 2; // PP Trip
+    // TEMPORARILY DISABLED FOR TESTING
+    transportFee = 0; // perWay * 2; // PP Trip
   }
 
   // 5. Final Totals
