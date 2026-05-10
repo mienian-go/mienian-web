@@ -193,6 +193,7 @@ export default function CustomerDashboard() {
     switch (status) {
       case "pending_payment": return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
       case "payment_uploaded": return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+      case "paid": return "bg-green-500/10 text-green-500 border-green-500/20";
       case "verified": return "bg-blue-500/10 text-blue-500 border-blue-500/20";
       case "preparing": return "bg-fuchsia-500/10 text-fuchsia-500 border-fuchsia-500/20";
       case "completed": return "bg-green-500/10 text-green-500 border-green-500/20";
@@ -204,6 +205,7 @@ export default function CustomerDashboard() {
     switch (status) {
       case "pending_payment": return "Menunggu Pembayaran";
       case "payment_uploaded": return "Menunggu Verifikasi";
+      case "paid": return "Pembayaran Berhasil";
       case "verified": return "Pesanan Dikonfirmasi";
       case "preparing": return "Dalam Persiapan";
       case "completed": return "Selesai";

@@ -83,9 +83,22 @@ export async function POST(req: NextRequest) {
       orderStatus = "payment_expired";
     }
 
-    // Update Firestore order
-    // invoiceNumber format: MIENIAN-{firestoreDocId} 
-    const firestoreId = invoiceNumber.replace("MIENIAN-", "");
+    // invoiceNumber format: INV-{firestoreDocId}-{timestamp}
+    // OR MIENIAN-{firestoreDocId}
+    let firestoreId = "";
+    if (invoiceNumber.startsWith("INV-")) {
+      const parts = invoiceNumber.split('-');
+      if (parts.length >= 3) {
+        parts.pop(); // remove timestamp suffix
+        parts.shift(); // remove INV prefix
+        firestoreId = parts.join("-");
+      } else {
+        firestoreId = invoiceNumber.replace("INV-", "");
+      }
+    } else {
+      firestoreId = invoiceNumber.replace("MIENIAN-", "");
+    }
+
     if (firestoreId) {
       try {
         const orderRef = doc(db, "orders", firestoreId);

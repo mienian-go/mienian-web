@@ -120,16 +120,16 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
         
         <div className="text-center mb-8">
            <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">
-             {success || order.status === "payment_verifying" ? "Tanda Terima (Receipt)" : "Menunggu Pembayaran"}
+             {success || ["payment_verifying", "paid", "verified", "preparing", "completed"].includes(order.status) ? "Tanda Terima (Receipt)" : "Menunggu Pembayaran"}
            </h1>
            <p className="text-sm text-foreground/60">
-             {success || order.status === "payment_verifying" 
-                ? "Pesanan Anda sedang dalam antrean verifikasi otomatis oleh admin kami." 
+             {success || ["payment_verifying", "paid", "verified", "preparing", "completed"].includes(order.status) 
+                ? "Pesanan Anda sedang dalam proses atau verifikasi." 
                 : "Selesaikan pembayaran sesuai detail di bawah ini, lalu unggah bukti transaksinya agar dapat segera kami proses."}
            </p>
         </div>
 
-        {success || (order.status === "payment_verifying" && !uploading) ? (
+        {success || (["payment_verifying", "paid", "verified", "preparing", "completed"].includes(order.status) && !uploading) ? (
           <div className="bg-card rounded-3xl border border-card-border shadow-xl overflow-hidden mb-8 relative">
              <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
                 <ReceiptText className="w-48 h-48" />
@@ -140,8 +140,12 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
                 <div className="inline-flex items-center justify-center p-3 bg-white/20 rounded-full mb-3 backdrop-blur-sm">
                    <CheckCircle2 className="w-8 h-8 text-white" />
                 </div>
-                <h2 className="text-2xl font-extrabold tracking-tight">Menunggu Verifikasi</h2>
-                <p className="text-white/80 text-sm mt-1">Bukti transfer Anda telah kami terima.</p>
+                <h2 className="text-2xl font-extrabold tracking-tight">
+                  {order.status === "paid" ? "Pembayaran Berhasil" : "Menunggu Verifikasi"}
+                </h2>
+                <p className="text-white/80 text-sm mt-1">
+                  {order.status === "paid" ? "Pembayaran otomatis Anda telah kami terima." : "Bukti transfer Anda telah kami terima."}
+                </p>
              </div>
 
              <div className="p-6 sm:p-8">
