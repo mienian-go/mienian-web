@@ -44,10 +44,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Build DOKU request payload
+    const baseUrl = req.nextUrl.origin;
     const dokuPayload: any = {
       order: {
         amount: Math.round(amount),
         invoice_number: invoiceNumber,
+        callback_url: `${baseUrl}/dashboard`,
+        auto_redirect: true,
       },
       payment: {
         payment_due_date: 60, // 60 minutes to pay
