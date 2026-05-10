@@ -125,7 +125,7 @@ export default function PackagesPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Catering Packages</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight">Menu Stall</h1>
           <p className="text-foreground/50 mt-1">Kelola paket Wedding & Corporate.</p>
         </div>
         <button

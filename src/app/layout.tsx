@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { CartProvider } from "@/context/CartContext";
 import { BookingProvider } from "@/context/BookingContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { GoCartProvider } from "@/context/GoCartContext";
 import { ConditionalLayout } from "@/components/ConditionalLayout";
 
 const outfit = Outfit({
@@ -50,7 +51,9 @@ export default function RootLayout({
           <AuthProvider>
             <BookingProvider>
               <CartProvider>
-                <ConditionalLayout>{children}</ConditionalLayout>
+                <GoCartProvider>
+                  <ConditionalLayout>{children}</ConditionalLayout>
+                </GoCartProvider>
               </CartProvider>
             </BookingProvider>
           </AuthProvider>

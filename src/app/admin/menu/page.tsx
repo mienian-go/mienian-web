@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Check, X as XIcon, RefreshCw, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Edit2, Trash2, Check, X as XIcon, RefreshCw, Loader2, Upload, ImageIcon } from "lucide-react";
 import { collection, query, orderBy, onSnapshot, doc, addDoc, updateDoc, deleteDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatRupiah } from "@/data/menu";
 import Modal from "@/components/admin/Modal";
 import { motion } from "framer-motion";
+import { uploadFile, deleteFile } from "@/lib/storage";
+import Image from "next/image";
 
 export default function MenuPage() {
   const [menuItems, setMenuItems] = useState<any[]>([]);
@@ -15,6 +17,10 @@ export default function MenuPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -22,11 +28,13 @@ export default function MenuPage() {
     category: "mie",
     isActive: true,
     sortOrder: 0,
+    imageUrl: "",
+    imagePath: "",
   });
 
   const categories = [
     { id: "all", label: "Semua Menu" },
-    { id: "mie", label: "Mie Satuan" },
+    { id: "mie", label: "Mie" },
     { id: "topping-reguler", label: "Topping Reguler" },
     { id: "topping-premium", label: "Topping Premium" },
     { id: "topping-super", label: "Topping Super" },
@@ -50,11 +58,13 @@ export default function MenuPage() {
         category: item.category || "mie",
         isActive: item.isActive ?? true,
         sortOrder: item.sortOrder || 0,
+        imageUrl: item.imageUrl || "",
+        imagePath: item.imagePath || "",
       });
+      setImagePreview(item.imageUrl || null);
     } else {
       setEditingId(null);
       
-      // Auto-set category based on current filter & find latest sortOrder
       const cat = selectedCategory !== "all" ? selectedCategory : "mie";
       const catItems = menuItems.filter(m => m.category === cat);
       const nextSort = catItems.length > 0 
@@ -67,25 +77,62 @@ export default function MenuPage() {
         category: cat,
         isActive: true,
         sortOrder: nextSort,
+        imageUrl: "",
+        imagePath: "",
       });
+      setImagePreview(null);
     }
+    setImageFile(null);
     setModalOpen(true);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Ukuran gambar maksimal 5MB.");
+        return;
+      }
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
+      let imageUrl = formData.imageUrl;
+      let imagePath = formData.imagePath;
+
+      // Upload new image if selected
+      if (imageFile) {
+        setUploading(true);
+        // Delete old image if exists
+        if (formData.imagePath) {
+          await deleteFile(formData.imagePath);
+        }
+        const result = await uploadFile(imageFile, "menu-images");
+        imageUrl = result.url;
+        imagePath = result.path;
+        setUploading(false);
+      }
+
+      const data = {
+        ...formData,
+        imageUrl,
+        imagePath,
+        updatedAt: Timestamp.now(),
+      };
+
       if (editingId) {
-        await updateDoc(doc(db, "menu_items", editingId), {
-          ...formData,
-          updatedAt: Timestamp.now()
-        });
+        await updateDoc(doc(db, "menu_items", editingId), data);
       } else {
         await addDoc(collection(db, "menu_items"), {
-          ...formData,
+          ...data,
           createdAt: Timestamp.now(),
-          updatedAt: Timestamp.now()
         });
       }
       setModalOpen(false);
@@ -94,12 +141,17 @@ export default function MenuPage() {
       alert("Gagal menyimpan data.");
     } finally {
       setSaving(false);
+      setUploading(false);
     }
   };
 
   const handleDelete = async (id: string, name: string) => {
     if (window.confirm(`Yakin ingin menghapus "${name}"?`)) {
       try {
+        const item = menuItems.find(m => m.id === id);
+        if (item?.imagePath) {
+          await deleteFile(item.imagePath);
+        }
         await deleteDoc(doc(db, "menu_items", id));
       } catch (err) {
         console.error("Error deleting menu item:", err);
@@ -135,8 +187,8 @@ export default function MenuPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Katalog Menu Satuan</h1>
-          <p className="text-foreground/50 mt-1">Kelola varian mie dan pilihan topping.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight">Katalog Menu GO</h1>
+          <p className="text-foreground/50 mt-1">Kelola varian mie dan pilihan topping untuk Mienian GO.</p>
         </div>
         <button
           onClick={() => handleOpenModal()}
@@ -169,6 +221,7 @@ export default function MenuPage() {
             <thead className="text-xs text-foreground/50 uppercase bg-muted/50 border-b border-white/5">
               <tr>
                 <th className="px-6 py-4 font-semibold w-5">Sort</th>
+                <th className="px-6 py-4 font-semibold w-14">Foto</th>
                 <th className="px-6 py-4 font-semibold">Nama Item</th>
                 <th className="px-6 py-4 font-semibold">Harga</th>
                 <th className="px-6 py-4 font-semibold">Kategori</th>
@@ -185,6 +238,17 @@ export default function MenuPage() {
                   className="hover:bg-muted/30 transition-colors group"
                 >
                   <td className="px-6 py-4 text-foreground/40 font-mono">{item.sortOrder || 0}</td>
+                  <td className="px-6 py-4">
+                    {item.imageUrl ? (
+                      <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 relative">
+                        <Image src={item.imageUrl} alt={item.name} fill className="object-cover" sizes="40px" />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center">
+                        <ImageIcon className="w-4 h-4 text-foreground/30" />
+                      </div>
+                    )}
+                  </td>
                   <td className="px-6 py-4 font-semibold">
                     {item.name}
                   </td>
@@ -227,7 +291,7 @@ export default function MenuPage() {
               ))}
               {filteredItems.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-foreground/50">
+                  <td colSpan={7} className="px-6 py-12 text-center text-foreground/50">
                     Tidak ada item di kategori ini.
                   </td>
                 </tr>
@@ -244,6 +308,39 @@ export default function MenuPage() {
         size="sm"
       >
         <form onSubmit={handleSave} className="space-y-5">
+          {/* Image Upload */}
+          <div>
+            <label className="block text-sm font-medium mb-2 text-foreground/70">Foto Menu</label>
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-white/10 rounded-xl p-4 cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center gap-2"
+            >
+              {imagePreview ? (
+                <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden">
+                  <Image src={imagePreview} alt="Preview" fill className="object-cover" sizes="400px" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <p className="text-white text-xs font-bold">Klik untuk ganti</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                    <Upload className="w-5 h-5 text-foreground/40" />
+                  </div>
+                  <p className="text-xs text-foreground/50 text-center">Klik untuk upload foto menu<br/><span className="text-foreground/30">JPG, PNG maks. 5MB</span></p>
+                </>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleImageChange}
+              className="hidden"
+            />
+            {uploading && <p className="text-xs text-primary mt-1 animate-pulse">Mengupload gambar...</p>}
+          </div>
+
           <div>
             <label className="block text-sm font-medium mb-1 text-foreground/70">Nama Item</label>
             <input

@@ -171,10 +171,12 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
                          <Phone className="w-4 h-4 text-primary shrink-0" />
                          <span className="font-bold">{order.whatsapp}</span>
                       </div>
-                      <div className="flex items-center gap-3">
-                         <Calendar className="w-4 h-4 text-primary shrink-0" />
-                         <span className="font-bold">{order.eventDate} <span className="text-foreground/50 font-normal">({order.eventTime})</span></span>
-                      </div>
+                      {order.orderType !== "delivery" && (
+                        <div className="flex items-center gap-3">
+                           <Calendar className="w-4 h-4 text-primary shrink-0" />
+                           <span className="font-bold">{order.eventDate} <span className="text-foreground/50 font-normal">({order.eventTime})</span></span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-3">
                          <MapPin className="w-4 h-4 text-primary shrink-0" />
                          <span className="font-bold line-clamp-1">{order.city} - {order.distanceKm}km</span>
@@ -184,34 +186,44 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
 
                 {/* Items Breakdown */}
                 <div className="mb-6">
-                   <p className="text-xs text-foreground/50 font-bold uppercase tracking-wider mb-4">Rincian Paket Catering</p>
-                   {/* Loop Over Items if we stored them */}
-                   <div className="space-y-3">
-                      {(order.items?.mie || []).map((m: any, i: number) => m.qty > 0 && (
+                   <p className="text-xs text-foreground/50 font-bold uppercase tracking-wider mb-4">Rincian Pesanan</p>
+                   {order.orderType === "delivery" ? (
+                     <div className="space-y-3">
+                       {(order.items || []).map((m: any, i: number) => (
                          <div key={i} className="flex justify-between text-sm">
-                            <span>{m.name} <span className="text-foreground/50">x{m.qty}</span></span>
-                            <span className="font-bold flex-shrink-0">Rp {(Number(m.qty) * 10000).toLocaleString('id-ID')}</span>
+                            <span>{m.name} <span className="text-foreground/50">x{m.quantity}</span></span>
+                            <span className="font-bold flex-shrink-0">Rp {(Number(m.quantity) * Number(m.price)).toLocaleString('id-ID')}</span>
                          </div>
-                      ))}
-                      {(order.items?.toppingReg || []).map((m: any, i: number) => m.qty > 0 && (
-                         <div key={i} className="flex justify-between text-sm text-foreground/80">
-                            <span>{m.name} <span className="text-foreground/50">x{m.qty}</span></span>
-                            <span className="font-bold flex-shrink-0">Rp {(Number(m.qty) * 5000).toLocaleString('id-ID')}</span>
-                         </div>
-                      ))}
-                      {(order.items?.toppingPrem || []).map((m: any, i: number) => m.qty > 0 && (
-                         <div key={i} className="flex justify-between text-sm text-foreground/80">
-                            <span>{m.name} <span className="text-foreground/50">x{m.qty}</span></span>
-                            <span className="font-bold flex-shrink-0">Rp {(Number(m.qty) * 8000).toLocaleString('id-ID')}</span>
-                         </div>
-                      ))}
-                      {(order.items?.toppingSuper || []).map((m: any, i: number) => m.qty > 0 && (
-                         <div key={i} className="flex justify-between text-sm text-foreground/80">
-                            <span>{m.name} <span className="text-foreground/50">x{m.qty}</span></span>
-                            <span className="font-bold flex-shrink-0">Rp {(Number(m.qty) * 13000).toLocaleString('id-ID')}</span>
-                         </div>
-                      ))}
-                   </div>
+                       ))}
+                     </div>
+                   ) : (
+                     <div className="space-y-3">
+                        {(order.items?.mie || []).map((m: any, i: number) => m.qty > 0 && (
+                           <div key={`mie-${i}`} className="flex justify-between text-sm">
+                              <span>{m.name} <span className="text-foreground/50">x{m.qty}</span></span>
+                              <span className="font-bold flex-shrink-0">Rp {(Number(m.qty) * 10000).toLocaleString('id-ID')}</span>
+                           </div>
+                        ))}
+                        {(order.items?.toppingReg || []).map((m: any, i: number) => m.qty > 0 && (
+                           <div key={`treg-${i}`} className="flex justify-between text-sm text-foreground/80">
+                              <span>{m.name} <span className="text-foreground/50">x{m.qty}</span></span>
+                              <span className="font-bold flex-shrink-0">Rp {(Number(m.qty) * 5000).toLocaleString('id-ID')}</span>
+                           </div>
+                        ))}
+                        {(order.items?.toppingPrem || []).map((m: any, i: number) => m.qty > 0 && (
+                           <div key={`tprem-${i}`} className="flex justify-between text-sm text-foreground/80">
+                              <span>{m.name} <span className="text-foreground/50">x{m.qty}</span></span>
+                              <span className="font-bold flex-shrink-0">Rp {(Number(m.qty) * 8000).toLocaleString('id-ID')}</span>
+                           </div>
+                        ))}
+                        {(order.items?.toppingSuper || []).map((m: any, i: number) => m.qty > 0 && (
+                           <div key={`tsup-${i}`} className="flex justify-between text-sm text-foreground/80">
+                              <span>{m.name} <span className="text-foreground/50">x{m.qty}</span></span>
+                              <span className="font-bold flex-shrink-0">Rp {(Number(m.qty) * 13000).toLocaleString('id-ID')}</span>
+                           </div>
+                        ))}
+                     </div>
+                   )}
                 </div>
 
                 {/* Costs Breakdown */}
@@ -232,6 +244,18 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
                      <div className="flex justify-between">
                         <span>Ongkos Transport ({order.distanceKm} KM)</span>
                         <span className="font-bold text-foreground">Rp {order.costs.transportFee.toLocaleString('id-ID')}</span>
+                     </div>
+                   )}
+                   {order.costs?.deliveryFee > 0 && (
+                     <div className="flex justify-between">
+                        <span>Ongkos Kirim ({order.distanceKm} KM)</span>
+                        <span className="font-bold text-foreground">Rp {order.costs.deliveryFee.toLocaleString('id-ID')}</span>
+                     </div>
+                   )}
+                   {order.costs?.serviceFee > 0 && (
+                     <div className="flex justify-between">
+                        <span>Biaya Layanan</span>
+                        <span className="font-bold text-foreground">Rp {order.costs.serviceFee.toLocaleString('id-ID')}</span>
                      </div>
                    )}
                 </div>

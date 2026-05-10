@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Sparkles, ShieldCheck, Clock, Utensils, ArrowRight, Loader2 } from "lucide-react";
+import { MapPin, Sparkles, ShieldCheck, Clock, Utensils, ArrowRight, Loader2, ShoppingCart, Plus } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { formatRupiah } from "@/data/menu";
 import { PackageShowcase } from "@/components/PackageShowcase";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useGoCart } from "@/context/GoCartContext";
 
 const container = {
   hidden: { opacity: 0 },
@@ -25,8 +27,30 @@ const scheduleData = [
 ];
 
 export default function MienianGO() {
+  const { state, dispatch, totalItems, totalPrice } = useGoCart();
   const [dbMenuItems, setDbMenuItems] = useState<any[]>([]);
   const [isLoadingMenu, setIsLoadingMenu] = useState(true);
+
+  const handleAddToCart = (item: any) => {
+    dispatch({
+      type: "ADD_ITEM",
+      payload: {
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: 1,
+        category: item.category,
+      }
+    });
+  };
+
+  const getItemQuantity = (id: string) => {
+    return state.items.find((i) => i.id === id)?.quantity || 0;
+  };
+
+  const handleUpdateQuantity = (id: string, newQty: number) => {
+    dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity: newQty } });
+  };
 
   useEffect(() => {
     async function fetchMenu() {
@@ -178,12 +202,45 @@ export default function MienianGO() {
                         >
                           <div className="card p-6 h-full flex flex-col justify-between hover:border-primary/50 transition-colors">
                             <div>
-                              <div className="w-full h-32 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center mb-4 text-5xl">
-                                {cat.emoji}
-                              </div>
+                              {item.imageUrl ? (
+                                <div className="w-full h-32 rounded-xl overflow-hidden relative mb-4">
+                                  <Image src={item.imageUrl} alt={item.name} fill className="object-cover" sizes="256px" />
+                                </div>
+                              ) : (
+                                <div className="w-full h-32 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center mb-4 text-5xl">
+                                  {cat.emoji}
+                                </div>
+                              )}
                               <h4 className="font-bold text-sm mb-1">{item.name}</h4>
                             </div>
-                            <p className="text-secondary font-bold text-lg mt-4">{formatRupiah(item.price)}</p>
+                            <div className="flex items-center justify-between mt-4">
+                              <p className="text-secondary font-bold text-lg">{formatRupiah(item.price)}</p>
+                              
+                              {getItemQuantity(item.id) === 0 ? (
+                                <button
+                                  onClick={() => handleAddToCart(item)}
+                                  className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
+                                >
+                                  <Plus className="w-5 h-5" />
+                                </button>
+                              ) : (
+                                <div className="flex items-center gap-3 bg-muted rounded-full p-1 border border-white/10">
+                                  <button
+                                    onClick={() => handleUpdateQuantity(item.id, getItemQuantity(item.id) - 1)}
+                                    className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors"
+                                  >
+                                    -
+                                  </button>
+                                  <span className="font-bold text-sm w-4 text-center">{getItemQuantity(item.id)}</span>
+                                  <button
+                                    onClick={() => handleUpdateQuantity(item.id, getItemQuantity(item.id) + 1)}
+                                    className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/80 transition-colors"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </motion.div>
                       ))}
@@ -265,6 +322,40 @@ export default function MienianGO() {
           </Link>
         </motion.div>
       </section>
+
+      {/* Floating Cart Bar */}
+      {totalItems > 0 && (
+        <motion.div
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          className="fixed bottom-0 left-0 right-0 z-50 p-4 pointer-events-none"
+        >
+          <div className="max-w-3xl mx-auto pointer-events-auto">
+            <Link
+              href="/mienian-go/checkout"
+              className="bg-primary text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between hover:bg-primary/90 transition-all border border-white/20"
+            >
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                    <ShoppingCart className="w-6 h-6" />
+                  </div>
+                  <span className="absolute -top-1 -right-1 bg-secondary text-secondary-foreground text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full border-2 border-primary">
+                    {totalItems}
+                  </span>
+                </div>
+                <div className="text-left">
+                  <p className="text-xs opacity-80 mb-0.5">Total Pesanan</p>
+                  <p className="font-extrabold text-lg leading-none">{formatRupiah(totalPrice)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 font-bold bg-white/20 px-4 py-2.5 rounded-xl">
+                Checkout <ArrowRight className="w-4 h-4" />
+              </div>
+            </Link>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }
