@@ -316,7 +316,7 @@ export default function MenuPage() {
               className="border-2 border-dashed border-white/10 rounded-xl p-4 cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center gap-2"
             >
               {imagePreview ? (
-                <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden">
+                <div className="relative w-full aspect-square rounded-lg overflow-hidden">
                   <Image src={imagePreview} alt="Preview" fill className="object-cover" sizes="400px" />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                     <p className="text-white text-xs font-bold">Klik untuk ganti</p>

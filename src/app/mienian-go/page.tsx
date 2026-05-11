@@ -203,11 +203,11 @@ export default function MienianGO() {
                           <div className="card p-6 h-full flex flex-col justify-between hover:border-primary/50 transition-colors">
                             <div>
                               {item.imageUrl ? (
-                                <div className="w-full h-32 rounded-xl overflow-hidden relative mb-4">
+                                <div className="w-full aspect-square rounded-xl overflow-hidden relative mb-4">
                                   <Image src={item.imageUrl} alt={item.name} fill className="object-cover" sizes="256px" />
                                 </div>
                               ) : (
-                                <div className="w-full h-32 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center mb-4 text-5xl">
+                                <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center mb-4 text-5xl">
                                   {cat.emoji}
                                 </div>
                               )}
