@@ -197,7 +197,12 @@ export default function CustomerDashboard() {
       case "paid": return "bg-green-500/10 text-green-500 border-green-500/20";
       case "verified": return "bg-blue-500/10 text-blue-500 border-blue-500/20";
       case "preparing": return "bg-fuchsia-500/10 text-fuchsia-500 border-fuchsia-500/20";
+      case "cooking": return "bg-orange-500/10 text-orange-500 border-orange-500/20";
+      case "delivering": return "bg-cyan-500/10 text-cyan-500 border-cyan-500/20";
+      case "delivered": return "bg-green-500/10 text-green-500 border-green-500/20";
       case "completed": return "bg-green-500/10 text-green-500 border-green-500/20";
+      case "payment_failed": return "bg-red-500/10 text-red-500 border-red-500/20";
+      case "payment_expired": return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
       default: return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
     }
   };
@@ -209,7 +214,12 @@ export default function CustomerDashboard() {
       case "paid": return "Pembayaran Berhasil";
       case "verified": return "Pesanan Dikonfirmasi";
       case "preparing": return "Dalam Persiapan";
+      case "cooking": return "Sedang Dimasak";
+      case "delivering": return "Sedang Diantar";
+      case "delivered": return "Pesanan Sampai";
       case "completed": return "Selesai";
+      case "payment_failed": return "Pembayaran Gagal";
+      case "payment_expired": return "Pembayaran Expired";
       default: return status.toUpperCase();
     }
   };

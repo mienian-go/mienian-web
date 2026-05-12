@@ -19,12 +19,19 @@ export default function OrdersPage() {
 
   // Status mapping
   const statuses: Record<string, { label: string, color: string }> = {
+    pending_payment: { label: "Menunggu Bayar", color: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30" },
     pending: { label: "Menunggu Upload", color: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30" },
     payment_verifying: { label: "Perlu Verifikasi", color: "bg-amber-500/20 text-amber-500 border-amber-500/30" },
+    paid: { label: "Lunas (DOKU)", color: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30" },
     verified: { label: "Lunas / Verified", color: "bg-blue-500/20 text-blue-500 border-blue-500/30" },
     preparing: { label: "Persiapan", color: "bg-fuchsia-500/20 text-fuchsia-500 border-fuchsia-500/30" },
+    cooking: { label: "Sedang Dimasak", color: "bg-orange-500/20 text-orange-500 border-orange-500/30" },
+    delivering: { label: "Diantar", color: "bg-cyan-500/20 text-cyan-500 border-cyan-500/30" },
+    delivered: { label: "Sampai", color: "bg-green-500/20 text-green-500 border-green-500/30" },
     completed: { label: "Selesai", color: "bg-green-500/20 text-green-500 border-green-500/30" },
     cancelled: { label: "Batal", color: "bg-red-500/20 text-red-500 border-red-500/30" },
+    payment_failed: { label: "Gagal Bayar", color: "bg-red-500/20 text-red-500 border-red-500/30" },
+    payment_expired: { label: "Expired", color: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30" },
   };
 
   useEffect(() => {
