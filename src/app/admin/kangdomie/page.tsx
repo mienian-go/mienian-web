@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { collection, query, getDocs, doc, updateDoc, deleteDoc, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Loader2, CheckCircle2, XCircle, Truck, MapPin, Phone, User, Trash2, Shield } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Truck, MapPin, Phone, User, Trash2, Shield, Hash, Edit3 } from "lucide-react";
 
 interface Driver {
   uid: string;
@@ -34,12 +34,20 @@ export default function AdminKangDoMiePage() {
 
   useEffect(() => { fetchDrivers(); }, []);
 
-  const toggleApproval = async (uid: string, currentStatus: boolean) => {
+  const toggleApproval = async (uid: string, currentStatus: boolean, gerobakId?: string) => {
+    if (!currentStatus && !gerobakId) {
+      alert("Harap isi ID Gerobak sebelum approve!");
+      return;
+    }
     setProcessing(uid);
     try {
-      await updateDoc(doc(db, "kangdomie_drivers", uid), { isApproved: !currentStatus });
+      const updates: any = { isApproved: !currentStatus };
+      if (!currentStatus && gerobakId) {
+        updates.gerobakId = gerobakId;
+      }
+      await updateDoc(doc(db, "kangdomie_drivers", uid), updates);
       setDrivers((prev) =>
-        prev.map((d) => (d.uid === uid ? { ...d, isApproved: !currentStatus } : d))
+        prev.map((d) => (d.uid === uid ? { ...d, isApproved: !currentStatus, gerobakId: gerobakId || d.gerobakId } : d))
       );
     } catch (err) {
       console.error("Error updating driver:", err);
@@ -109,7 +117,7 @@ export default function AdminKangDoMiePage() {
                     key={driver.uid}
                     driver={driver}
                     processing={processing === driver.uid}
-                    onToggleApproval={() => toggleApproval(driver.uid, driver.isApproved)}
+                    onToggleApproval={(gerobakId) => toggleApproval(driver.uid, driver.isApproved, gerobakId)}
                     onDelete={() => deleteDriver(driver.uid)}
                   />
                 ))}
@@ -151,59 +159,79 @@ function DriverCard({
 }: {
   driver: Driver;
   processing: boolean;
-  onToggleApproval: () => void;
+  onToggleApproval: (gerobakId?: string) => void;
   onDelete: () => void;
 }) {
+  const [editGerobakId, setEditGerobakId] = useState(driver.gerobakId || "");
+
   return (
-    <div className={`card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+    <div className={`card p-5 space-y-4 ${
       !driver.isApproved ? "border-yellow-500/20" : ""
     }`}>
-      <div className="flex items-center gap-4">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-          driver.isOnline ? "bg-green-500/20 text-green-400" : "bg-white/5 text-foreground/30"
-        }`}>
-          <Truck className="w-6 h-6" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+            driver.isOnline ? "bg-green-500/20 text-green-400" : "bg-white/5 text-foreground/30"
+          }`}>
+            <Truck className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="font-bold">{driver.name}</p>
+              {driver.isOnline && (
+                <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold">ONLINE</span>
+              )}
+            </div>
+            <div className="flex items-center gap-3 text-xs text-foreground/50 mt-1">
+              <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {driver.phone}</span>
+              {driver.gerobakId && (
+                <span className="flex items-center gap-1"><Hash className="w-3 h-3" /> {driver.gerobakId}</span>
+              )}
+            </div>
+          </div>
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <p className="font-bold">{driver.name}</p>
-            {driver.isOnline && (
-              <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold">ONLINE</span>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onToggleApproval(editGerobakId || undefined)}
+            disabled={processing}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 ${
+              driver.isApproved
+                ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                : "bg-green-500/10 text-green-400 hover:bg-green-500/20"
+            } disabled:opacity-50`}
+          >
+            {processing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : driver.isApproved ? (
+              <><XCircle className="w-4 h-4" /> Revoke</>
+            ) : (
+              <><CheckCircle2 className="w-4 h-4" /> Approve</>
             )}
-          </div>
-          <div className="flex items-center gap-3 text-xs text-foreground/50 mt-1">
-            <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {driver.phone}</span>
-            <span className="flex items-center gap-1"><Truck className="w-3 h-3" /> {driver.gerobakId}</span>
-          </div>
+          </button>
+          <button
+            onClick={onDelete}
+            disabled={processing}
+            className="p-2 rounded-xl bg-red-500/5 text-red-400/50 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onToggleApproval}
-          disabled={processing}
-          className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 ${
-            driver.isApproved
-              ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
-              : "bg-green-500/10 text-green-400 hover:bg-green-500/20"
-          } disabled:opacity-50`}
-        >
-          {processing ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : driver.isApproved ? (
-            <><XCircle className="w-4 h-4" /> Revoke</>
-          ) : (
-            <><CheckCircle2 className="w-4 h-4" /> Approve</>
-          )}
-        </button>
-        <button
-          onClick={onDelete}
-          disabled={processing}
-          className="p-2 rounded-xl bg-red-500/5 text-red-400/50 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
+      {/* Gerobak ID assignment for pending drivers */}
+      {!driver.isApproved && (
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/10">
+          <Hash className="w-4 h-4 text-yellow-400 shrink-0" />
+          <input
+            type="text"
+            value={editGerobakId}
+            onChange={(e) => setEditGerobakId(e.target.value)}
+            placeholder="Assign ID Gerobak, misal: GRB-001"
+            className="flex-1 px-3 py-2 rounded-lg bg-card border border-card-border text-sm focus:border-primary focus:outline-none"
+          />
+        </div>
+      )}
     </div>
   );
 }

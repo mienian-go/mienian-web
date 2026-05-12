@@ -6,7 +6,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfi
 import { auth } from "@/lib/firebase";
 import { getDriver, registerDriver } from "@/lib/firestoreDriver";
 import { useRouter } from "next/navigation";
-import { Loader2, Truck, Mail, Lock, User, Phone, Hash } from "lucide-react";
+import { Loader2, Truck, Mail, Lock, User, Phone } from "lucide-react";
 
 export default function KangDoMieLogin() {
   const router = useRouter();
@@ -21,7 +21,6 @@ export default function KangDoMieLogin() {
   // Register fields
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [gerobakId, setGerobakId] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +50,7 @@ export default function KangDoMieLogin() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!name || !phone || !gerobakId) {
+    if (!name || !phone) {
       setError("Lengkapi semua field.");
       return;
     }
@@ -59,7 +58,7 @@ export default function KangDoMieLogin() {
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: name });
-      await registerDriver(cred.user.uid, { name, phone, gerobakId });
+      await registerDriver(cred.user.uid, { name, phone, gerobakId: "" });
       setError("");
       setIsRegister(false);
       alert("Registrasi berhasil! Tunggu approval dari Admin Mienian.");
@@ -123,19 +122,6 @@ export default function KangDoMieLogin() {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="08xxxxxxxxxx"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-primary focus:outline-none"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-white/40 mb-2 uppercase tracking-wider">ID Gerobak</label>
-                  <div className="relative">
-                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                    <input
-                      type="text"
-                      value={gerobakId}
-                      onChange={(e) => setGerobakId(e.target.value)}
-                      placeholder="Misal: GRB-001"
                       className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-primary focus:outline-none"
                     />
                   </div>
