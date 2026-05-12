@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getDriver, registerDriver } from "@/lib/firestoreDriver";
 import { useRouter } from "next/navigation";
@@ -175,13 +175,32 @@ export default function KangDoMieLogin() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => { setIsRegister(!isRegister); setError(""); }}
-              className="text-sm text-white/50 hover:text-white transition-colors"
-            >
-              {isRegister ? "Sudah punya akun? Login" : "Belum punya akun? Daftar"}
-            </button>
+          <div className="mt-6 text-center space-y-3">
+            {!isRegister && (
+              <button
+                onClick={async () => {
+                  if (!email) { setError("Masukkan email dulu."); return; }
+                  try {
+                    await sendPasswordResetEmail(auth, email);
+                    alert("Link reset password telah dikirim ke email kamu!");
+                    setError("");
+                  } catch (err: any) {
+                    setError(err.code === "auth/user-not-found" ? "Email tidak ditemukan." : "Gagal mengirim reset email.");
+                  }
+                }}
+                className="text-xs text-primary/70 hover:text-primary transition-colors"
+              >
+                Lupa Password?
+              </button>
+            )}
+            <div>
+              <button
+                onClick={() => { setIsRegister(!isRegister); setError(""); }}
+                className="text-sm text-white/50 hover:text-white transition-colors"
+              >
+                {isRegister ? "Sudah punya akun? Login" : "Belum punya akun? Daftar"}
+              </button>
+            </div>
           </div>
         </div>
 
