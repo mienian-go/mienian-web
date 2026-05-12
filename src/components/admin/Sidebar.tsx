@@ -20,6 +20,7 @@ import {
   LogOut,
   FileText,
   ShieldAlert,
+  Truck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -31,6 +32,7 @@ const navItems = [
   { name: "Menu Stall", href: "/admin/packages", icon: PackageSearch },
   { name: "Menu GO", href: "/admin/menu", icon: Utensils },
   { name: "Blog", href: "/admin/blog", icon: FileText },
+  { name: "KangDoMie", href: "/admin/kangdomie", icon: Truck },
   { name: "Jadwal GO", href: "/admin/schedule", icon: Calendar },
   { name: "Testimonials", href: "/admin/testimonials", icon: MessageSquareQuote },
   { name: "Content", href: "/admin/content", icon: MenuSquare },

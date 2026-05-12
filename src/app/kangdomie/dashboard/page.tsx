@@ -1,0 +1,500 @@
+"use client";
+
+import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { upsertKangDoMieLocation, deleteKangDoMieLocation } from "@/lib/firestoreGo";
+import {
+  getDriver,
+  setDriverOnline,
+  subscribeToDriverOrders,
+  subscribeToUnassignedOrders,
+  acceptOrder,
+  updateOrderStatusDriver,
+  type KangDoMieDriver,
+  type KangDoMieOrder,
+} from "@/lib/firestoreDriver";
+import { useRouter } from "next/navigation";
+import {
+  Loader2, LogOut, MapPin, Power, Package, Clock, CheckCircle2,
+  Navigation, Phone, User, ChevronRight, Truck, Flame, AlertCircle,
+} from "lucide-react";
+
+const STATUS_FLOW: Record<string, { next: string; label: string; color: string }> = {
+  paid: { next: "preparing", label: "Terima Pesanan", color: "bg-green-500" },
+  preparing: { next: "cooking", label: "Mulai Masak 🔥", color: "bg-orange-500" },
+  cooking: { next: "delivering", label: "Siap Antar 🛺", color: "bg-blue-500" },
+  delivering: { next: "delivered", label: "Sudah Sampai ✅", color: "bg-emerald-500" },
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  paid: "Menunggu",
+  preparing: "Diterima",
+  cooking: "Sedang Dimasak 🔥",
+  delivering: "Dalam Perjalanan 🛺",
+  delivered: "Selesai ✅",
+};
+
+function formatRupiah(num: number) {
+  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
+}
+
+export default function KangDoMieDashboard() {
+  const router = useRouter();
+  const [driver, setDriver] = useState<KangDoMieDriver | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(false);
+  const [myOrders, setMyOrders] = useState<KangDoMieOrder[]>([]);
+  const [availableOrders, setAvailableOrders] = useState<KangDoMieOrder[]>([]);
+  const [activeTab, setActiveTab] = useState<"available" | "my">("available");
+  const [processingOrder, setProcessingOrder] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const gpsIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const watchIdRef = useRef<number | null>(null);
+
+  // Auth check
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        router.push("/kangdomie/login");
+        return;
+      }
+      const d = await getDriver(user.uid);
+      if (!d || !d.isApproved) {
+        router.push("/kangdomie/login");
+        return;
+      }
+      setDriver(d);
+      setIsOnline(d.isOnline);
+      setLoading(false);
+    });
+    return () => unsub();
+  }, [router]);
+
+  // Subscribe to orders
+  useEffect(() => {
+    if (!driver) return;
+
+    const unsub1 = subscribeToDriverOrders(driver.uid, (orders) => {
+      setMyOrders(orders.filter((o) => o.status !== "delivered" && o.status !== "payment_failed" && o.status !== "payment_expired"));
+    });
+
+    const unsub2 = subscribeToUnassignedOrders("", (orders) => {
+      setAvailableOrders(orders);
+    });
+
+    return () => { unsub1(); unsub2(); };
+  }, [driver]);
+
+  // GPS tracking
+  const startGPS = useCallback(() => {
+    if (!driver || !navigator.geolocation) return;
+
+    // Watch position continuously
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserLocation(loc);
+      },
+      (err) => console.error("GPS error:", err),
+      { enableHighAccuracy: true, maximumAge: 5000 }
+    );
+
+    // Push to Firestore every 10 seconds
+    gpsIntervalRef.current = setInterval(async () => {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            await upsertKangDoMieLocation(driver.uid, {
+              name: `KangDoMie — ${driver.name}`,
+              driverName: driver.name,
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              status: "available",
+              eta: "~5 min",
+              lastUpdated: null,
+            });
+          } catch (err) {
+            console.error("Failed to push location:", err);
+          }
+        },
+        (err) => console.error("GPS push error:", err),
+        { enableHighAccuracy: true }
+      );
+    }, 10000);
+  }, [driver]);
+
+  const stopGPS = useCallback(async () => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    if (gpsIntervalRef.current) {
+      clearInterval(gpsIntervalRef.current);
+      gpsIntervalRef.current = null;
+    }
+    // Remove location from Firestore
+    if (driver) {
+      try {
+        await upsertKangDoMieLocation(driver.uid, {
+          name: `KangDoMie — ${driver.name}`,
+          driverName: driver.name,
+          lat: 0,
+          lng: 0,
+          status: "offline",
+          lastUpdated: null,
+        });
+      } catch (err) {
+        console.error("Failed to set offline:", err);
+      }
+    }
+  }, [driver]);
+
+  const toggleOnline = async () => {
+    if (!driver) return;
+    const newStatus = !isOnline;
+    setIsOnline(newStatus);
+    await setDriverOnline(driver.uid, newStatus);
+
+    if (newStatus) {
+      startGPS();
+    } else {
+      await stopGPS();
+    }
+  };
+
+  // Cleanup GPS on unmount
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+      if (gpsIntervalRef.current) clearInterval(gpsIntervalRef.current);
+    };
+  }, []);
+
+  // Auto-start GPS if driver was online
+  useEffect(() => {
+    if (driver && isOnline) {
+      startGPS();
+    }
+  }, [driver, isOnline, startGPS]);
+
+  const handleAcceptOrder = async (orderId: string) => {
+    if (!driver) return;
+    setProcessingOrder(orderId);
+    try {
+      await acceptOrder(orderId, driver.uid);
+      setActiveTab("my");
+    } catch (err) {
+      console.error("Failed to accept:", err);
+    }
+    setProcessingOrder(null);
+  };
+
+  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+    setProcessingOrder(orderId);
+    try {
+      await updateOrderStatusDriver(orderId, newStatus);
+    } catch (err) {
+      console.error("Failed to update:", err);
+    }
+    setProcessingOrder(null);
+  };
+
+  const handleLogout = async () => {
+    await stopGPS();
+    if (driver) await setDriverOnline(driver.uid, false);
+    await signOut(auth);
+    router.push("/kangdomie/login");
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0f0f1a]">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (!driver) return null;
+
+  const activeOrders = myOrders.length;
+
+  return (
+    <div className="min-h-screen bg-[#0f0f1a] text-white">
+      {/* ========== HEADER ========== */}
+      <header className="sticky top-0 z-50 bg-[#0f0f1a]/90 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-[#FF6B6B] rounded-xl flex items-center justify-center">
+              <Truck className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-bold text-sm leading-tight">{driver.name}</p>
+              <p className="text-[10px] text-white/40">{driver.gerobakId}</p>
+            </div>
+          </div>
+          <button onClick={handleLogout} className="p-2 rounded-xl hover:bg-white/5 transition-colors text-white/40 hover:text-white">
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
+      </header>
+
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        {/* ========== ONLINE TOGGLE ========== */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`rounded-2xl p-6 border transition-all duration-500 ${
+            isOnline
+              ? "bg-gradient-to-r from-green-500/10 to-emerald-500/5 border-green-500/30"
+              : "bg-white/5 border-white/10"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-bold text-lg">{isOnline ? "Kamu Online 🟢" : "Kamu Offline"}</p>
+              <p className="text-xs text-white/50 mt-1">
+                {isOnline
+                  ? "Lokasi GPS dikirim setiap 10 detik ke pelanggan"
+                  : "Nyalakan untuk mulai terima pesanan"}
+              </p>
+              {isOnline && userLocation && (
+                <p className="text-[10px] text-white/30 mt-2 flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  {userLocation.lat.toFixed(5)}, {userLocation.lng.toFixed(5)}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={toggleOnline}
+              className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+                isOnline
+                  ? "bg-green-500 shadow-lg shadow-green-500/30 hover:bg-green-600"
+                  : "bg-white/10 hover:bg-white/20"
+              }`}
+            >
+              <Power className={`w-7 h-7 ${isOnline ? "text-white" : "text-white/50"}`} />
+            </button>
+          </div>
+        </motion.div>
+
+        {/* ========== STATS ========== */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+            <p className="text-2xl font-extrabold text-primary">{activeOrders}</p>
+            <p className="text-[10px] text-white/40 mt-1">Pesanan Aktif</p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+            <p className="text-2xl font-extrabold text-secondary">{availableOrders.length}</p>
+            <p className="text-[10px] text-white/40 mt-1">Menunggu</p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+            <p className="text-2xl font-extrabold text-emerald-400">
+              {isOnline ? "ON" : "OFF"}
+            </p>
+            <p className="text-[10px] text-white/40 mt-1">Status GPS</p>
+          </div>
+        </div>
+
+        {/* ========== TABS ========== */}
+        <div className="flex gap-2 bg-white/5 p-1.5 rounded-xl">
+          <button
+            onClick={() => setActiveTab("available")}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              activeTab === "available"
+                ? "bg-primary text-white shadow-lg shadow-primary/30"
+                : "text-white/50 hover:text-white"
+            }`}
+          >
+            📦 Tersedia ({availableOrders.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("my")}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              activeTab === "my"
+                ? "bg-primary text-white shadow-lg shadow-primary/30"
+                : "text-white/50 hover:text-white"
+            }`}
+          >
+            🛺 Pesananku ({myOrders.length})
+          </button>
+        </div>
+
+        {/* ========== ORDER LIST ========== */}
+        <div className="space-y-3">
+          <AnimatePresence mode="popLayout">
+            {activeTab === "available" ? (
+              availableOrders.length === 0 ? (
+                <motion.div
+                  key="empty-available"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-12"
+                >
+                  <Package className="w-12 h-12 text-white/20 mx-auto mb-3" />
+                  <p className="text-white/40 text-sm">Belum ada pesanan masuk</p>
+                  <p className="text-white/20 text-xs mt-1">Pastikan status kamu Online</p>
+                </motion.div>
+              ) : (
+                availableOrders.map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    type="available"
+                    processing={processingOrder === order.id}
+                    onAccept={() => handleAcceptOrder(order.id)}
+                  />
+                ))
+              )
+            ) : (
+              myOrders.length === 0 ? (
+                <motion.div
+                  key="empty-my"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-12"
+                >
+                  <Truck className="w-12 h-12 text-white/20 mx-auto mb-3" />
+                  <p className="text-white/40 text-sm">Belum ada pesanan yang kamu ambil</p>
+                </motion.div>
+              ) : (
+                myOrders.map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    type="my"
+                    processing={processingOrder === order.id}
+                    onUpdateStatus={(status) => handleUpdateStatus(order.id, status)}
+                  />
+                ))
+              )
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// ORDER CARD COMPONENT
+// ============================================
+
+function OrderCard({
+  order,
+  type,
+  processing,
+  onAccept,
+  onUpdateStatus,
+}: {
+  order: KangDoMieOrder;
+  type: "available" | "my";
+  processing: boolean;
+  onAccept?: () => void;
+  onUpdateStatus?: (status: string) => void;
+}) {
+  const statusInfo = STATUS_FLOW[order.status];
+  const items = order.items || [];
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: -100 }}
+      className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden"
+    >
+      {/* Header */}
+      <div className="p-4 flex items-center justify-between border-b border-white/5">
+        <div className="flex items-center gap-3">
+          <div className={`w-2.5 h-2.5 rounded-full ${
+            order.status === "paid" ? "bg-yellow-400 animate-pulse" :
+            order.status === "cooking" ? "bg-orange-400 animate-pulse" :
+            order.status === "delivering" ? "bg-blue-400 animate-pulse" :
+            "bg-green-400"
+          }`} />
+          <div>
+            <p className="font-bold text-sm">#{order.orderId || order.id.slice(-6)}</p>
+            <p className="text-[10px] text-white/40">{STATUS_LABELS[order.status] || order.status}</p>
+          </div>
+        </div>
+        <p className="font-extrabold text-primary text-sm">
+          {formatRupiah(order.costs?.grandTotal || 0)}
+        </p>
+      </div>
+
+      {/* Customer info */}
+      <div className="p-4 space-y-2">
+        <div className="flex items-center gap-2 text-sm">
+          <User className="w-3.5 h-3.5 text-white/30" />
+          <span className="text-white/70">{order.customerName}</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <MapPin className="w-3.5 h-3.5 text-white/30" />
+          <span className="text-white/50 text-xs">{order.address}</span>
+        </div>
+        {order.whatsapp && (
+          <a
+            href={`https://wa.me/${order.whatsapp.replace(/^0/, "62")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-sm text-green-400 hover:text-green-300"
+          >
+            <Phone className="w-3.5 h-3.5" />
+            <span className="text-xs">{order.whatsapp}</span>
+          </a>
+        )}
+
+        {/* Items */}
+        <div className="mt-3 pt-3 border-t border-white/5">
+          <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2 font-bold">Items</p>
+          <div className="space-y-1">
+            {items.map((item: any, i: number) => (
+              <div key={i} className="flex justify-between text-xs">
+                <span className="text-white/60">{item.quantity}x {item.name}</span>
+                <span className="text-white/40">{formatRupiah(item.price * item.quantity)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Action */}
+      {type === "available" && onAccept && (
+        <div className="p-4 pt-0">
+          <button
+            onClick={onAccept}
+            disabled={processing}
+            className="w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+            Ambil Pesanan
+          </button>
+        </div>
+      )}
+
+      {type === "my" && statusInfo && onUpdateStatus && (
+        <div className="p-4 pt-0">
+          <button
+            onClick={() => onUpdateStatus(statusInfo.next)}
+            disabled={processing}
+            className={`w-full py-3 rounded-xl ${statusInfo.color} hover:opacity-90 text-white font-bold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
+          >
+            {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
+            {statusInfo.label}
+          </button>
+        </div>
+      )}
+
+      {type === "my" && order.status === "delivered" && (
+        <div className="p-4 pt-0">
+          <div className="w-full py-3 rounded-xl bg-emerald-500/10 text-emerald-400 font-bold text-sm text-center">
+            ✅ Pesanan Selesai
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+}
