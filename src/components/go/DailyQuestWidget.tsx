@@ -3,40 +3,38 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Flame, X, Clock, Gift } from "lucide-react";
+import { getActiveDailyQuests, type DailyQuest } from "@/lib/firestoreGo";
 
-interface Quest {
-  id: string;
-  title: string;
-  description: string;
-  reward: string;
-  emoji: string;
-  expiresIn: string;
-}
-
-const QUESTS: Quest[] = [
+const FALLBACK_QUESTS = [
   {
-    id: "1",
+    id: "fallback-1",
     title: "Mie Siang Hemat!",
     description: "Pesen mie jam 11:00 - 14:00",
     reward: "Ekstra Topping GRATIS",
     emoji: "🍳",
-    expiresIn: "Hari ini",
+    isActive: true,
+    expiresAt: null,
+    createdAt: null,
   },
   {
-    id: "2",
+    id: "fallback-2",
     title: "Double Power!",
     description: "Beli 2 porsi mie sekaligus",
     reward: "+200 Poin Bonus",
     emoji: "⚡",
-    expiresIn: "Hari ini",
+    isActive: true,
+    expiresAt: null,
+    createdAt: null,
   },
   {
-    id: "3",
+    id: "fallback-3",
     title: "Topping Hunter",
     description: "Cobain 3 topping berbeda",
     reward: "Diskon 15% Next Order",
     emoji: "🎯",
-    expiresIn: "Minggu ini",
+    isActive: true,
+    expiresAt: null,
+    createdAt: null,
   },
 ];
 
@@ -44,15 +42,30 @@ export default function DailyQuestWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentQuest, setCurrentQuest] = useState(0);
   const [dismissed, setDismissed] = useState(false);
+  const [quests, setQuests] = useState<DailyQuest[]>([]);
+
+  // Fetch quests from Firestore
+  useEffect(() => {
+    async function fetchQuests() {
+      try {
+        const data = await getActiveDailyQuests();
+        setQuests(data.length > 0 ? data : FALLBACK_QUESTS);
+      } catch (err) {
+        console.error("Error fetching quests:", err);
+        setQuests(FALLBACK_QUESTS);
+      }
+    }
+    fetchQuests();
+  }, []);
 
   // Auto-rotate quests
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || quests.length === 0) return;
     const interval = setInterval(() => {
-      setCurrentQuest((prev) => (prev + 1) % QUESTS.length);
+      setCurrentQuest((prev) => (prev + 1) % quests.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, [isOpen]);
+  }, [isOpen, quests.length]);
 
   // Show after 2 seconds
   useEffect(() => {
@@ -60,7 +73,9 @@ export default function DailyQuestWidget() {
     return () => clearTimeout(timer);
   }, []);
 
-  if (dismissed) return null;
+  if (dismissed || quests.length === 0) return null;
+
+  const quest = quests[currentQuest];
 
   return (
     <AnimatePresence>
@@ -90,27 +105,27 @@ export default function DailyQuestWidget() {
             <div className="p-4">
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={QUESTS[currentQuest].id}
+                  key={quest.id}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.3 }}
                 >
                   <div className="flex items-start gap-3 mb-3">
-                    <span className="text-2xl">{QUESTS[currentQuest].emoji}</span>
+                    <span className="text-2xl">{quest.emoji}</span>
                     <div>
-                      <h4 className="font-bold text-sm">{QUESTS[currentQuest].title}</h4>
-                      <p className="text-[11px] text-foreground/50">{QUESTS[currentQuest].description}</p>
+                      <h4 className="font-bold text-sm">{quest.title}</h4>
+                      <p className="text-[11px] text-foreground/50">{quest.description}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary/10 text-secondary">
                       <Gift className="w-3 h-3" />
-                      <span className="text-[10px] font-bold">{QUESTS[currentQuest].reward}</span>
+                      <span className="text-[10px] font-bold">{quest.reward}</span>
                     </div>
                     <div className="flex items-center gap-1 text-foreground/30">
                       <Clock className="w-3 h-3" />
-                      <span className="text-[10px]">{QUESTS[currentQuest].expiresIn}</span>
+                      <span className="text-[10px]">Hari ini</span>
                     </div>
                   </div>
                 </motion.div>
@@ -118,7 +133,7 @@ export default function DailyQuestWidget() {
 
               {/* Dots indicator */}
               <div className="flex justify-center gap-1.5 mt-3">
-                {QUESTS.map((_, i) => (
+                {quests.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => setCurrentQuest(i)}

@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, MapPin, Phone, User, Clock, CheckCircle2, Rocket
 import Link from "next/link";
 import { formatRupiah } from "@/data/menu";
 import { useLoadScript, Autocomplete } from "@react-google-maps/api";
+import { useAuth } from "@/context/AuthContext";
 
 const libraries: "places"[] = ["places"];
 
@@ -23,6 +24,7 @@ const FREE_DELIVERY_RADIUS = 1; // km
 
 export default function CheckoutPage() {
   const { state, dispatch, totalPrice, totalItems } = useGoCart();
+  const { user } = useAuth();
   const [city, setCity] = useState<string>("Jakarta");
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -124,6 +126,7 @@ export default function CheckoutPage() {
         orderId,
         orderType: isPickup ? "pickup" : "delivery",
         orderMode: state.orderMode,
+        userId: user?.uid || null,
         customerName: state.customerName,
         whatsapp: state.whatsapp,
         city: city,

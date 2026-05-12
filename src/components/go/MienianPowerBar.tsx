@@ -1,24 +1,66 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Zap, Gift, TrendingUp } from "lucide-react";
-
-interface MienianPowerBarProps {
-  points: number;
-  level: number;
-  userName?: string;
-}
+import { useAuth } from "@/context/AuthContext";
+import { subscribeToUserPoints, initUserPoints, type UserPoints } from "@/lib/firestoreGo";
 
 const LEVEL_THRESHOLDS = [0, 500, 2000, 5000, 10000, 25000];
 const LEVEL_NAMES = ["Newbie", "Reguler", "Mania", "Sultan", "Legend", "God Tier"];
 const LEVEL_COLORS = ["#9E9E9E", "#4CAF50", "#FF9800", "#E91E63", "#9C27B0", "#FFD700"];
 
-export default function MienianPowerBar({ points = 0, level = 0, userName }: MienianPowerBarProps) {
+export default function MienianPowerBar() {
+  const { user } = useAuth();
+  const [data, setData] = useState<UserPoints | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setData(null);
+      return;
+    }
+
+    // Initialize points doc if doesn't exist
+    initUserPoints(user.uid, user.displayName || "User").catch(console.error);
+
+    // Subscribe to real-time updates
+    const unsubscribe = subscribeToUserPoints(user.uid, (pointsData) => {
+      setData(pointsData);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const points = data?.points || 0;
+  const level = data?.level || 0;
   const currentThreshold = LEVEL_THRESHOLDS[level] || 0;
   const nextThreshold = LEVEL_THRESHOLDS[level + 1] || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1];
   const progress = Math.min(((points - currentThreshold) / (nextThreshold - currentThreshold)) * 100, 100);
   const levelName = LEVEL_NAMES[level] || "Newbie";
   const levelColor = LEVEL_COLORS[level] || "#9E9E9E";
+
+  if (!user) {
+    // Guest mode — show teaser
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="card p-5 sm:p-6"
+      >
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center">
+            <Zap className="w-5 h-5 text-secondary" />
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-foreground/40 font-bold">Mienian Power</p>
+            <p className="text-sm font-bold text-foreground/60">Login untuk mulai kumpulin poin!</p>
+          </div>
+        </div>
+        <p className="text-xs text-foreground/40">Setiap Rp 1.000 belanja = 100 poin. Tuker poin jadi diskon! 🔥</p>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -62,6 +104,13 @@ export default function MienianPowerBar({ points = 0, level = 0, userName }: Mie
           <p className="text-[10px] text-foreground/40">{points.toLocaleString("id-ID")} poin</p>
           <p className="text-[10px] text-foreground/40">{nextThreshold.toLocaleString("id-ID")} poin</p>
         </div>
+      </div>
+
+      {/* Info */}
+      <div className="flex items-center gap-2 text-[10px] text-foreground/40 mb-3">
+        <span>📊 Total belanja: {(data?.totalSpent || 0).toLocaleString("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 })}</span>
+        <span>•</span>
+        <span>{data?.totalOrders || 0} pesanan</span>
       </div>
 
       {/* Quick Actions */}

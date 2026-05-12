@@ -107,11 +107,7 @@ export default function MienianGO() {
           {/* Mienian Power + Quick Actions */}
           <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
             {/* Power Bar */}
-            <MienianPowerBar
-              points={user ? 2400 : 0}
-              level={user ? 1 : 0}
-              userName={displayName || undefined}
-            />
+            <MienianPowerBar />
 
             {/* Quick Stats */}
             <div className="card p-5 sm:p-6 flex flex-col justify-between">

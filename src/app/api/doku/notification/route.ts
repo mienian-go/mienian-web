@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { doc, updateDoc, Timestamp } from "firebase/firestore";
+import { doc, updateDoc, getDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { earnPoints } from "@/lib/firestoreGo";
 
 
 function verifyNotificationSignature(
@@ -110,6 +111,24 @@ export async function POST(req: NextRequest) {
           updatedAt: Timestamp.now(),
         });
         console.log(`Order ${firestoreId} updated to status: ${orderStatus}`);
+
+        // Award loyalty points on successful payment
+        if (transactionStatus === "SUCCESS") {
+          try {
+            const orderSnap = await getDoc(orderRef);
+            if (orderSnap.exists()) {
+              const orderData = orderSnap.data();
+              const userId = orderData.userId;
+              const totalAmount = orderData.costs?.grandTotal || orderData.totalPrice || amount;
+              if (userId) {
+                const earned = await earnPoints(userId, totalAmount, orderData.customerName);
+                console.log(`Awarded ${earned} points to user ${userId} for order ${firestoreId}`);
+              }
+            }
+          } catch (pointsErr) {
+            console.error("Failed to award points:", pointsErr);
+          }
+        }
       } catch (dbErr) {
         console.error("Failed to update Firestore:", dbErr);
       }
