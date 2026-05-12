@@ -141,10 +141,21 @@ export default function OrdersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-semibold">{order.event?.picName}</div>
-                      <div className="text-xs text-foreground/50 truncate max-w-[200px]" title={order.event?.venue}>
-                        Tgl: {order.event?.date} — {order.event?.venue}
-                      </div>
+                      {order.source === 'mienian_go' ? (
+                        <>
+                          <div className="font-semibold">{order.customerName}</div>
+                          <div className="text-xs text-foreground/50 truncate max-w-[200px]" title={order.address}>
+                            Tgl: {order.createdAt ? new Date(order.createdAt.seconds * 1000).toLocaleDateString("id-ID") : "-"} — {order.orderType === 'pickup' ? 'Ambil di Gerobak' : order.address || "Delivery"}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="font-semibold">{order.event?.picName}</div>
+                          <div className="text-xs text-foreground/50 truncate max-w-[200px]" title={order.event?.venue}>
+                            Tgl: {order.event?.date} — {order.event?.venue}
+                          </div>
+                        </>
+                      )}
                     </td>
                     <td className="px-6 py-4 font-semibold uppercase tracking-wider text-xs">
                       {formatRupiah(order.totalPrice)}
@@ -190,31 +201,41 @@ export default function OrdersPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Event Details */}
               <div className="bg-muted/30 border border-white/5 rounded-2xl p-5 space-y-4 shadow-inner">
-                <h4 className="font-bold text-sm uppercase tracking-wider text-foreground/50 border-b border-white/10 pb-2">Event Information</h4>
+                <h4 className="font-bold text-sm uppercase tracking-wider text-foreground/50 border-b border-white/10 pb-2">
+                  {selectedOrder.source === 'mienian_go' ? 'Customer Information' : 'Event Information'}
+                </h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="block text-foreground/40 text-[10px] uppercase font-bold mb-0.5">PIC Name</span>
-                    <p className="font-semibold">{selectedOrder.event?.picName}</p>
+                    <span className="block text-foreground/40 text-[10px] uppercase font-bold mb-0.5">{selectedOrder.source === 'mienian_go' ? 'Customer Name' : 'PIC Name'}</span>
+                    <p className="font-semibold">{selectedOrder.source === 'mienian_go' ? selectedOrder.customerName : selectedOrder.event?.picName}</p>
                   </div>
                   <div>
                     <span className="block text-foreground/40 text-[10px] uppercase font-bold mb-0.5">WhatsApp</span>
                     <a 
-                      href={`https://wa.me/${selectedOrder.event?.whatsapp?.replace(/^0/, '62')}`}
+                      href={`https://wa.me/${(selectedOrder.event?.whatsapp || selectedOrder.whatsapp || "").replace(/^0/, '62')}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-green-500 hover:underline flex items-center gap-1 font-semibold"
                     >
-                      {selectedOrder.event?.whatsapp}
+                      {selectedOrder.event?.whatsapp || selectedOrder.whatsapp || "-"}
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
                   <div>
                     <span className="block text-foreground/40 text-[10px] uppercase font-bold mb-0.5">Date & Time</span>
-                    <p className="font-medium">{selectedOrder.event?.date} (Jam {selectedOrder.event?.time})</p>
+                    <p className="font-medium">
+                      {selectedOrder.source === 'mienian_go' 
+                        ? (selectedOrder.createdAt ? new Date(selectedOrder.createdAt.seconds * 1000).toLocaleDateString("id-ID") : "-") 
+                        : `${selectedOrder.event?.date} (Jam ${selectedOrder.event?.time})`}
+                    </p>
                   </div>
                   <div className="col-span-2">
-                    <span className="block text-foreground/40 text-[10px] uppercase font-bold mb-0.5">Venue</span>
-                    <p className="bg-background/50 p-2 rounded text-xs">{selectedOrder.event?.venue}</p>
+                    <span className="block text-foreground/40 text-[10px] uppercase font-bold mb-0.5">{selectedOrder.source === 'mienian_go' ? 'Delivery Address' : 'Venue'}</span>
+                    <p className="bg-background/50 p-2 rounded text-xs">
+                      {selectedOrder.source === 'mienian_go' 
+                        ? (selectedOrder.orderType === 'pickup' ? 'Ambil di Gerobak' : selectedOrder.address)
+                        : selectedOrder.event?.venue}
+                    </p>
                   </div>
                   {selectedOrder.event?.notes && (
                     <div className="col-span-2">

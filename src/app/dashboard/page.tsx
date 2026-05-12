@@ -426,7 +426,11 @@ export default function CustomerDashboard() {
                                 {getStatusLabel(order.status)}
                               </span>
                             </div>
-                            <h4 className="font-bold text-lg mt-0.5">{order.orderType === 'delivery' ? 'Mienian GO Delivery' : (order.packageName || "Katering Reguler")}</h4>
+                            <h4 className="font-bold text-lg mt-0.5">
+                              {order.source === 'mienian_go' 
+                                ? `Mienian GO ${order.orderType === 'pickup' ? '(Self-Pickup)' : '(Delivery)'}` 
+                                : (order.packageName || "Katering Reguler")}
+                            </h4>
                           </div>
                         </div>
                         <div className="text-right flex flex-col justify-center">
@@ -439,15 +443,15 @@ export default function CustomerDashboard() {
                         <div className="flex items-center gap-2 text-xs">
                           <CalendarIcon className="w-3.5 h-3.5 text-foreground/30" />
                           <div>
-                            <p className="text-foreground/30 font-bold uppercase text-[9px]">{order.orderType === 'delivery' ? 'Tgl Pesanan' : 'Tanggal Event'}</p>
-                            <p className="font-bold">{order.orderType === 'delivery' ? new Date(order.createdAt?.toMillis ? order.createdAt.toMillis() : Date.now()).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : (order.eventDate || order.event?.date || "-")}</p>
+                            <p className="text-foreground/30 font-bold uppercase text-[9px]">{order.source === 'mienian_go' ? 'Tgl Pesanan' : 'Tanggal Event'}</p>
+                            <p className="font-bold">{order.source === 'mienian_go' ? new Date(order.createdAt?.toMillis ? order.createdAt.toMillis() : Date.now()).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : (order.eventDate || order.event?.date || "-")}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 text-xs">
                           <MapPin className="w-3.5 h-3.5 text-foreground/30" />
                           <div className="truncate">
                             <p className="text-foreground/30 font-bold uppercase text-[9px]">Lokasi</p>
-                            <p className="font-bold truncate max-w-[120px]">{order.orderType === 'delivery' ? order.address : (order.city || order.event?.city || "-")}</p>
+                            <p className="font-bold truncate max-w-[120px]">{order.source === 'mienian_go' ? (order.orderType === 'pickup' ? 'Ambil di Gerobak' : order.address) : (order.city || order.event?.city || "-")}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 text-xs">
