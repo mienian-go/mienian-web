@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { InstagramIcon } from "@/components/ui/InstagramIcon";
 import { PackageShowcase } from "@/components/PackageShowcase";
+import HeroBannerSlideshow from "@/components/HeroBannerSlideshow";
 
 const container = {
   hidden: { opacity: 0 },
@@ -135,6 +136,9 @@ export default function Home() {
           </motion.div>
         </motion.div>
       </section>
+
+      {/* ============ SLIDESHOW BANNER ============ */}
+      <HeroBannerSlideshow />
 
       <PackageShowcase />
 

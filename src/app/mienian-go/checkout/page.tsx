@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useGoCart } from "@/context/GoCartContext";
-import { ArrowLeft, ArrowRight, MapPin, Phone, User, Clock, CheckCircle2, Rocket, Loader2, ShoppingCart, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, MapPin, Phone, User, Clock, CheckCircle2, Rocket, Loader2, ShoppingCart, ShieldCheck, Bike, Package } from "lucide-react";
 import Link from "next/link";
 import { formatRupiah } from "@/data/menu";
 import { useLoadScript, Autocomplete } from "@react-google-maps/api";
@@ -17,8 +17,9 @@ const KOTA_ORIGIN: Record<string, string> = {
 };
 
 const DELIVERY_FEE_PER_KM = 3000;
-const BASE_DELIVERY_FEE = 10000; // Minimum ongkir 10rb
+const BASE_DELIVERY_FEE = 10000;
 const SERVICE_FEE = 3000;
+const FREE_DELIVERY_RADIUS = 1; // km
 
 export default function CheckoutPage() {
   const { state, dispatch, totalPrice, totalItems } = useGoCart();
@@ -32,7 +33,9 @@ export default function CheckoutPage() {
     libraries,
   });
 
-  const deliveryFee = state.distanceKm > 0 ? Math.max(BASE_DELIVERY_FEE, Math.ceil(state.distanceKm) * DELIVERY_FEE_PER_KM) : 0;
+  const isPickup = state.orderMode === "pickup";
+  const isFreeDelivery = !isPickup && state.distanceKm > 0 && state.distanceKm <= FREE_DELIVERY_RADIUS;
+  const deliveryFee = isPickup ? 0 : (isFreeDelivery ? 0 : (state.distanceKm > 0 ? Math.max(BASE_DELIVERY_FEE, Math.ceil(state.distanceKm) * DELIVERY_FEE_PER_KM) : 0));
   const grandTotal = totalPrice + deliveryFee + SERVICE_FEE;
 
   const calculateDistance = (dest: string, origin: string) => {
@@ -82,11 +85,15 @@ export default function CheckoutPage() {
   }, [city]);
 
   const handleCheckout = async () => {
-    if (!state.customerName || !state.whatsapp || !state.address) {
-      alert("Harap lengkapi Nama, WhatsApp, dan Alamat Pengiriman.");
+    if (!state.customerName || !state.whatsapp) {
+      alert("Harap lengkapi Nama dan WhatsApp.");
       return;
     }
-    if (state.distanceKm === 0) {
+    if (!isPickup && !state.address) {
+      alert("Harap lengkapi Alamat Pengiriman.");
+      return;
+    }
+    if (!isPickup && state.distanceKm === 0) {
       alert("Silakan pilih alamat dari saran Google Maps agar sistem dapat menghitung ongkos kirim.");
       return;
     }
@@ -110,21 +117,18 @@ export default function CheckoutPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal membuat pembayaran Doku");
 
-      // We should ideally save the order to firestore here, but for now we rely on the Doku Webhook to create it, 
-      // or we can save it to Firestore directly so the webhook can update it.
-      // Since Doku API route just returns URL, let's just save order to Firestore directly first:
-      
       const { doc, setDoc } = await import("firebase/firestore");
       const { db } = await import("@/lib/firebase");
       
       await setDoc(doc(db, "orders", orderId), {
         orderId,
-        orderType: "delivery",
+        orderType: isPickup ? "pickup" : "delivery",
+        orderMode: state.orderMode,
         customerName: state.customerName,
         whatsapp: state.whatsapp,
         city: city,
-        address: state.address,
-        distanceKm: state.distanceKm,
+        address: isPickup ? `Pickup — ${city}` : state.address,
+        distanceKm: isPickup ? 0 : state.distanceKm,
         items: state.items,
         costs: {
           subtotal: totalPrice,
@@ -136,10 +140,8 @@ export default function CheckoutPage() {
         createdAt: new Date(),
       });
 
-      // Clear cart
       dispatch({ type: "CLEAR_CART" });
 
-      // Redirect to doku
       if (data.paymentUrl) {
         window.location.href = data.paymentUrl;
       } else {
@@ -176,15 +178,37 @@ export default function CheckoutPage() {
         </div>
 
         <h1 className="text-3xl sm:text-4xl font-extrabold mb-8">
-          Checkout <span className="gradient-text">Delivery</span>
+          Checkout <span className="gradient-text">{isPickup ? "Pickup" : "Delivery"}</span>
         </h1>
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* LEFT COLUMN: FORM */}
           <div className="flex-1 space-y-6">
+            {/* Order Type Toggle */}
+            <div className="card p-2 flex gap-2">
+              <button
+                onClick={() => dispatch({ type: "SET_DELIVERY_DETAILS", payload: { orderMode: "delivery" } })}
+                className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all ${
+                  !isPickup ? "bg-primary text-white shadow-lg shadow-primary/30" : "text-foreground/50 hover:bg-muted"
+                }`}
+              >
+                <Bike className="w-4 h-4" />
+                🏍️ Delivery
+              </button>
+              <button
+                onClick={() => dispatch({ type: "SET_DELIVERY_DETAILS", payload: { orderMode: "pickup" } })}
+                className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all ${
+                  isPickup ? "bg-secondary text-white shadow-lg shadow-secondary/30" : "text-foreground/50 hover:bg-muted"
+                }`}
+              >
+                <Package className="w-4 h-4" />
+                🛺 Self-Pickup
+              </button>
+            </div>
+
             <div className="card p-6 sm:p-8">
               <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                <User className="text-primary w-5 h-5" /> Kontak & Pengiriman
+                <User className="text-primary w-5 h-5" /> {isPickup ? "Data Pemesan" : "Kontak & Pengiriman"}
               </h2>
 
               <div className="space-y-5">
@@ -213,56 +237,98 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Pilih Area Mienian GO Terdekat</label>
-                  <div className="flex flex-wrap gap-3">
-                    {Object.keys(KOTA_ORIGIN).map((k) => (
-                      <button
-                        key={k}
-                        onClick={() => setCity(k)}
-                        className={`flex-1 min-w-[100px] py-2 text-sm rounded-xl font-bold border-2 transition-all ${
-                          city === k ? "bg-primary/10 border-primary text-primary" : "bg-card border-card-border hover:border-primary/50 text-foreground/70"
-                        }`}
-                      >
-                        {k}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Alamat Pengiriman (Ketik di Bawah)</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <MapPin className="w-5 h-5 text-foreground/40" />
+                {isPickup ? (
+                  /* Pickup Mode */
+                  <div className="p-5 rounded-xl bg-secondary/5 border border-secondary/20">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 rounded-lg bg-secondary/20 flex items-center justify-center">
+                        <MapPin className="w-4 h-4 text-secondary" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm">Samperin gerobak terdekat!</p>
+                        <p className="text-xs text-foreground/50">Pesanan akan disiapkan, kamu tinggal ambil di gerobak</p>
+                      </div>
                     </div>
-                    {isLoaded ? (
-                      <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged}>
-                         <input
-                          type="text"
-                          value={state.address}
-                          onChange={(e) => dispatch({ type: "SET_DELIVERY_DETAILS", payload: { address: e.target.value } })}
-                          placeholder="Cari alamat di Google Maps..."
-                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-muted border border-transparent focus:border-primary focus:outline-none transition-colors"
-                          required
-                        />
-                      </Autocomplete>
-                    ) : (
-                      <input
-                        type="text"
-                        placeholder="Loading Maps..."
-                        disabled
-                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-muted border border-transparent opacity-50 cursor-not-allowed"
-                      />
-                    )}
+                    <div className="flex flex-wrap gap-3 mt-3">
+                      {Object.keys(KOTA_ORIGIN).map((k) => (
+                        <button
+                          key={k}
+                          onClick={() => setCity(k)}
+                          className={`px-4 py-2 text-sm rounded-xl font-bold border-2 transition-all ${
+                            city === k ? "bg-secondary/10 border-secondary text-secondary" : "bg-card border-card-border hover:border-secondary/50 text-foreground/70"
+                          }`}
+                        >
+                          {k}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  {isCalculating && <p className="text-xs text-primary mt-2 animate-pulse flex items-center gap-1"><Rocket className="w-3 h-3"/> Menghitung jarak pengiriman...</p>}
-                  {state.distanceKm > 0 && !isCalculating && (
-                    <p className="text-xs text-green-500 mt-2 font-bold flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" /> Jarak terhitung: {state.distanceKm.toFixed(1)} km
-                    </p>
-                  )}
-                </div>
+                ) : (
+                  /* Delivery Mode */
+                  <>
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Pilih Area Mienian GO Terdekat</label>
+                      <div className="flex flex-wrap gap-3">
+                        {Object.keys(KOTA_ORIGIN).map((k) => (
+                          <button
+                            key={k}
+                            onClick={() => setCity(k)}
+                            className={`flex-1 min-w-[100px] py-2 text-sm rounded-xl font-bold border-2 transition-all ${
+                              city === k ? "bg-primary/10 border-primary text-primary" : "bg-card border-card-border hover:border-primary/50 text-foreground/70"
+                            }`}
+                          >
+                            {k}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Alamat Pengiriman (Ketik di Bawah)</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <MapPin className="w-5 h-5 text-foreground/40" />
+                        </div>
+                        {isLoaded ? (
+                          <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged}>
+                             <input
+                              type="text"
+                              value={state.address}
+                              onChange={(e) => dispatch({ type: "SET_DELIVERY_DETAILS", payload: { address: e.target.value } })}
+                              placeholder="Cari alamat di Google Maps..."
+                              className="w-full pl-10 pr-4 py-3 rounded-xl bg-muted border border-transparent focus:border-primary focus:outline-none transition-colors"
+                              required
+                            />
+                          </Autocomplete>
+                        ) : (
+                          <input
+                            type="text"
+                            placeholder="Loading Maps..."
+                            disabled
+                            className="w-full pl-10 pr-4 py-3 rounded-xl bg-muted border border-transparent opacity-50 cursor-not-allowed"
+                          />
+                        )}
+                      </div>
+                      {isCalculating && <p className="text-xs text-primary mt-2 animate-pulse flex items-center gap-1"><Rocket className="w-3 h-3"/> Menghitung jarak pengiriman...</p>}
+                      {state.distanceKm > 0 && !isCalculating && (
+                        <div className="mt-2">
+                          <p className="text-xs text-green-500 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Jarak terhitung: {state.distanceKm.toFixed(1)} km
+                          </p>
+                          {isFreeDelivery && (
+                            <motion.p 
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              className="text-xs text-secondary font-extrabold mt-1 flex items-center gap-1"
+                            >
+                              🎉 GRATIS ONGKIR! (Radius &lt; {FREE_DELIVERY_RADIUS}km)
+                            </motion.p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -290,8 +356,12 @@ export default function CheckoutPage() {
                   <span className="font-bold text-foreground">{formatRupiah(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-foreground/70">
-                  <span>Ongkos Kirim</span>
-                  {state.distanceKm > 0 ? (
+                  <span>{isPickup ? "Ongkos Kirim" : "Ongkos Kirim"}</span>
+                  {isPickup ? (
+                    <span className="font-bold text-green-500">GRATIS</span>
+                  ) : isFreeDelivery ? (
+                    <span className="font-bold text-green-500">🎉 GRATIS</span>
+                  ) : state.distanceKm > 0 ? (
                     <span className="font-bold text-foreground">{formatRupiah(deliveryFee)}</span>
                   ) : (
                     <span className="text-xs italic">Pilih alamat dulu</span>
@@ -309,9 +379,10 @@ export default function CheckoutPage() {
                   <span className="font-extrabold text-2xl text-primary">{formatRupiah(grandTotal)}</span>
                 </div>
                 
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
                   onClick={handleCheckout}
-                  disabled={isSubmitting || state.distanceKm === 0}
+                  disabled={isSubmitting || (!isPickup && state.distanceKm === 0)}
                   className="btn btn-primary w-full py-4 text-lg"
                 >
                   {isSubmitting ? (
@@ -319,9 +390,9 @@ export default function CheckoutPage() {
                       <Loader2 className="w-5 h-5 animate-spin" /> Memproses...
                     </span>
                   ) : (
-                    "Bayar Sekarang"
+                    "Gas, Bayar! 🔥"
                   )}
-                </button>
+                </motion.button>
                 <p className="text-xs text-center text-foreground/50 mt-4 flex items-center justify-center gap-1">
                   <ShieldCheck className="w-4 h-4" /> Pembayaran Aman & Otomatis via DOKU
                 </p>

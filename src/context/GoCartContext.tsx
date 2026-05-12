@@ -19,6 +19,7 @@ export interface GoCartState {
   distanceKm: number;
   lat: number | null;
   lng: number | null;
+  orderMode: "delivery" | "pickup";
 }
 
 type GoCartAction =
@@ -37,6 +38,7 @@ const initialState: GoCartState = {
   distanceKm: 0,
   lat: null,
   lng: null,
+  orderMode: "delivery",
 };
 
 function goCartReducer(state: GoCartState, action: GoCartAction): GoCartState {
