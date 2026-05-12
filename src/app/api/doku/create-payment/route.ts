@@ -55,6 +55,9 @@ export async function POST(req: NextRequest) {
       payment: {
         payment_due_date: 60, // 60 minutes to pay
       },
+      notification: {
+        url: `${baseUrl}/api/doku/notification`,
+      },
     };
 
     // Add customer info if available
