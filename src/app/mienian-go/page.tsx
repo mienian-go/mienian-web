@@ -10,6 +10,7 @@ import { PackageShowcase } from "@/components/PackageShowcase";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useGoCart } from "@/context/GoCartContext";
+import NearbyKangDoMieMap from "@/components/NearbyKangDoMieMap";
 
 const container = {
   hidden: { opacity: 0 },
@@ -108,6 +109,9 @@ export default function MienianGO() {
           </motion.div>
         </motion.div>
       </section>
+
+      {/* ============ NEARBY KANGDOMIE MAP ============ */}
+      <NearbyKangDoMieMap />
 
       <PackageShowcase />
 
