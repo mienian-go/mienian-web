@@ -70,6 +70,17 @@ export default function AdminKangDoMiePage() {
   const approved = drivers.filter((d) => d.isApproved);
   const pending = drivers.filter((d) => !d.isApproved);
 
+  // Auto-generate next gerobak ID: M-GO-001, M-GO-002, ...
+  const generateNextGerobakId = () => {
+    const existingIds = drivers
+      .map((d) => d.gerobakId)
+      .filter((id) => id && id.startsWith("M-GO-"))
+      .map((id) => parseInt(id.replace("M-GO-", ""), 10))
+      .filter((n) => !isNaN(n));
+    const maxNum = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+    return `M-GO-${String(maxNum + 1).padStart(3, "0")}`;
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -117,6 +128,7 @@ export default function AdminKangDoMiePage() {
                     key={driver.uid}
                     driver={driver}
                     processing={processing === driver.uid}
+                    suggestedGerobakId={generateNextGerobakId()}
                     onToggleApproval={(gerobakId) => toggleApproval(driver.uid, driver.isApproved, gerobakId)}
                     onDelete={() => deleteDriver(driver.uid)}
                   />
@@ -154,15 +166,17 @@ export default function AdminKangDoMiePage() {
 function DriverCard({
   driver,
   processing,
+  suggestedGerobakId,
   onToggleApproval,
   onDelete,
 }: {
   driver: Driver;
   processing: boolean;
+  suggestedGerobakId?: string;
   onToggleApproval: (gerobakId?: string) => void;
   onDelete: () => void;
 }) {
-  const [editGerobakId, setEditGerobakId] = useState(driver.gerobakId || "");
+  const [editGerobakId, setEditGerobakId] = useState(driver.gerobakId || suggestedGerobakId || "");
 
   return (
     <div className={`card p-5 space-y-4 ${
