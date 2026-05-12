@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Sparkles, ShieldCheck, Clock, Utensils, ArrowRight, Loader2, ShoppingCart, Plus, Minus, Bike, MessageCircle } from "lucide-react";
+import { MapPin, Sparkles, ShieldCheck, Clock, Utensils, ArrowRight, Loader2, ShoppingCart, Plus, Minus, Bike, MessageCircle, Trophy } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatRupiah } from "@/data/menu";
@@ -129,11 +129,11 @@ export default function MienianGO() {
                   Pesan Sekarang
                 </Link>
                 <Link
-                  href="#lokasi"
+                  href="/mienian-go/leaderboard"
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-muted hover:bg-muted/80 text-foreground/70 text-xs font-bold transition-colors"
                 >
-                  <MapPin className="w-3.5 h-3.5" />
-                  Cek Jadwal
+                  <Trophy className="w-3.5 h-3.5" />
+                  Leaderboard
                 </Link>
               </div>
             </div>
