@@ -112,7 +112,8 @@ export default function CheckoutPage() {
           amount: grandTotal,
           customerName: state.customerName,
           customerEmail: "no-email@mienian.id",
-          invoiceNumber: `INV-${orderId}-${Date.now().toString().slice(-6)}`
+          invoiceNumber: `INV-${orderId}-${Date.now().toString().slice(-6)}`,
+          callbackUrl: `${window.location.origin}/mienian-go/tracking/${orderId}`,
         })
       });
 

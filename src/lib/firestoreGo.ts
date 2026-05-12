@@ -222,3 +222,41 @@ export async function upsertKangDoMieLocation(id: string, data: Omit<KangDoMieLo
 export async function deleteKangDoMieLocation(id: string): Promise<void> {
   await deleteDoc(doc(db, "kangdomie_locations", id));
 }
+
+// ============================================
+// IN-APP CHAT
+// Subcollection: orders/{orderId}/chats
+// ============================================
+
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: "customer" | "driver";
+  message: string;
+  createdAt: any;
+}
+
+export async function sendChatMessage(
+  orderId: string,
+  data: Omit<ChatMessage, "id" | "createdAt">
+): Promise<void> {
+  await addDoc(collection(db, "orders", orderId, "chats"), {
+    ...data,
+    createdAt: Timestamp.now(),
+  });
+}
+
+export function subscribeToChatMessages(
+  orderId: string,
+  callback: (messages: ChatMessage[]) => void
+) {
+  const q = query(
+    collection(db, "orders", orderId, "chats"),
+    orderBy("createdAt", "asc")
+  );
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as ChatMessage)));
+  });
+}
+

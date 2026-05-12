@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     const CHECKOUT_PATH = "/checkout/v1/payment";
 
     const body = await req.json();
-    const { orderId, amount, customerName, customerEmail, invoiceNumber } = body;
+    const { orderId, amount, customerName, customerEmail, invoiceNumber, callbackUrl } = body;
 
     if (!orderId || !amount || !invoiceNumber) {
       return NextResponse.json(
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       order: {
         amount: Math.round(amount),
         invoice_number: invoiceNumber,
-        callback_url: `${baseUrl}/dashboard`,
+        callback_url: callbackUrl || `${baseUrl}/dashboard`,
         auto_redirect: true,
       },
       payment: {

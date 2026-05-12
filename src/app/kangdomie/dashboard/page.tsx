@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { upsertKangDoMieLocation, deleteKangDoMieLocation } from "@/lib/firestoreGo";
+import { upsertKangDoMieLocation, subscribeToChatMessages, sendChatMessage, type ChatMessage } from "@/lib/firestoreGo";
 import {
   getDriver,
   setDriverOnline,
@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import {
   Loader2, LogOut, MapPin, Power, Package, Clock, CheckCircle2,
   Navigation, Phone, User, ChevronRight, Truck, Flame, AlertCircle,
+  MessageCircle, Send, X,
 } from "lucide-react";
 
 const STATUS_FLOW: Record<string, { next: string; label: string; color: string }> = {
@@ -367,6 +368,8 @@ export default function KangDoMieDashboard() {
                     type="my"
                     processing={processingOrder === order.id}
                     onUpdateStatus={(status) => handleUpdateStatus(order.id, status)}
+                    driverName={driver?.name}
+                    driverUid={driver?.uid}
                   />
                 ))
               )
@@ -388,15 +391,48 @@ function OrderCard({
   processing,
   onAccept,
   onUpdateStatus,
+  driverName,
+  driverUid,
 }: {
   order: KangDoMieOrder;
   type: "available" | "my";
   processing: boolean;
   onAccept?: () => void;
   onUpdateStatus?: (status: string) => void;
+  driverName?: string;
+  driverUid?: string;
 }) {
   const statusInfo = STATUS_FLOW[order.status];
   const items = order.items || [];
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [newMsg, setNewMsg] = useState("");
+  const [sending, setSending] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!chatOpen || type !== "my") return;
+    const unsub = subscribeToChatMessages(order.id, (msgs) => {
+      setMessages(msgs);
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+    });
+    return () => unsub();
+  }, [chatOpen, order.id, type]);
+
+  const handleSendMsg = async () => {
+    if (!newMsg.trim() || sending || !driverUid) return;
+    setSending(true);
+    try {
+      await sendChatMessage(order.id, {
+        senderId: driverUid,
+        senderName: driverName || "KangDoMie",
+        senderRole: "driver",
+        message: newMsg.trim(),
+      });
+      setNewMsg("");
+    } catch (err) { console.error(err); }
+    setSending(false);
+  };
 
   return (
     <motion.div
@@ -493,6 +529,69 @@ function OrderCard({
           <div className="w-full py-3 rounded-xl bg-emerald-500/10 text-emerald-400 font-bold text-sm text-center">
             ✅ Pesanan Selesai
           </div>
+        </div>
+      )}
+
+      {/* Chat button for my orders */}
+      {type === "my" && (
+        <div className="px-4 pb-4">
+          <button
+            onClick={() => setChatOpen(!chatOpen)}
+            className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-bold transition-colors flex items-center justify-center gap-2"
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            {chatOpen ? "Tutup Chat" : `Chat Customer (${messages.length})`}
+          </button>
+
+          <AnimatePresence>
+            {chatOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="mt-3 border border-white/10 rounded-xl overflow-hidden">
+                  <div className="max-h-[200px] overflow-y-auto p-3 space-y-2">
+                    {messages.length === 0 && (
+                      <p className="text-center text-white/20 text-xs py-4">Belum ada pesan</p>
+                    )}
+                    {messages.map((msg) => {
+                      const isMe = msg.senderRole === "driver";
+                      return (
+                        <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                          <div className={`max-w-[80%] px-3 py-2 rounded-xl text-xs ${
+                            isMe ? "bg-primary text-white rounded-br-sm" : "bg-white/10 text-white rounded-bl-sm"
+                          }`}>
+                            {!isMe && <p className="text-[9px] font-bold text-white/40 mb-0.5">{msg.senderName}</p>}
+                            <p>{msg.message}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div ref={chatEndRef} />
+                  </div>
+                  <div className="flex gap-2 p-2 border-t border-white/10">
+                    <input
+                      type="text"
+                      value={newMsg}
+                      onChange={(e) => setNewMsg(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSendMsg()}
+                      placeholder="Balas customer..."
+                      className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-primary"
+                    />
+                    <button
+                      onClick={handleSendMsg}
+                      disabled={sending || !newMsg.trim()}
+                      className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center disabled:opacity-30"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
     </motion.div>
