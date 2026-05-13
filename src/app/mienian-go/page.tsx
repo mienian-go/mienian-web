@@ -8,6 +8,7 @@ import Image from "next/image";
 import { formatRupiah } from "@/data/menu";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { subscribeToKangDoMieLocations } from "@/lib/firestoreGo";
 import { useGoCart } from "@/context/GoCartContext";
 import { useAuth } from "@/context/AuthContext";
 import NearbyKangDoMieMap from "@/components/NearbyKangDoMieMap";
@@ -34,6 +35,7 @@ export default function MienianGO() {
   const { user } = useAuth();
   const [dbMenuItems, setDbMenuItems] = useState<any[]>([]);
   const [isLoadingMenu, setIsLoadingMenu] = useState(true);
+  const [availableKangCount, setAvailableKangCount] = useState(0);
 
   const handleAddToCart = (item: any) => {
     dispatch({
@@ -70,6 +72,13 @@ export default function MienianGO() {
       }
     }
     fetchMenu();
+  }, []);
+
+  useEffect(() => {
+    const unsub = subscribeToKangDoMieLocations((locations) => {
+      setAvailableKangCount(locations.filter(l => l.status === "available").length);
+    });
+    return () => unsub();
   }, []);
 
   const categoriesToShow = [
@@ -117,7 +126,7 @@ export default function MienianGO() {
                 </div>
                 <div>
                   <p className="text-[10px] uppercase tracking-widest text-foreground/40 font-bold">KangDoMie Aktif</p>
-                  <p className="text-xl font-extrabold leading-tight">5 <span className="text-sm text-foreground/50 font-medium">di sekitarmu</span></p>
+                  <p className="text-xl font-extrabold leading-tight">{availableKangCount} <span className="text-sm text-foreground/50 font-medium">di sekitarmu</span></p>
                 </div>
               </div>
               <div className="flex gap-2">

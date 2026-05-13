@@ -44,35 +44,12 @@ function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): 
   return R * c;
 }
 
-// Fallback: generate random KangDoMie near user (used when Firestore is empty)
-function generateFallbackKangDoMie(userLat: number, userLng: number): KangDoMieLocation[] {
-  const names = [
-    { name: "KangDoMie #1", driverName: "Pak Joko" },
-    { name: "KangDoMie #2", driverName: "Mas Agus" },
-    { name: "KangDoMie #3", driverName: "Bang Roni" },
-    { name: "KangDoMie #4", driverName: "Kang Dedi" },
-    { name: "KangDoMie #5", driverName: "Pak Udin" },
-  ];
-  const etas = ["3 min", "5 min", "7 min", "8 min", "10 min"];
-  
-  return names.map((n, i) => ({
-    id: `fallback-${i}`,
-    name: `${n.name} — ${n.driverName}`,
-    driverName: n.driverName,
-    lat: userLat + (Math.random() - 0.5) * 0.014,
-    lng: userLng + (Math.random() - 0.5) * 0.014,
-    status: (Math.random() > 0.3 ? "available" : "busy") as "available" | "busy",
-    eta: etas[Math.floor(Math.random() * etas.length)],
-    lastUpdated: null,
-  }));
-}
 
 export default function NearbyKangDoMieMap() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<KangDoMieLocation | null>(null);
   const [nearbyKang, setNearbyKang] = useState<KangDoMieLocation[]>([]);
-  const [usingFallback, setUsingFallback] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
   const userLocRef = useRef<{ lat: number; lng: number } | null>(null);
 
@@ -104,29 +81,15 @@ export default function NearbyKangDoMieMap() {
   // Subscribe to Firestore KangDoMie locations (real-time)
   useEffect(() => {
     const unsubscribe = subscribeToKangDoMieLocations((locations) => {
-      if (locations.length > 0) {
-        // Filter by 1km radius if user location available
-        const loc = userLocRef.current;
-        if (loc) {
-          const filtered = locations.filter(
-            (k) => getDistanceKm(loc.lat, loc.lng, k.lat, k.lng) <= 1.0
-          );
-          setNearbyKang(filtered);
-        } else {
-          setNearbyKang(locations);
-        }
-        setUsingFallback(false);
+      // Filter by 1km radius if user location available
+      const loc = userLocRef.current;
+      if (loc) {
+        const filtered = locations.filter(
+          (k) => getDistanceKm(loc.lat, loc.lng, k.lat, k.lng) <= 1.0
+        );
+        setNearbyKang(filtered);
       } else {
-        // Firestore empty → use fallback
-        const loc = userLocRef.current;
-        if (loc) {
-          const fallback = generateFallbackKangDoMie(loc.lat, loc.lng);
-          const inRadius = fallback.filter(
-            (k) => getDistanceKm(loc.lat, loc.lng, k.lat, k.lng) <= 1.0
-          );
-          setNearbyKang(inRadius);
-        }
-        setUsingFallback(true);
+        setNearbyKang(locations);
       }
     });
     return () => unsubscribe();
@@ -342,9 +305,6 @@ export default function NearbyKangDoMieMap() {
                   <span className="w-4 h-4 rounded-full border border-primary/30 inline-block" /> 1km
                 </span>
               </div>
-              {usingFallback && (
-                <p className="text-[10px] text-foreground/30 mt-2">📡 Posisi simulasi — menunggu data real-time dari KangDoMie App</p>
-              )}
             </div>
           </div>
         </motion.div>

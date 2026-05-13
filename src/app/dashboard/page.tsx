@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getOrdersByUserId, getUserProfile, updateUserProfile, uploadProfilePhoto } from "@/lib/firestore";
 import { updateProfile } from "firebase/auth";
+import { getDriver } from "@/lib/firestoreDriver";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Package, 
@@ -53,7 +54,11 @@ export default function CustomerDashboard() {
   useEffect(() => {
     // Admin users should be redirected to admin dashboard
     if (!authLoading && user && role) {
-      router.push("/admin");
+      if (role === "affiliate") {
+        router.push("/affiliate/dashboard");
+      } else {
+        router.push("/admin");
+      }
       return;
     }
 
@@ -67,8 +72,20 @@ export default function CustomerDashboard() {
       }
     }, 3000);
 
+    const checkAndFetch = async () => {
+      if (!user) return;
+      const driverDoc = await getDriver(user.uid);
+      if (driverDoc) {
+        await logout();
+        setAuthError("Email ini terdaftar sebagai KangDoMie. Silakan gunakan akun/email lain untuk Pelanggan.");
+        if (isMounted) setLoading(false);
+        return;
+      }
+      if (isMounted) fetchData();
+    };
+
     if (user) {
-      fetchData();
+      checkAndFetch();
     } else if (!authLoading) {
       if (isMounted) setLoading(false);
     }
@@ -169,11 +186,20 @@ export default function CustomerDashboard() {
         });
       } else {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        
+        // Cek driver dulu
+        const driverDoc = await getDriver(userCredential.user.uid);
+        if (driverDoc) {
+          await auth.signOut();
+          setAuthError("Email ini terdaftar sebagai KangDoMie. Silakan gunakan email lain untuk Pelanggan.");
+          return;
+        }
+
         // Verify they are actually a customer
         const userProfile = await getUserProfile(userCredential.user.uid);
         if (!userProfile) {
           await auth.signOut();
-          setAuthError("Email ini terdaftar sebagai Affiliate, bukan Pelanggan. Silakan gunakan email lain untuk daftar Pelanggan.");
+          setAuthError("Email ini terdaftar sebagai Affiliate/role lain. Silakan daftar sebagai Pelanggan.");
           return;
         }
       }
