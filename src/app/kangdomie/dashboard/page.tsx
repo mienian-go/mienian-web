@@ -16,7 +16,7 @@ import {
   type KangDoMieOrder,
 } from "@/lib/firestoreDriver";
 import { getDateRange, getDriverCommissionForPeriod } from "@/lib/firestoreDriverSales";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/kangdomie/BottomNav";
@@ -88,6 +88,18 @@ export default function KangDoMieDashboard() {
     });
     return () => unsub();
   }, [router]);
+
+  // Real-time driver doc listener (syncs photo, stats across pages)
+  useEffect(() => {
+    if (!driver) return;
+    const unsub = onSnapshot(doc(db, "kangdomie_drivers", driver.uid), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setDriver((prev) => prev ? { ...prev, ...data } as any : prev);
+      }
+    });
+    return () => unsub();
+  }, [driver?.uid]);
 
   // Subscribe to orders
   useEffect(() => {
@@ -249,7 +261,13 @@ export default function KangDoMieDashboard() {
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl overflow-hidden bg-white/5">
-              <Image src="/kangdomie-icon.png" alt="KangDoMie" width={40} height={40} className="w-full h-full object-cover" />
+              {(driver as any).photoURL ? (
+                <Image src={(driver as any).photoURL} alt={driver.name} width={40} height={40} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-sm font-bold text-white/30">
+                  {driver.name.charAt(0)}
+                </div>
+              )}
             </div>
             <div>
               <p className="font-bold text-sm leading-tight">{driver.name}</p>
