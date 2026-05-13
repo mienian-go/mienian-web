@@ -15,11 +15,16 @@ import {
   type KangDoMieDriver,
   type KangDoMieOrder,
 } from "@/lib/firestoreDriver";
+import { getDateRange, getDriverCommissionForPeriod } from "@/lib/firestoreDriverSales";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+import BottomNav from "@/components/kangdomie/BottomNav";
+import Image from "next/image";
 import {
   Loader2, LogOut, MapPin, Power, Package, Clock, CheckCircle2,
   Navigation, Phone, User, ChevronRight, Truck, Flame, AlertCircle,
-  MessageCircle, Send, X,
+  MessageCircle, Send, X, DollarSign, ShoppingBag,
 } from "lucide-react";
 
 const STATUS_FLOW: Record<string, { next: string; label: string; color: string }> = {
@@ -51,6 +56,8 @@ export default function KangDoMieDashboard() {
   const [activeTab, setActiveTab] = useState<"available" | "my">("available");
   const [processingOrder, setProcessingOrder] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [todayCommission, setTodayCommission] = useState(0);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
   const gpsIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const watchIdRef = useRef<number | null>(null);
 
@@ -68,6 +75,12 @@ export default function KangDoMieDashboard() {
       }
       setDriver(d);
       setIsOnline(d.isOnline);
+
+      // Fetch today's commission
+      const { start, end } = getDateRange("daily");
+      const commData = await getDriverCommissionForPeriod(user.uid, start, end);
+      setTodayCommission(commData.totalCommission);
+
       setLoading(false);
     });
     return () => unsub();
@@ -87,6 +100,15 @@ export default function KangDoMieDashboard() {
 
     return () => { unsub1(); unsub2(); };
   }, [driver]);
+
+  // Subscribe to menu items (stock display)
+  useEffect(() => {
+    const q = query(collection(db, "menu_items"), orderBy("sortOrder", "asc"));
+    const unsub = onSnapshot(q, (snap) => {
+      setMenuItems(snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((i: any) => i.isActive));
+    });
+    return () => unsub();
+  }, []);
 
   // GPS tracking
   const startGPS = useCallback(() => {
@@ -215,23 +237,28 @@ export default function KangDoMieDashboard() {
 
   const activeOrders = myOrders.length;
 
+  const formatRupiahLocal = (num: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
+
   return (
-    <div className="min-h-screen bg-[#0f0f1a] text-white">
+    <div className="min-h-screen bg-[#0f0f1a] text-white pb-24">
       {/* ========== HEADER ========== */}
       <header className="sticky top-0 z-50 bg-[#0f0f1a]/90 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-[#FF6B6B] rounded-xl flex items-center justify-center">
-              <Truck className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden bg-white/5">
+              <Image src="/kangdomie-icon.png" alt="KangDoMie" width={40} height={40} className="w-full h-full object-cover" />
             </div>
             <div>
               <p className="font-bold text-sm leading-tight">{driver.name}</p>
               <p className="text-[10px] text-white/40">{driver.gerobakId}</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="p-2 rounded-xl hover:bg-white/5 transition-colors text-white/40 hover:text-white">
-            <LogOut className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="px-3 py-1.5 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+              <p className="text-[9px] text-yellow-400/60 font-bold">KOMISI HARI INI</p>
+              <p className="text-xs font-extrabold text-yellow-400">{formatRupiahLocal(todayCommission)}</p>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -291,6 +318,31 @@ export default function KangDoMieDashboard() {
             <p className="text-[10px] text-white/40 mt-1">Status GPS</p>
           </div>
         </div>
+
+        {/* ========== MENU DISPLAY (Barang Jualan) ========== */}
+        {menuItems.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4 text-primary" /> Barang Jualan
+              </h3>
+              <span className="text-[10px] text-white/30">{menuItems.length} item</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 max-h-[250px] overflow-y-auto pr-1 no-scrollbar">
+              {menuItems.map((item: any) => (
+                <div key={item.id} className="rounded-xl bg-white/[0.03] border border-white/5 p-3">
+                  <p className="font-bold text-xs leading-tight mb-1 truncate">{item.name}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-primary font-bold">{formatRupiahLocal(item.price)}</span>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${item.stock !== undefined && item.stock <= 3 ? "bg-red-500/20 text-red-400" : "bg-white/5 text-white/40"}`}>
+                      {item.stock !== undefined ? `Stok: ${item.stock}` : "∞"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         {/* ========== TABS ========== */}
         <div className="flex gap-2 bg-white/5 p-1.5 rounded-xl">
@@ -370,6 +422,8 @@ export default function KangDoMieDashboard() {
           </AnimatePresence>
         </div>
       </div>
+
+      <BottomNav />
     </div>
   );
 }
