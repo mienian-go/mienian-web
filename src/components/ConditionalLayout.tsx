@@ -7,12 +7,13 @@ import { Footer } from "@/components/Footer";
 export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdminPage = pathname.startsWith("/admin");
-
+  const isKangDoMiePage = pathname.startsWith("/kangdomie");
+  const hideLayout = isAdminPage || isKangDoMiePage;
   return (
     <>
-      {!isAdminPage && <Navbar />}
+      {!hideLayout && <Navbar />}
       <main className="min-h-screen">{children}</main>
-      {!isAdminPage && <Footer />}
+      {!hideLayout && <Footer />}
     </>
   );
 }
