@@ -163,7 +163,7 @@ export default function NearbyKangDoMieMap() {
           className="flex flex-col lg:flex-row gap-6"
         >
           {/* Map */}
-          <div className="flex-1 card overflow-hidden p-0 min-h-[400px] lg:min-h-[500px] relative">
+          <div className="flex-1 card overflow-hidden p-0 min-h-[400px] h-[400px] lg:min-h-[500px] lg:h-[500px] relative">
             {!isLoaded || !userLocation ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/50">
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />
