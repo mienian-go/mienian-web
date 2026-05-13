@@ -54,11 +54,7 @@ export default function CustomerDashboard() {
   useEffect(() => {
     // Admin users should be redirected to admin dashboard
     if (!authLoading && user && role) {
-      if (role === "affiliate") {
-        router.push("/affiliate/dashboard");
-      } else {
-        router.push("/admin");
-      }
+      router.push("/admin");
       return;
     }
 
