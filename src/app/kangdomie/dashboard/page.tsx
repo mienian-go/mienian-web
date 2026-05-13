@@ -75,13 +75,16 @@ export default function KangDoMieDashboard() {
       }
       setDriver(d);
       setIsOnline(d.isOnline);
-
-      // Fetch today's commission
-      const { start, end } = getDateRange("daily");
-      const commData = await getDriverCommissionForPeriod(user.uid, start, end);
-      setTodayCommission(commData.totalCommission);
-
       setLoading(false);
+
+      // Fetch today's commission in background (non-blocking)
+      try {
+        const { start, end } = getDateRange("daily");
+        const commData = await getDriverCommissionForPeriod(user.uid, start, end);
+        setTodayCommission(commData.totalCommission);
+      } catch (err) {
+        console.error("Failed to fetch commission:", err);
+      }
     });
     return () => unsub();
   }, [router]);
