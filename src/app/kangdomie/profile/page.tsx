@@ -41,22 +41,23 @@ export default function KangDoMieProfile() {
       if (!d || !d.isApproved) { router.push("/kangdomie/login"); return; }
 
       setDriver({ ...d, email: user.email || "" } as any);
-
-      // Fetch today's commission
-      const { start: todayStart, end: todayEnd } = getDateRange("daily");
-      const todayData = await getDriverCommissionForPeriod(user.uid, todayStart, todayEnd);
-      setTodayCommission(todayData.totalCommission);
-
-      // Monthly commission
-      const { start: monthStart, end: monthEnd } = getDateRange("monthly");
-      const monthData = await getDriverCommissionForPeriod(user.uid, monthStart, monthEnd);
-      setMonthlyCommission(monthData.totalCommission);
-
-      // Today attendance
-      const att = await getTodayAttendance(user.uid);
-      setTodayAttendance(att);
-
       setLoading(false);
+
+      // Fetch commission data in background (non-blocking)
+      try {
+        const { start: todayStart, end: todayEnd } = getDateRange("daily");
+        const todayData = await getDriverCommissionForPeriod(user.uid, todayStart, todayEnd);
+        setTodayCommission(todayData.totalCommission);
+
+        const { start: monthStart, end: monthEnd } = getDateRange("monthly");
+        const monthData = await getDriverCommissionForPeriod(user.uid, monthStart, monthEnd);
+        setMonthlyCommission(monthData.totalCommission);
+
+        const att = await getTodayAttendance(user.uid);
+        setTodayAttendance(att);
+      } catch (err) {
+        console.error("Failed to fetch profile data:", err);
+      }
     });
     return () => unsub();
   }, [router]);
@@ -190,6 +191,49 @@ export default function KangDoMieProfile() {
             ))}
           </div>
         </motion.div>
+
+        {/* Withdraw Button — only available near end of month (28-31) */}
+        {(() => {
+          const today = new Date().getDate();
+          const lastDay = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+          const canWithdraw = today >= 28 && today <= lastDay;
+          const totalComm = driver.totalCommission || 0;
+          return canWithdraw && totalComm > 0 ? (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+              <button
+                onClick={async () => {
+                  if (!confirm(`Withdraw komisi ${formatRupiah(totalComm)}? Request akan dikirim ke admin.`)) return;
+                  try {
+                    const { addDoc, collection, Timestamp: TS } = await import("firebase/firestore");
+                    await addDoc(collection(db, "kangdomie_withdrawals"), {
+                      driverId: driver.uid,
+                      driverName: driver.name,
+                      amount: totalComm,
+                      status: "pending",
+                      requestedAt: TS.now(),
+                    });
+                    alert("Request withdraw berhasil dikirim! Admin akan memproses dalam 1-3 hari kerja.");
+                  } catch (err) {
+                    console.error("Withdraw failed:", err);
+                    alert("Gagal mengirim request. Coba lagi nanti.");
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-r from-yellow-500/20 to-yellow-600/10 border border-yellow-500/30 text-yellow-400 font-bold text-sm hover:from-yellow-500/30 transition-all"
+              >
+                <DollarSign className="w-4 h-4" />
+                Withdraw Penghasilan — {formatRupiah(totalComm)}
+              </button>
+              <p className="text-[10px] text-white/30 text-center mt-1.5">Tersedia setiap tanggal 28-{lastDay}</p>
+            </motion.div>
+          ) : !canWithdraw ? (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+              <div className="w-full py-4 rounded-2xl bg-white/[0.02] border border-white/5 text-center">
+                <p className="text-xs text-white/30 font-bold">💰 Withdraw tersedia tanggal 28-{lastDay}</p>
+                <p className="text-[10px] text-white/20 mt-0.5">Saldo: {formatRupiah(totalComm)}</p>
+              </div>
+            </motion.div>
+          ) : null;
+        })()}
 
         {/* Logout */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>

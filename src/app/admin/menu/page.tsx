@@ -28,6 +28,7 @@ export default function MenuPage() {
     category: "mie",
     isActive: true,
     sortOrder: 0,
+    stock: 0,
     imageUrl: "",
     imagePath: "",
   });
@@ -58,6 +59,7 @@ export default function MenuPage() {
         category: item.category || "mie",
         isActive: item.isActive ?? true,
         sortOrder: item.sortOrder || 0,
+        stock: item.stock ?? 0,
         imageUrl: item.imageUrl || "",
         imagePath: item.imagePath || "",
       });
@@ -77,6 +79,7 @@ export default function MenuPage() {
         category: cat,
         isActive: true,
         sortOrder: nextSort,
+        stock: 0,
         imageUrl: "",
         imagePath: "",
       });
@@ -224,6 +227,7 @@ export default function MenuPage() {
                 <th className="px-6 py-4 font-semibold w-14">Foto</th>
                 <th className="px-6 py-4 font-semibold">Nama Item</th>
                 <th className="px-6 py-4 font-semibold">Harga</th>
+                <th className="px-6 py-4 font-semibold">Stok</th>
                 <th className="px-6 py-4 font-semibold">Kategori</th>
                 <th className="px-6 py-4 font-semibold text-center">Status</th>
                 <th className="px-6 py-4 font-semibold text-right">Aksi</th>
@@ -253,6 +257,11 @@ export default function MenuPage() {
                     {item.name}
                   </td>
                   <td className="px-6 py-4 font-medium text-primary">{formatRupiah(item.price)}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${item.stock !== undefined && item.stock <= 5 ? "bg-red-500/20 text-red-400" : "bg-white/5 text-foreground/70"}`}>
+                      {item.stock !== undefined ? item.stock : "∞"}
+                    </span>
+                  </td>
                   <td className="px-6 py-4">
                     <span className="px-2 py-1 rounded text-xs font-bold uppercase bg-white/5 text-foreground/70">
                       {item.category.replace("-", " ")}
@@ -291,7 +300,7 @@ export default function MenuPage() {
               ))}
               {filteredItems.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-foreground/50">
+                  <td colSpan={8} className="px-6 py-12 text-center text-foreground/50">
                     Tidak ada item di kategori ini.
                   </td>
                 </tr>
@@ -386,6 +395,19 @@ export default function MenuPage() {
               onChange={(e) => setFormData({...formData, sortOrder: Number(e.target.value)})}
               className="w-full px-4 py-2 bg-background border border-white/10 rounded-lg focus:border-primary focus:outline-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1 text-foreground/70">Stok KangDoMie</label>
+            <input
+              type="number"
+              min="0"
+              value={formData.stock}
+              onChange={(e) => setFormData({...formData, stock: Number(e.target.value)})}
+              className="w-full px-4 py-2 bg-background border border-white/10 rounded-lg focus:border-primary focus:outline-none"
+              placeholder="Jumlah stok tersedia"
+            />
+            <p className="text-[10px] text-foreground/40 mt-1">Stok akan berkurang otomatis saat ada pembelian online/POS</p>
           </div>
 
           <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/5">
