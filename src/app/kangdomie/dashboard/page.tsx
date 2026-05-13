@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { upsertKangDoMieLocation, subscribeToChatMessages, sendChatMessage, type ChatMessage } from "@/lib/firestoreGo";
+import { upsertKangDoMieLocation, deleteKangDoMieLocation, subscribeToChatMessages, sendChatMessage, type ChatMessage } from "@/lib/firestoreGo";
 import {
   getDriver,
   setDriverOnline,
@@ -136,19 +136,12 @@ export default function KangDoMieDashboard() {
       clearInterval(gpsIntervalRef.current);
       gpsIntervalRef.current = null;
     }
-    // Remove location from Firestore
+    // Delete location from Firestore completely
     if (driver) {
       try {
-        await upsertKangDoMieLocation(driver.uid, {
-          name: `KangDoMie — ${driver.name}`,
-          driverName: driver.name,
-          lat: 0,
-          lng: 0,
-          status: "offline",
-          lastUpdated: null,
-        });
+        await deleteKangDoMieLocation(driver.uid);
       } catch (err) {
-        console.error("Failed to set offline:", err);
+        console.error("Failed to delete location:", err);
       }
     }
   }, [driver]);
