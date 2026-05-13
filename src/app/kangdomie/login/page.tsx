@@ -7,6 +7,7 @@ import { auth } from "@/lib/firebase";
 import { getDriver, registerDriver } from "@/lib/firestoreDriver";
 import { useRouter } from "next/navigation";
 import { Loader2, Truck, Mail, Lock, User, Phone } from "lucide-react";
+import Image from "next/image";
 
 export default function KangDoMieLogin() {
   const router = useRouter();
@@ -78,8 +79,8 @@ export default function KangDoMieLogin() {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-gradient-to-br from-primary to-[#FF6B6B] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-primary/30">
-            <Truck className="w-10 h-10 text-white" />
+          <div className="w-28 h-28 mx-auto mb-4">
+            <Image src="/kangdomie-icon.png" alt="KangDoMie" width={112} height={112} className="w-full h-full object-contain drop-shadow-2xl" />
           </div>
           <h1 className="text-3xl font-extrabold text-white">KangDoMie</h1>
           <p className="text-white/50 text-sm mt-1">Driver App — Mienian GO</p>
