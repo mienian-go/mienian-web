@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Edit2, Trash2, Check, X as XIcon, RefreshCw, Loader2, Upload, ImageIcon } from "lucide-react";
+import { Plus, Edit2, Trash2, Check, X as XIcon, RefreshCw, Loader2, Upload, ImageIcon, Package, Minus } from "lucide-react";
 import { collection, query, orderBy, onSnapshot, doc, addDoc, updateDoc, deleteDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatRupiah } from "@/data/menu";
@@ -20,6 +20,7 @@ export default function MenuPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [refilling, setRefilling] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -173,6 +174,40 @@ export default function MenuPage() {
     }
   };
 
+  const DEFAULT_STOCK: Record<string, number> = {
+    "mie": 15,
+    "topping-reguler": 10,
+    "topping-premium": 5,
+    "topping-super": 5,
+  };
+
+  const handleRefillAll = async () => {
+    if (!confirm("Refill semua stok ke default?\n\n• Mie: 15/item\n• Topping Reguler: 10/item\n• Topping Premium: 5/item\n• Topping Super: 5/item")) return;
+    setRefilling(true);
+    try {
+      for (const item of menuItems) {
+        const defaultStock = DEFAULT_STOCK[item.category] ?? 10;
+        await updateDoc(doc(db, "menu_items", item.id), {
+          stock: defaultStock,
+          lastStockReset: Timestamp.now(),
+        });
+      }
+    } catch (err) {
+      console.error("Refill error:", err);
+      alert("Gagal refill stok.");
+    }
+    setRefilling(false);
+  };
+
+  const updateStock = async (id: string, newStock: number) => {
+    if (newStock < 0) return;
+    try {
+      await updateDoc(doc(db, "menu_items", id), { stock: newStock });
+    } catch (err) {
+      console.error("Stock update error:", err);
+    }
+  };
+
   // Filter items
   const filteredItems = selectedCategory === "all" 
     ? menuItems 
@@ -193,13 +228,23 @@ export default function MenuPage() {
           <h1 className="text-3xl font-extrabold tracking-tight">Katalog Menu GO</h1>
           <p className="text-foreground/50 mt-1">Kelola varian mie dan pilihan topping untuk Mienian GO.</p>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="btn btn-primary px-4 py-2 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Tambah Menu
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleRefillAll}
+            disabled={refilling}
+            className="px-4 py-2 flex items-center gap-2 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 font-bold text-sm transition-colors disabled:opacity-50"
+          >
+            {refilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />}
+            Refill Stok
+          </button>
+          <button
+            onClick={() => handleOpenModal()}
+            className="btn btn-primary px-4 py-2 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Tambah Menu
+          </button>
+        </div>
       </div>
 
       <div className="flex overflow-x-auto gap-2 pb-4 scrollbar-hide">
@@ -258,9 +303,23 @@ export default function MenuPage() {
                   </td>
                   <td className="px-6 py-4 font-medium text-primary">{formatRupiah(item.price)}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${item.stock !== undefined && item.stock <= 5 ? "bg-red-500/20 text-red-400" : "bg-white/5 text-foreground/70"}`}>
-                      {item.stock !== undefined ? item.stock : "∞"}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => updateStock(item.id, (item.stock || 0) - 1)}
+                        className="w-6 h-6 rounded bg-white/5 hover:bg-white/10 flex items-center justify-center text-foreground/50 hover:text-foreground transition-colors"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <span className={`px-2 py-1 rounded text-xs font-bold min-w-[32px] text-center ${item.stock !== undefined && item.stock <= 5 ? "bg-red-500/20 text-red-400" : "bg-white/5 text-foreground/70"}`}>
+                        {item.stock !== undefined ? item.stock : "∞"}
+                      </span>
+                      <button
+                        onClick={() => updateStock(item.id, (item.stock || 0) + 1)}
+                        className="w-6 h-6 rounded bg-white/5 hover:bg-white/10 flex items-center justify-center text-foreground/50 hover:text-foreground transition-colors"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className="px-2 py-1 rounded text-xs font-bold uppercase bg-white/5 text-foreground/70">
