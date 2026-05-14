@@ -182,16 +182,26 @@ export default function MenuPage() {
   };
 
   const handleRefillAll = async () => {
-    if (!confirm("Refill semua stok ke default?\n\n• Mie: 15/item\n• Topping Reguler: 10/item\n• Topping Premium: 5/item\n• Topping Super: 5/item")) return;
+    if (!confirm("Refill stok SEMUA KangDoMie ke default?\n\n• Mie: 15/item\n• Topping Reguler: 10/item\n• Topping Premium: 5/item\n• Topping Super: 5/item\n\nIni akan mereset inventory semua driver.")) return;
     setRefilling(true);
     try {
+      // Build inventory template from menu items
+      const inventory: Record<string, number> = {};
       for (const item of menuItems) {
-        const defaultStock = DEFAULT_STOCK[item.category] ?? 10;
-        await updateDoc(doc(db, "menu_items", item.id), {
-          stock: defaultStock,
-          lastStockReset: Timestamp.now(),
+        inventory[item.id] = DEFAULT_STOCK[item.category] ?? 10;
+      }
+
+      // Get all approved drivers and reset their inventory
+      const { getDocs: gd, query: q, collection: col, where: w } = await import("firebase/firestore");
+      const driversSnap = await gd(q(col(db, "kangdomie_drivers"), w("isApproved", "==", true)));
+      for (const d of driversSnap.docs) {
+        await updateDoc(doc(db, "kangdomie_drivers", d.id), {
+          inventory,
+          lastInventoryReset: Timestamp.now(),
+          updatedAt: Timestamp.now(),
         });
       }
+      alert(`Berhasil refill inventory ${driversSnap.docs.length} KangDoMie!`);
     } catch (err) {
       console.error("Refill error:", err);
       alert("Gagal refill stok.");

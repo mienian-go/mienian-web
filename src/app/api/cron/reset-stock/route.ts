@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { collection, getDocs, updateDoc, doc, query, Timestamp } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc, query, where, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 // Default stock values per category
@@ -18,24 +18,33 @@ export async function GET(request: Request) {
   }
 
   try {
-    const snap = await getDocs(query(collection(db, "menu_items")));
-    let updated = 0;
-
-    for (const d of snap.docs) {
+    // 1. Get all menu items to build inventory template
+    const menuSnap = await getDocs(query(collection(db, "menu_items")));
+    const inventory: Record<string, number> = {};
+    for (const d of menuSnap.docs) {
       const data = d.data();
       const category = data.category || "mie";
-      const defaultStock = DEFAULT_STOCK[category] ?? 10;
+      inventory[d.id] = DEFAULT_STOCK[category] ?? 10;
+    }
 
-      await updateDoc(doc(db, "menu_items", d.id), {
-        stock: defaultStock,
-        lastStockReset: Timestamp.now(),
+    // 2. Reset inventory for ALL approved drivers
+    const driversSnap = await getDocs(
+      query(collection(db, "kangdomie_drivers"), where("isApproved", "==", true))
+    );
+
+    let updated = 0;
+    for (const d of driversSnap.docs) {
+      await updateDoc(doc(db, "kangdomie_drivers", d.id), {
+        inventory,
+        lastInventoryReset: Timestamp.now(),
+        updatedAt: Timestamp.now(),
       });
       updated++;
     }
 
     return NextResponse.json({
       success: true,
-      message: `Reset ${updated} menu items stock`,
+      message: `Reset inventory for ${updated} drivers (${menuSnap.docs.length} items)`,
       timestamp: new Date().toISOString(),
     });
   } catch (err: any) {

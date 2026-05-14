@@ -223,14 +223,65 @@ export async function getMonthlyAttendance(driverId: string, year: number, month
 }
 
 // ============================================
-// MENU STOCK (for POS — synced with admin)
+// PER-DRIVER INVENTORY
 // ============================================
 
-/** Decrement menu item stock after sale */
-export async function decrementMenuStock(itemId: string, qty: number): Promise<void> {
-  await updateDoc(doc(db, "menu_items", itemId), {
-    stock: increment(-qty),
+/** Default stock per category (used for daily reset) */
+export const DEFAULT_STOCK: Record<string, number> = {
+  "mie": 15,
+  "topping-reguler": 10,
+  "topping-premium": 5,
+  "topping-super": 5,
+};
+
+/** Get driver's inventory (map of itemId -> stock) */
+export async function getDriverInventory(driverId: string): Promise<Record<string, number>> {
+  const snap = await getDoc(doc(db, "kangdomie_drivers", driverId));
+  if (snap.exists()) {
+    return snap.data().inventory || {};
+  }
+  return {};
+}
+
+/** Update a single item's stock for a driver */
+export async function updateDriverItemStock(driverId: string, itemId: string, stock: number): Promise<void> {
+  await updateDoc(doc(db, "kangdomie_drivers", driverId), {
+    [`inventory.${itemId}`]: stock,
+    updatedAt: Timestamp.now(),
   });
+}
+
+/** Decrement driver's item stock after sale */
+export async function decrementDriverStock(driverId: string, itemId: string, qty: number): Promise<void> {
+  await updateDoc(doc(db, "kangdomie_drivers", driverId), {
+    [`inventory.${itemId}`]: increment(-qty),
+    updatedAt: Timestamp.now(),
+  });
+}
+
+/** Refill a single driver's inventory to defaults based on menu categories */
+export async function refillDriverInventory(driverId: string, menuItems: { id: string; category: string }[]): Promise<void> {
+  const inventory: Record<string, number> = {};
+  for (const item of menuItems) {
+    inventory[item.id] = DEFAULT_STOCK[item.category] ?? 10;
+  }
+  await updateDoc(doc(db, "kangdomie_drivers", driverId), {
+    inventory,
+    lastInventoryReset: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+  });
+}
+
+/** Refill ALL approved drivers' inventory */
+export async function refillAllDriversInventory(menuItems: { id: string; category: string }[]): Promise<number> {
+  const q = query(collection(db, "kangdomie_drivers"), where("isApproved", "==", true));
+  const snap = await getDocs(q);
+  let count = 0;
+  for (const d of snap.docs) {
+    await refillDriverInventory(d.id, menuItems);
+    count++;
+  }
+  return count;
 }
 
 // ============================================

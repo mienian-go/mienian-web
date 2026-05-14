@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { collection, query, getDocs, doc, updateDoc, deleteDoc, orderBy, setDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getMonthlyAttendance, getDriverCommissionForPeriod, getDateRange, type Attendance } from "@/lib/firestoreDriverSales";
-import { Loader2, CheckCircle2, XCircle, Truck, MapPin, Phone, User, Trash2, Shield, Hash, Edit3, QrCode, Eye, Calendar, DollarSign, TrendingUp, Briefcase, Clock } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Truck, MapPin, Phone, User, Trash2, Shield, Hash, Edit3, QrCode, Eye, Calendar, DollarSign, TrendingUp, Briefcase, Clock, Package, Plus, Minus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
@@ -21,6 +21,7 @@ interface Driver {
   totalCommission?: number;
   workDays?: number;
   qrCode?: string;
+  inventory?: Record<string, number>;
 }
 
 function formatRupiah(num: number) {
@@ -37,6 +38,7 @@ export default function AdminKangDoMiePage() {
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [driverAttendance, setDriverAttendance] = useState<Attendance[]>([]);
   const [driverCommission, setDriverCommission] = useState({ totalSales: 0, totalCommission: 0, count: 0 });
+  const [menuItems, setMenuItems] = useState<any[]>([]);
 
   const fetchDrivers = async () => {
     try {
@@ -50,7 +52,19 @@ export default function AdminKangDoMiePage() {
     }
   };
 
-  useEffect(() => { fetchDrivers(); }, []);
+  const fetchMenuItems = async () => {
+    try {
+      const snap = await getDocs(query(collection(db, "menu_items"), orderBy("sortOrder", "asc")));
+      setMenuItems(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (err) {
+      console.error("Error fetching menu:", err);
+    }
+  };
+
+  useEffect(() => { 
+    fetchDrivers(); 
+    fetchMenuItems();
+  }, []);
 
   const toggleApproval = async (uid: string, currentStatus: boolean, gerobakId?: string) => {
     if (!currentStatus && !gerobakId) {
@@ -101,6 +115,43 @@ export default function AdminKangDoMiePage() {
     ]);
     setDriverAttendance(att);
     setDriverCommission(comm);
+  };
+
+  const updateDriverStock = async (driverId: string, itemId: string, currentStock: number, delta: number) => {
+    const newStock = Math.max(0, currentStock + delta);
+    setProcessing(`stock_${itemId}`);
+    try {
+      await updateDoc(doc(db, "kangdomie_drivers", driverId), {
+        [`inventory.${itemId}`]: newStock,
+        updatedAt: Timestamp.now()
+      });
+      // Update local state so UI refreshes immediately
+      setDrivers(prev => prev.map(d => {
+        if (d.uid === driverId) {
+          return {
+            ...d,
+            inventory: {
+              ...(d.inventory || {}),
+              [itemId]: newStock
+            }
+          };
+        }
+        return d;
+      }));
+      // Update selected driver state too
+      if (selectedDriver?.uid === driverId) {
+        setSelectedDriver(prev => prev ? {
+          ...prev,
+          inventory: {
+            ...(prev.inventory || {}),
+            [itemId]: newStock
+          }
+        } : prev);
+      }
+    } catch (err) {
+      console.error("Error updating stock:", err);
+    }
+    setProcessing(null);
   };
 
   const generateQRForDriver = async (driver: Driver) => {
@@ -324,6 +375,51 @@ export default function AdminKangDoMiePage() {
                           <p className="text-sm text-foreground/50">Komisi</p>
                           <p className="font-bold text-yellow-400">{formatRupiah(driverCommission.totalCommission)}</p>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Inventory Section */}
+                    <div className="mt-6 p-5 rounded-2xl bg-white/[0.02] border border-white/5">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-extrabold flex items-center gap-2">
+                          <Package className="w-4 h-4 text-primary" /> Inventory Gerobak
+                        </h3>
+                        <span className="text-xs bg-white/5 px-2 py-1 rounded text-foreground/50 font-bold">
+                          {menuItems.length} items
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                        {menuItems.map(item => {
+                          const stock = selectedDriver.inventory?.[item.id] ?? 0;
+                          return (
+                            <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                              <div>
+                                <p className="font-bold text-sm leading-tight">{item.name}</p>
+                                <p className="text-[10px] text-foreground/40 mt-0.5 uppercase tracking-wider">{item.category.replace("-", " ")}</p>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => updateDriverStock(selectedDriver.uid, item.id, stock, -1)}
+                                  disabled={processing === `stock_${item.id}`}
+                                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-foreground/50 transition-colors disabled:opacity-50"
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </button>
+                                <span className={`text-sm font-bold min-w-[24px] text-center ${stock <= 3 ? "text-red-400" : ""}`}>
+                                  {stock}
+                                </span>
+                                <button
+                                  onClick={() => updateDriverStock(selectedDriver.uid, item.id, stock, 1)}
+                                  disabled={processing === `stock_${item.id}`}
+                                  className="w-7 h-7 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 flex items-center justify-center transition-colors disabled:opacity-50"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 

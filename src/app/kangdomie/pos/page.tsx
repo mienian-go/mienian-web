@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getDriver, type KangDoMieDriver } from "@/lib/firestoreDriver";
-import { recordSale, calculateCommission, decrementMenuStock } from "@/lib/firestoreDriverSales";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { recordSale, calculateCommission, decrementDriverStock } from "@/lib/firestoreDriverSales";
+import { collection, query, orderBy, onSnapshot, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/kangdomie/BottomNav";
@@ -44,6 +44,7 @@ export default function KangDoMiePOS() {
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
+  const [driverInventory, setDriverInventory] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -56,7 +57,7 @@ export default function KangDoMiePOS() {
     return () => unsub();
   }, [router]);
 
-  // Subscribe to menu items (real-time for stock updates)
+  // Subscribe to menu items
   useEffect(() => {
     const q = query(collection(db, "menu_items"), orderBy("sortOrder", "asc"));
     const unsub = onSnapshot(q, (snap) => {
@@ -67,6 +68,17 @@ export default function KangDoMiePOS() {
     });
     return () => unsub();
   }, []);
+
+  // Subscribe to driver's inventory (real-time)
+  useEffect(() => {
+    if (!driver) return;
+    const unsub = onSnapshot(doc(db, "kangdomie_drivers", driver.uid), (snap) => {
+      if (snap.exists()) {
+        setDriverInventory(snap.data().inventory || {});
+      }
+    });
+    return () => unsub();
+  }, [driver?.uid]);
 
   const categories = [
     { id: "all", label: "Semua" },
@@ -80,8 +92,9 @@ export default function KangDoMiePOS() {
 
   const addToCart = (item: MenuItem) => {
     const existing = cart.find((c) => c.id === item.id);
+    const myStock = driverInventory[item.id];
     if (existing) {
-      if (item.stock !== undefined && existing.qty >= item.stock) return;
+      if (myStock !== undefined && existing.qty >= myStock) return;
       setCart(cart.map((c) => (c.id === item.id ? { ...c, qty: c.qty + 1 } : c)));
     } else {
       setCart([...cart, { ...item, qty: 1 }]);
@@ -94,7 +107,8 @@ export default function KangDoMiePOS() {
         .map((c) => {
           if (c.id !== id) return c;
           const newQty = c.qty + delta;
-          if (c.stock !== undefined && newQty > c.stock) return c;
+          const myStock = driverInventory[c.id];
+          if (myStock !== undefined && newQty > myStock) return c;
           return { ...c, qty: newQty };
         })
         .filter((c) => c.qty > 0)
@@ -118,11 +132,9 @@ export default function KangDoMiePOS() {
         saleType: "pos",
       });
 
-      // Decrement stock for each item
+      // Decrement driver's inventory for each item
       for (const item of cart) {
-        if (item.stock !== undefined) {
-          await decrementMenuStock(item.id, item.qty);
-        }
+        await decrementDriverStock(driver.uid, item.id, item.qty);
       }
 
       setCart([]);
@@ -190,7 +202,8 @@ export default function KangDoMiePOS() {
         <div className="grid grid-cols-2 gap-3">
           {filteredMenu.map((item) => {
             const inCart = cart.find((c) => c.id === item.id);
-            const outOfStock = item.stock !== undefined && item.stock <= 0;
+            const myStock = driverInventory[item.id];
+            const outOfStock = myStock !== undefined && myStock <= 0;
 
             return (
               <motion.button
@@ -214,9 +227,9 @@ export default function KangDoMiePOS() {
                 <p className="font-bold text-xs leading-tight mb-1">{item.name}</p>
                 <p className="text-primary font-extrabold text-sm">{formatRupiah(item.price)}</p>
 
-                {item.stock !== undefined && (
-                  <p className={`text-[9px] mt-1 font-bold ${item.stock <= 3 ? "text-red-400" : "text-white/30"}`}>
-                    Stok: {item.stock}
+                {myStock !== undefined && (
+                  <p className={`text-[9px] mt-1 font-bold ${myStock <= 3 ? "text-red-400" : "text-white/30"}`}>
+                    Stok: {myStock}
                   </p>
                 )}
 
