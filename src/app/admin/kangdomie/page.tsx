@@ -28,6 +28,13 @@ function formatRupiah(num: number) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
 }
 
+const DEFAULT_STOCK: Record<string, number> = {
+  "mie": 15,
+  "topping-reguler": 10,
+  "topping-premium": 5,
+  "topping-super": 5,
+};
+
 type TabType = "drivers" | "profiles" | "attendance";
 
 export default function AdminKangDoMiePage() {
@@ -160,12 +167,6 @@ export default function AdminKangDoMiePage() {
     if (!confirm("Reset stok driver ini ke default? (Mie: 15, Reguler: 10, Premium/Super: 5)")) return;
     setProcessing("reset_stock");
     try {
-      const DEFAULT_STOCK: Record<string, number> = {
-        "mie": 15,
-        "topping-reguler": 10,
-        "topping-premium": 5,
-        "topping-super": 5,
-      };
       const initialInventory: Record<string, number> = {};
       for (const item of menuItems) {
         initialInventory[item.id] = DEFAULT_STOCK[item.category] ?? 10;
@@ -189,12 +190,6 @@ export default function AdminKangDoMiePage() {
     if (!confirm("Refill stok SEMUA KangDoMie ke default?\n\nIni akan mereset inventory semua driver aktif.")) return;
     setProcessing("refill_all");
     try {
-      const DEFAULT_STOCK: Record<string, number> = {
-        "mie": 15,
-        "topping-reguler": 10,
-        "topping-premium": 5,
-        "topping-super": 5,
-      };
       const initialInventory: Record<string, number> = {};
       for (const item of menuItems) {
         initialInventory[item.id] = DEFAULT_STOCK[item.category] ?? 10;
@@ -500,6 +495,18 @@ export default function AdminKangDoMiePage() {
                                   className="w-7 h-7 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 flex items-center justify-center transition-colors disabled:opacity-50"
                                 >
                                   <Plus className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const defaultVal = DEFAULT_STOCK[item.category] ?? 10;
+                                    const diff = defaultVal - stock;
+                                    if (diff > 0) updateDriverStock(selectedDriver.uid, item.id, stock, diff);
+                                  }}
+                                  disabled={processing === `stock_${item.id}` || stock >= (DEFAULT_STOCK[item.category] ?? 10)}
+                                  className="ml-1 text-[10px] bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 px-2 py-1 rounded font-bold transition-colors disabled:opacity-30 disabled:hover:bg-emerald-500/10"
+                                  title="Refill item ini ke batas maksimal (default)"
+                                >
+                                  Refill
                                 </button>
                               </div>
                             </div>
