@@ -219,13 +219,24 @@ export default function KangDoMieDashboard() {
     }
   };
 
-  // Cleanup GPS on unmount
+  // Cleanup GPS on unmount and handle beforeunload
   useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Best effort to mark as offline when closing tab
+      if (driver) {
+        // Using fetch to trigger an endpoint would be better, but we don't have one right now.
+        // The Map UI will automatically filter out stale locations after 2 minutes anyway.
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
     return () => {
       if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
       if (gpsIntervalRef.current) clearInterval(gpsIntervalRef.current);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, []);
+  }, [driver]);
 
   // Auto-start GPS if driver was online
   useEffect(() => {

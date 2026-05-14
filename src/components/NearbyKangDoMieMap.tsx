@@ -55,6 +55,7 @@ export default function NearbyKangDoMieMap() {
   const [selectedDriverProfile, setSelectedDriverProfile] = useState<any | null>(null);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [nearbyKang, setNearbyKang] = useState<KangDoMieLocation[]>([]);
+  const [rawLocations, setRawLocations] = useState<KangDoMieLocation[]>([]);
   const mapRef = useRef<google.maps.Map | null>(null);
   const userLocRef = useRef<{ lat: number; lng: number } | null>(null);
   const { dispatch } = useGoCart();
@@ -87,19 +88,37 @@ export default function NearbyKangDoMieMap() {
   // Subscribe to Firestore KangDoMie locations (real-time)
   useEffect(() => {
     const unsubscribe = subscribeToKangDoMieLocations((locations) => {
-      // Filter by 1km radius if user location available
+      setRawLocations(locations);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Filter raw locations based on staleness and distance every 5 seconds
+  useEffect(() => {
+    const filterLocations = () => {
+      const now = Date.now();
+      // Only keep locations updated within the last 2 minutes (120,000 ms)
+      const activeLocations = rawLocations.filter((k) => {
+        if (!k.lastUpdated) return true;
+        const diff = now - k.lastUpdated.toMillis();
+        return diff <= 120000;
+      });
+
       const loc = userLocRef.current;
       if (loc) {
-        const filtered = locations.filter(
+        const filtered = activeLocations.filter(
           (k) => getDistanceKm(loc.lat, loc.lng, k.lat, k.lng) <= 1.0
         );
         setNearbyKang(filtered);
       } else {
-        setNearbyKang(locations);
+        setNearbyKang(activeLocations);
       }
-    });
-    return () => unsubscribe();
-  }, []);
+    };
+
+    filterLocations();
+    const interval = setInterval(filterLocations, 5000);
+    return () => clearInterval(interval);
+  }, [rawLocations]);
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
