@@ -112,12 +112,24 @@ export async function POST(req: NextRequest) {
         });
         console.log(`Order ${firestoreId} updated to status: ${orderStatus}`);
 
-        // Award loyalty points on successful payment
+        // On successful payment: auto-assign driver & award points
         if (transactionStatus === "SUCCESS") {
           try {
             const orderSnap = await getDoc(orderRef);
             if (orderSnap.exists()) {
               const orderData = orderSnap.data();
+
+              // Auto-assign selected KangDoMie driver for delivery orders
+              if (orderData.driverId && orderData.orderType === "delivery" && !orderData.assignedDriver) {
+                await updateDoc(orderRef, {
+                  assignedDriver: orderData.driverId,
+                  status: "preparing",
+                  updatedAt: Timestamp.now(),
+                });
+                console.log(`Auto-assigned driver ${orderData.driverId} to order ${firestoreId}`);
+              }
+
+              // Award loyalty points
               const userId = orderData.userId;
               const totalAmount = orderData.costs?.grandTotal || orderData.totalPrice || amount;
               if (userId) {
@@ -126,7 +138,7 @@ export async function POST(req: NextRequest) {
               }
             }
           } catch (pointsErr) {
-            console.error("Failed to award points:", pointsErr);
+            console.error("Failed to process post-payment:", pointsErr);
           }
         }
       } catch (dbErr) {

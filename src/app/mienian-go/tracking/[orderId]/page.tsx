@@ -269,7 +269,7 @@ export default function TrackingPage() {
         </div>
 
         {/* ========== DRIVER INFO ========== */}
-        {order.assignedDriver && (
+        {(order.driverName || order.assignedDriver) && (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
             <h3 className="font-bold text-sm text-white/60 uppercase tracking-wider mb-3">KangDoMie-mu</h3>
             <div className="flex items-center gap-3">
@@ -277,17 +277,35 @@ export default function TrackingPage() {
                 <Truck className="w-6 h-6 text-primary" />
               </div>
               <div className="flex-1">
-                <p className="font-bold text-sm">Driver Assigned</p>
-                <p className="text-xs text-white/40">Pesananmu sedang diproses</p>
+                <p className="font-bold text-sm">{order.driverName || "KangDoMie"}</p>
+                <p className="text-xs text-white/40">
+                  {order.status === "paid" && "Menunggu konfirmasi driver..."}
+                  {order.status === "preparing" && "Sedang menyiapkan pesananmu"}
+                  {order.status === "cooking" && "Mie lagi dimasak! 🔥"}
+                  {order.status === "delivering" && "Sedang jalan ke lokasimu 🛺"}
+                  {order.status === "delivered" && "Pesanan sudah diantar ✅"}
+                </p>
               </div>
-              <button
-                onClick={() => setChatOpen(true)}
-                className="px-4 py-2 rounded-xl bg-green-500/10 text-green-400 text-xs font-bold hover:bg-green-500/20 transition-colors flex items-center gap-1.5"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                Chat
-              </button>
+              {order.assignedDriver && order.status !== "delivered" && (
+                <button
+                  onClick={() => setChatOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-green-500/10 text-green-400 text-xs font-bold hover:bg-green-500/20 transition-colors flex items-center gap-1.5"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  Chat
+                </button>
+              )}
             </div>
+
+            {/* ETA Info */}
+            {order.status === "delivering" && order.address && (
+              <div className="mt-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                <p className="text-xs text-blue-300 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5" />
+                  KangDoMie sedang dalam perjalanan ke alamatmu
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
