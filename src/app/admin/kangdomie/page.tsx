@@ -78,6 +78,20 @@ export default function AdminKangDoMiePage() {
         updates.gerobakId = gerobakId;
         // Auto-generate QR code data on approval
         updates.qrCode = `MIENIAN-KANGDOMIE-${gerobakId}-${uid.slice(0, 8)}`;
+        
+        // Initialize default stock
+        const DEFAULT_STOCK: Record<string, number> = {
+          "mie": 15,
+          "topping-reguler": 10,
+          "topping-premium": 5,
+          "topping-super": 5,
+        };
+        const initialInventory: Record<string, number> = {};
+        for (const item of menuItems) {
+          initialInventory[item.id] = DEFAULT_STOCK[item.category] ?? 10;
+        }
+        updates.inventory = initialInventory;
+        updates.lastInventoryReset = Timestamp.now();
       }
       await updateDoc(doc(db, "kangdomie_drivers", uid), updates);
       setDrivers((prev) =>
@@ -86,6 +100,7 @@ export default function AdminKangDoMiePage() {
           isApproved: !currentStatus,
           gerobakId: gerobakId || d.gerobakId,
           qrCode: updates.qrCode || d.qrCode,
+          inventory: updates.inventory || d.inventory,
         } : d))
       );
     } catch (err) {
@@ -123,33 +138,84 @@ export default function AdminKangDoMiePage() {
     try {
       await updateDoc(doc(db, "kangdomie_drivers", driverId), {
         [`inventory.${itemId}`]: newStock,
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
       });
-      // Update local state so UI refreshes immediately
-      setDrivers(prev => prev.map(d => {
-        if (d.uid === driverId) {
-          return {
-            ...d,
-            inventory: {
-              ...(d.inventory || {}),
-              [itemId]: newStock
-            }
-          };
-        }
-        return d;
-      }));
-      // Update selected driver state too
-      if (selectedDriver?.uid === driverId) {
+      setDrivers(prev => prev.map(d => d.uid === driverId ? {
+        ...d,
+        inventory: { ...(d.inventory || {}), [itemId]: newStock }
+      } : d));
+      if (selectedDriver && selectedDriver.uid === driverId) {
         setSelectedDriver(prev => prev ? {
           ...prev,
-          inventory: {
-            ...(prev.inventory || {}),
-            [itemId]: newStock
-          }
-        } : prev);
+          inventory: { ...(prev.inventory || {}), [itemId]: newStock }
+        } : null);
       }
     } catch (err) {
-      console.error("Error updating stock:", err);
+      console.error("Stock update failed", err);
+    }
+    setProcessing(null);
+  };
+
+  const resetDriverStock = async (driverId: string) => {
+    if (!confirm("Reset stok driver ini ke default? (Mie: 15, Reguler: 10, Premium/Super: 5)")) return;
+    setProcessing("reset_stock");
+    try {
+      const DEFAULT_STOCK: Record<string, number> = {
+        "mie": 15,
+        "topping-reguler": 10,
+        "topping-premium": 5,
+        "topping-super": 5,
+      };
+      const initialInventory: Record<string, number> = {};
+      for (const item of menuItems) {
+        initialInventory[item.id] = DEFAULT_STOCK[item.category] ?? 10;
+      }
+      await updateDoc(doc(db, "kangdomie_drivers", driverId), {
+        inventory: initialInventory,
+        lastInventoryReset: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      });
+      setDrivers(prev => prev.map(d => d.uid === driverId ? { ...d, inventory: initialInventory } : d));
+      if (selectedDriver && selectedDriver.uid === driverId) {
+        setSelectedDriver(prev => prev ? { ...prev, inventory: initialInventory } : null);
+      }
+    } catch (err) {
+      console.error("Reset stock failed", err);
+    }
+    setProcessing(null);
+  };
+
+  const handleRefillAll = async () => {
+    if (!confirm("Refill stok SEMUA KangDoMie ke default?\n\nIni akan mereset inventory semua driver aktif.")) return;
+    setProcessing("refill_all");
+    try {
+      const DEFAULT_STOCK: Record<string, number> = {
+        "mie": 15,
+        "topping-reguler": 10,
+        "topping-premium": 5,
+        "topping-super": 5,
+      };
+      const initialInventory: Record<string, number> = {};
+      for (const item of menuItems) {
+        initialInventory[item.id] = DEFAULT_STOCK[item.category] ?? 10;
+      }
+      
+      const approvedDrivers = drivers.filter(d => d.isApproved);
+      for (const d of approvedDrivers) {
+        await updateDoc(doc(db, "kangdomie_drivers", d.uid), {
+          inventory: initialInventory,
+          lastInventoryReset: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        });
+      }
+      setDrivers(prev => prev.map(d => d.isApproved ? { ...d, inventory: initialInventory } : d));
+      if (selectedDriver?.isApproved) {
+        setSelectedDriver(prev => prev ? { ...prev, inventory: initialInventory } : null);
+      }
+      alert(`Berhasil refill inventory ${approvedDrivers.length} KangDoMie!`);
+    } catch (err) {
+      console.error("Refill error:", err);
+      alert("Gagal refill stok.");
     }
     setProcessing(null);
   };
@@ -192,13 +258,23 @@ export default function AdminKangDoMiePage() {
             Kelola driver, profil, statistik, dan absensi.
           </p>
         </div>
-        <div className="flex items-center gap-4 text-sm">
-          <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-400 font-bold">
-            {approved.length} Aktif
-          </span>
-          <span className="px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 font-bold">
-            {pending.length} Pending
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-sm">
+          <div className="flex gap-4">
+            <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-400 font-bold flex items-center justify-center">
+              {approved.length} Aktif
+            </span>
+            <span className="px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 font-bold flex items-center justify-center">
+              {pending.length} Pending
+            </span>
+          </div>
+          <button
+            onClick={handleRefillAll}
+            disabled={processing === "refill_all"}
+            className="px-4 py-2 flex items-center gap-2 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 font-bold text-sm transition-colors disabled:opacity-50"
+          >
+            {processing === "refill_all" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />}
+            Refill Semua Stok
+          </button>
         </div>
       </div>
 
@@ -384,9 +460,18 @@ export default function AdminKangDoMiePage() {
                         <h3 className="font-extrabold flex items-center gap-2">
                           <Package className="w-4 h-4 text-primary" /> Inventory Gerobak
                         </h3>
-                        <span className="text-xs bg-white/5 px-2 py-1 rounded text-foreground/50 font-bold">
-                          {menuItems.length} items
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => resetDriverStock(selectedDriver.uid)}
+                            disabled={processing === "reset_stock"}
+                            className="text-[10px] bg-primary/20 text-primary hover:bg-primary/30 px-3 py-1.5 rounded-lg font-bold transition-colors disabled:opacity-50"
+                          >
+                            Reset Default
+                          </button>
+                          <span className="text-xs bg-white/5 px-2 py-1 rounded text-foreground/50 font-bold">
+                            {menuItems.length} items
+                          </span>
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">

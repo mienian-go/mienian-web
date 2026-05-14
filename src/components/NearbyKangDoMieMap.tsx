@@ -5,6 +5,9 @@ import { GoogleMap, useLoadScript, MarkerF, CircleF, InfoWindowF } from "@react-
 import { motion } from "framer-motion";
 import { MapPin, Navigation, Loader2, AlertCircle, Bike } from "lucide-react";
 import { subscribeToKangDoMieLocations, type KangDoMieLocation } from "@/lib/firestoreGo";
+import { doc, getDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useGoCart } from "@/context/GoCartContext";
 
 const libraries: "places"[] = ["places"];
 
@@ -49,9 +52,12 @@ export default function NearbyKangDoMieMap() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<KangDoMieLocation | null>(null);
+  const [selectedDriverProfile, setSelectedDriverProfile] = useState<any | null>(null);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
   const [nearbyKang, setNearbyKang] = useState<KangDoMieLocation[]>([]);
   const mapRef = useRef<google.maps.Map | null>(null);
   const userLocRef = useRef<{ lat: number; lng: number } | null>(null);
+  const { dispatch } = useGoCart();
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyBgj6aPrkcd-B2lWsE0_AdA8PQpbO13R7c",
@@ -98,6 +104,34 @@ export default function NearbyKangDoMieMap() {
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
   }, []);
+
+  // Fetch menu items once
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const snap = await getDocs(query(collection(db, "menu_items"), orderBy("sortOrder", "asc")));
+        setMenuItems(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (e) {}
+    };
+    fetchMenu();
+  }, []);
+
+  // Fetch driver profile when selected
+  useEffect(() => {
+    if (!selectedMarker) {
+      setSelectedDriverProfile(null);
+      return;
+    }
+    const fetchProfile = async () => {
+      try {
+        const snap = await getDoc(doc(db, "kangdomie_drivers", selectedMarker.id));
+        if (snap.exists()) {
+          setSelectedDriverProfile(snap.data());
+        }
+      } catch(e) {}
+    };
+    fetchProfile();
+  }, [selectedMarker]);
 
   const availableCount = nearbyKang.filter((k) => k.status === "available").length;
 
@@ -201,17 +235,73 @@ export default function NearbyKangDoMieMap() {
                     position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
                     onCloseClick={() => setSelectedMarker(null)}
                   >
-                    <div className="p-1 min-w-[180px]">
-                      <p className="font-bold text-sm text-gray-900 mb-1">🛺 {selectedMarker.name}</p>
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-block w-2 h-2 rounded-full ${selectedMarker.status === "available" ? "bg-green-500" : "bg-gray-400"}`} />
-                        <span className="text-xs text-gray-600">
-                          {selectedMarker.status === "available" ? "Tersedia" : "Sedang Sibuk"}
+                    <div className="p-1 min-w-[200px] text-gray-900">
+                      <p className="font-bold text-sm mb-1">🛺 {selectedMarker.name}</p>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`inline-block w-2 h-2 rounded-full ${selectedMarker.status === "available" && !selectedDriverProfile?.isCooking ? "bg-green-500" : "bg-orange-500"}`} />
+                        <span className="text-xs font-semibold">
+                          {selectedMarker.status === "available" && !selectedDriverProfile?.isCooking ? "Tersedia" : "Sedang Melayani Pembeli"}
                         </span>
                       </div>
-                      {selectedMarker.status === "available" && selectedMarker.eta && (
-                        <p className="text-xs text-gray-500 mt-1">⏱️ Estimasi: <strong>{selectedMarker.eta}</strong></p>
+
+                      {selectedDriverProfile?.isCooking && selectedDriverProfile?.cookingUntil && (
+                        <div className="bg-orange-50 rounded p-2 mb-2 border border-orange-200">
+                          <p className="text-[10px] text-orange-800 font-medium">Driver sedang melayani pesanan di tempat. Jika Anda memanggil sekarang, driver akan jalan setelah selesai memasak.</p>
+                          {(() => {
+                            const end = selectedDriverProfile.cookingUntil.toMillis();
+                            const diffMin = Math.max(0, Math.ceil((end - Date.now()) / 60000));
+                            if (diffMin > 0) {
+                              const travelMin = selectedMarker.eta ? parseInt(selectedMarker.eta) || 0 : 0;
+                              const totalEta = diffMin + travelMin;
+                              return (
+                                <div className="mt-1 space-y-0.5">
+                                  <p className="text-[10px] text-orange-600 font-semibold">Selesai masak: ~{diffMin} menit</p>
+                                  {travelMin > 0 && (
+                                    <p className="text-xs font-bold text-orange-700">Total Estimasi Tiba: ~{totalEta} menit</p>
+                                  )}
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
                       )}
+
+                      {selectedMarker.status === "available" && !selectedDriverProfile?.isCooking && selectedMarker.eta && (
+                        <p className="text-xs text-gray-500 mt-1 mb-2">⏱️ Estimasi Tiba: <strong>{selectedMarker.eta}</strong></p>
+                      )}
+
+                      {/* Stok Inventory */}
+                      {selectedDriverProfile?.inventory && menuItems.length > 0 && (
+                        <div className="mt-2 border-t border-gray-200 pt-2">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Stok Tersedia</p>
+                          <div className="grid grid-cols-2 gap-1 max-h-[100px] overflow-y-auto pr-1">
+                            {menuItems.map(item => {
+                              const stock = selectedDriverProfile.inventory?.[item.id] ?? 0;
+                              if (stock <= 0) return null;
+                              return (
+                                <div key={item.id} className="flex justify-between items-center bg-gray-50 px-1.5 py-1 rounded">
+                                  <span className="text-[10px] truncate max-w-[60px]">{item.name}</span>
+                                  <span className="text-[10px] font-bold">{stock}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          dispatch({ 
+                            type: "SET_DELIVERY_DETAILS", 
+                            payload: { driverId: selectedMarker.id, driverName: selectedMarker.name } 
+                          });
+                          document.getElementById("menu-go")?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="w-full mt-3 py-1.5 bg-primary text-white text-[11px] font-bold rounded-lg hover:bg-primary/90 transition-colors"
+                      >
+                        Pilih KangDoMie Ini
+                      </button>
                     </div>
                   </InfoWindowF>
                 )}

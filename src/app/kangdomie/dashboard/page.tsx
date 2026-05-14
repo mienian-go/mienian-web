@@ -58,6 +58,29 @@ export default function KangDoMieDashboard() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [todayCommission, setTodayCommission] = useState(0);
   const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+
+  // Timer for cooking
+  useEffect(() => {
+    if (!driver?.isCooking || !driver?.cookingUntil) {
+      setTimeRemaining(null);
+      return;
+    }
+    const interval = setInterval(async () => {
+      const now = Date.now();
+      const end = driver.cookingUntil.toMillis();
+      const diff = Math.max(0, Math.floor((end - now) / 1000));
+      setTimeRemaining(diff);
+      if (diff === 0) {
+        clearInterval(interval);
+        try {
+          const { doc, updateDoc } = await import("firebase/firestore");
+          await updateDoc(doc(db, "kangdomie_drivers", driver.uid), { isCooking: false });
+        } catch(e) { console.error(e) }
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [driver?.isCooking, driver?.cookingUntil]);
   const gpsIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const watchIdRef = useRef<number | null>(null);
 
@@ -321,6 +344,28 @@ export default function KangDoMieDashboard() {
             </button>
           </div>
         </motion.div>
+
+        {/* ========== COOKING TIMER ========== */}
+        {driver?.isCooking && timeRemaining !== null && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="rounded-2xl bg-orange-500/10 border border-orange-500/30 p-5 text-center relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-orange-500/5 animate-pulse" />
+            <h3 className="text-orange-400 font-extrabold flex items-center justify-center gap-2 mb-1">
+              <Flame className="w-5 h-5 animate-bounce" /> Sedang Memasak
+            </h3>
+            <p className="text-xs text-orange-400/70 mb-3">Mohon selesaikan pesanan di tempat</p>
+            <div className="text-4xl font-mono font-bold text-white tracking-widest drop-shadow-md">
+              {Math.floor(timeRemaining / 60).toString().padStart(2, "0")}:
+              {(timeRemaining % 60).toString().padStart(2, "0")}
+            </div>
+            {timeRemaining === 0 && (
+              <p className="text-xs text-green-400 font-bold mt-2">Waktu memasak selesai!</p>
+            )}
+          </motion.div>
+        )}
 
         {/* ========== STATS ========== */}
         <div className="grid grid-cols-3 gap-3">

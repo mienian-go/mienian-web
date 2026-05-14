@@ -5,7 +5,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getDriver, type KangDoMieDriver } from "@/lib/firestoreDriver";
 import { recordSale, calculateCommission, decrementDriverStock } from "@/lib/firestoreDriverSales";
-import { collection, query, orderBy, onSnapshot, doc } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/kangdomie/BottomNav";
@@ -135,6 +135,24 @@ export default function KangDoMiePOS() {
       // Decrement driver's inventory for each item
       for (const item of cart) {
         await decrementDriverStock(driver.uid, item.id, item.qty);
+      }
+
+      // Calculate cooking time (only count "mie" category for portions)
+      const miePortions = cart.filter(c => c.category === "mie").reduce((sum, c) => sum + c.qty, 0);
+      
+      if (miePortions > 0) {
+        // 1-4 portions = 4 min, 5-8 = 8 min, etc.
+        const cookingMinutes = Math.ceil(miePortions / 4) * 4;
+        // Start countdown 30 seconds after payment
+        const delayMs = 30000;
+        const cookingMs = cookingMinutes * 60000;
+        const cookingUntil = Timestamp.fromMillis(Date.now() + delayMs + cookingMs);
+
+        await updateDoc(doc(db, "kangdomie_drivers", driver.uid), {
+          isCooking: true,
+          cookingUntil,
+          updatedAt: Timestamp.now(),
+        });
       }
 
       setCart([]);

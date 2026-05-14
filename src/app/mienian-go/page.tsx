@@ -212,9 +212,16 @@ export default function MienianGO() {
             <h2 className="text-3xl sm:text-5xl font-extrabold mb-4">
               Menu <span className="gradient-text">Andalan</span>
             </h2>
-            <p className="text-foreground/60 text-lg max-w-xl mx-auto">
-              Semua varian mie cuma {formatRupiah(8500)} — topping mulai dari {formatRupiah(3500)}. Affordable tapi premium!
-            </p>
+            {state.driverName ? (
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm font-medium mb-4 text-primary">
+                <Bike className="w-4 h-4" />
+                <span>Memesan dari KangDoMie: <strong>{state.driverName}</strong></span>
+              </div>
+            ) : (
+              <p className="text-foreground/60 text-lg max-w-xl mx-auto">
+                Semua varian mie cuma {formatRupiah(8500)} — topping mulai dari {formatRupiah(3500)}. Affordable tapi premium!
+              </p>
+            )}
           </motion.div>
 
           {isLoadingMenu ? (

@@ -25,6 +25,8 @@ export interface KangDoMieDriver {
   gerobakId: string;
   isOnline: boolean;
   isApproved: boolean;
+  isCooking?: boolean;
+  cookingUntil?: any;
   createdAt: any;
   updatedAt: any;
 }

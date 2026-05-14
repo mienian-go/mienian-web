@@ -209,15 +209,6 @@ export default function MenuPage() {
     setRefilling(false);
   };
 
-  const updateStock = async (id: string, newStock: number) => {
-    if (newStock < 0) return;
-    try {
-      await updateDoc(doc(db, "menu_items", id), { stock: newStock });
-    } catch (err) {
-      console.error("Stock update error:", err);
-    }
-  };
-
   // Filter items
   const filteredItems = selectedCategory === "all" 
     ? menuItems 
@@ -282,7 +273,6 @@ export default function MenuPage() {
                 <th className="px-6 py-4 font-semibold w-14">Foto</th>
                 <th className="px-6 py-4 font-semibold">Nama Item</th>
                 <th className="px-6 py-4 font-semibold">Harga</th>
-                <th className="px-6 py-4 font-semibold">Stok</th>
                 <th className="px-6 py-4 font-semibold">Kategori</th>
                 <th className="px-6 py-4 font-semibold text-center">Status</th>
                 <th className="px-6 py-4 font-semibold text-right">Aksi</th>
@@ -312,25 +302,6 @@ export default function MenuPage() {
                     {item.name}
                   </td>
                   <td className="px-6 py-4 font-medium text-primary">{formatRupiah(item.price)}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => updateStock(item.id, (item.stock || 0) - 1)}
-                        className="w-6 h-6 rounded bg-white/5 hover:bg-white/10 flex items-center justify-center text-foreground/50 hover:text-foreground transition-colors"
-                      >
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <span className={`px-2 py-1 rounded text-xs font-bold min-w-[32px] text-center ${item.stock !== undefined && item.stock <= 5 ? "bg-red-500/20 text-red-400" : "bg-white/5 text-foreground/70"}`}>
-                        {item.stock !== undefined ? item.stock : "∞"}
-                      </span>
-                      <button
-                        onClick={() => updateStock(item.id, (item.stock || 0) + 1)}
-                        className="w-6 h-6 rounded bg-white/5 hover:bg-white/10 flex items-center justify-center text-foreground/50 hover:text-foreground transition-colors"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </td>
                   <td className="px-6 py-4">
                     <span className="px-2 py-1 rounded text-xs font-bold uppercase bg-white/5 text-foreground/70">
                       {item.category.replace("-", " ")}

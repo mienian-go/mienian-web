@@ -133,6 +133,8 @@ export default function CheckoutPage() {
         city: city,
         address: isPickup ? `Pickup — ${city}` : state.address,
         distanceKm: isPickup ? 0 : state.distanceKm,
+        driverId: state.driverId || null,
+        driverName: state.driverName || null,
         items: state.items,
         costs: {
           subtotal: totalPrice,
@@ -189,26 +191,41 @@ export default function CheckoutPage() {
           {/* LEFT COLUMN: FORM */}
           <div className="flex-1 space-y-6">
             {/* Order Type Toggle */}
-            <div className="card p-2 flex gap-2">
+            <div className="flex gap-4">
               <button
+                type="button"
                 onClick={() => dispatch({ type: "SET_DELIVERY_DETAILS", payload: { orderMode: "delivery" } })}
-                className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all ${
-                  !isPickup ? "bg-primary text-white shadow-lg shadow-primary/30" : "text-foreground/50 hover:bg-muted"
+                className={`flex-1 p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${
+                  !isPickup ? "border-primary bg-primary/10 text-primary" : "border-white/10 hover:bg-white/5"
                 }`}
               >
-                <Bike className="w-4 h-4" />
-                🏍️ Delivery
+                <Rocket className="w-6 h-6" />
+                <span className="font-bold text-sm">Delivery Cepat</span>
               </button>
               <button
+                type="button"
                 onClick={() => dispatch({ type: "SET_DELIVERY_DETAILS", payload: { orderMode: "pickup" } })}
-                className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all ${
-                  isPickup ? "bg-secondary text-white shadow-lg shadow-secondary/30" : "text-foreground/50 hover:bg-muted"
+                className={`flex-1 p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${
+                  isPickup ? "border-primary bg-primary/10 text-primary" : "border-white/10 hover:bg-white/5"
                 }`}
               >
-                <Package className="w-4 h-4" />
-                🛺 Self-Pickup
+                <Package className="w-6 h-6" />
+                <span className="font-bold text-sm">Self Pickup</span>
               </button>
             </div>
+
+            {!isPickup && (
+              <div className="mt-6 p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                <p className="text-sm font-bold text-orange-500 mb-1 flex items-center gap-2">
+                  <Bike className="w-4 h-4" /> Driver KangDoMie
+                </p>
+                {state.driverName ? (
+                  <p className="text-xs text-foreground/70">Memanggil: <strong className="text-foreground">{state.driverName}</strong></p>
+                ) : (
+                  <p className="text-xs text-orange-400">Anda belum memilih KangDoMie. Silakan kembali ke peta dan pilih KangDoMie terdekat.</p>
+                )}
+              </div>
+            )}
 
             <div className="card p-6 sm:p-8">
               <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -386,8 +403,8 @@ export default function CheckoutPage() {
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={handleCheckout}
-                  disabled={isSubmitting || (!isPickup && state.distanceKm === 0)}
-                  className="btn btn-primary w-full py-4 text-lg"
+                  disabled={isSubmitting || isCalculating || (!isPickup && !state.distanceKm) || (!isPickup && !state.driverId)}
+                  className="w-full py-4 bg-primary text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-primary/90 transition-all disabled:opacity-50 mt-8"
                 >
                   {isSubmitting ? (
                     <span className="flex items-center justify-center gap-2">

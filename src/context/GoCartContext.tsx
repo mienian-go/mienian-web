@@ -20,6 +20,8 @@ export interface GoCartState {
   lat: number | null;
   lng: number | null;
   orderMode: "delivery" | "pickup";
+  driverId?: string;
+  driverName?: string;
 }
 
 type GoCartAction =
@@ -39,6 +41,8 @@ const initialState: GoCartState = {
   lat: null,
   lng: null,
   orderMode: "delivery",
+  driverId: undefined,
+  driverName: undefined,
 };
 
 function goCartReducer(state: GoCartState, action: GoCartAction): GoCartState {
