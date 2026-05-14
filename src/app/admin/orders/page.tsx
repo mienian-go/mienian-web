@@ -244,6 +244,14 @@ export default function OrdersPage() {
                         : selectedOrder.event?.venue}
                     </p>
                   </div>
+                  {selectedOrder.source === 'mienian_go' && selectedOrder.driverName && (
+                    <div className="col-span-2">
+                      <span className="block text-foreground/40 text-[10px] uppercase font-bold mb-0.5">KangDoMie Driver</span>
+                      <p className="bg-primary/10 text-primary p-2 rounded text-xs border border-primary/20 font-bold">
+                        🛺 {selectedOrder.driverName}
+                      </p>
+                    </div>
+                  )}
                   {selectedOrder.event?.notes && (
                     <div className="col-span-2">
                       <span className="block text-foreground/40 text-[10px] uppercase font-bold mb-0.5">Notes</span>
