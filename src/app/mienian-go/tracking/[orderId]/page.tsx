@@ -36,6 +36,7 @@ export default function TrackingPage() {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [cookingSecondsLeft, setCookingSecondsLeft] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Auth
@@ -55,6 +56,36 @@ export default function TrackingPage() {
     });
     return () => unsub();
   }, [orderId]);
+
+  // Subscribe to driver cooking state
+  useEffect(() => {
+    if (!order?.assignedDriver) return;
+    const unsub = onSnapshot(doc(db, "kangdomie_drivers", order.assignedDriver), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.isCooking && data.cookingUntil) {
+          const diffSec = Math.max(0, Math.ceil((data.cookingUntil.toMillis() - Date.now()) / 1000));
+          setCookingSecondsLeft(diffSec > 0 ? diffSec : null);
+        } else {
+          setCookingSecondsLeft(null);
+        }
+      }
+    });
+    return () => unsub();
+  }, [order?.assignedDriver]);
+
+  // Countdown interval
+  useEffect(() => {
+    if (cookingSecondsLeft === null) return;
+    if (cookingSecondsLeft <= 0) { setCookingSecondsLeft(null); return; }
+    const timer = setInterval(() => {
+      setCookingSecondsLeft(prev => {
+        if (prev === null || prev <= 1) { clearInterval(timer); return null; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cookingSecondsLeft]);
 
   // Subscribe to chat
   useEffect(() => {
@@ -175,6 +206,23 @@ export default function TrackingPage() {
               <h2 className="text-2xl font-extrabold mb-2">Menunggu Pembayaran ⏳</h2>
               <p className="text-white/40 text-sm">Segera selesaikan pembayaran untuk memproses pesanan</p>
             </div>
+          )}
+
+          {/* Cooking countdown */}
+          {cookingSecondsLeft !== null && cookingSecondsLeft > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-orange-500/15 border border-orange-500/30"
+            >
+              <Flame className="w-4 h-4 text-orange-400 animate-pulse" />
+              <span className="text-orange-300 text-sm font-bold">
+                Masak selesai dalam{" "}
+                <span className="text-orange-400 font-extrabold tabular-nums">
+                  {Math.floor(cookingSecondsLeft / 60)}:{String(cookingSecondsLeft % 60).padStart(2, "0")}
+                </span>
+              </span>
+            </motion.div>
           )}
         </motion.div>
 
