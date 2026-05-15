@@ -530,7 +530,9 @@ export default function CustomerDashboard() {
                         </div>
                         <div className="flex items-center justify-end">
                            <Link 
-                            href={`/payment/${order.id}`}
+                            href={(order.source === 'mienian_go' || order.orderId?.startsWith('GO') || order.id?.startsWith('GO')) 
+                              ? `/mienian-go/tracking/${order.id}` 
+                              : `/payment/${order.id}`}
                             className="flex items-center gap-1.5 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-xs font-bold hover:bg-primary hover:text-white hover:border-transparent transition-all group/btn"
                            >
                             Detail <ChevronRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
