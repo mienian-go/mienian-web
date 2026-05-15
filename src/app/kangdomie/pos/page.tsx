@@ -215,57 +215,77 @@ export default function KangDoMiePOS() {
         </div>
       </header>
 
-      {/* Menu Grid */}
-      <div className="max-w-2xl mx-auto px-4 py-4">
-        <div className="grid grid-cols-2 gap-3">
-          {filteredMenu.map((item) => {
-            const inCart = cart.find((c) => c.id === item.id);
-            const myStock = driverInventory[item.id];
-            const outOfStock = myStock !== undefined && myStock <= 0;
-
+      {/* Menu Grid - Grouped by Category */}
+      <div className="max-w-2xl mx-auto px-4 py-4 space-y-6">
+        {[
+          { id: "mie", label: "🍜 Mie", emoji: "🍜" },
+          { id: "topping-reguler", label: "🥚 Topping Reguler", emoji: "🥚" },
+          { id: "topping-premium", label: "🥩 Topping Premium", emoji: "🥩" },
+          { id: "topping-super", label: "⭐ Topping Super", emoji: "⭐" },
+        ]
+          .filter((cat) => {
+            const items = filteredMenu.filter((m) => m.category === cat.id);
+            return items.length > 0;
+          })
+          .map((cat) => {
+            const items = filteredMenu.filter((m) => m.category === cat.id);
             return (
-              <motion.button
-                key={item.id}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => !outOfStock && addToCart(item)}
-                disabled={outOfStock}
-                className={`relative text-left rounded-2xl border p-3 transition-all ${
-                  inCart
-                    ? "border-primary/40 bg-primary/5"
-                    : outOfStock
-                    ? "border-white/5 bg-white/[0.02] opacity-50"
-                    : "border-white/5 bg-white/[0.03] hover:border-white/10"
-                }`}
-              >
-                {item.imageUrl && (
-                  <div className="w-full aspect-square rounded-xl overflow-hidden mb-2 bg-white/5">
-                    <Image src={item.imageUrl} alt={item.name} width={200} height={200} className="w-full h-full object-cover" />
-                  </div>
-                )}
-                <p className="font-bold text-xs leading-tight mb-1">{item.name}</p>
-                <p className="text-primary font-extrabold text-sm">{formatRupiah(item.price)}</p>
+              <div key={cat.id}>
+                <h3 className="text-sm font-extrabold text-white/60 uppercase tracking-wider mb-3 px-1">
+                  {cat.label}
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {items.map((item) => {
+                    const inCart = cart.find((c) => c.id === item.id);
+                    const myStock = driverInventory[item.id];
+                    const outOfStock = myStock !== undefined && myStock <= 0;
 
-                {myStock !== undefined && (
-                  <p className={`text-[9px] mt-1 font-bold ${myStock <= 3 ? "text-red-400" : "text-white/30"}`}>
-                    Stok: {myStock}
-                  </p>
-                )}
+                    return (
+                      <motion.button
+                        key={item.id}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => !outOfStock && addToCart(item)}
+                        disabled={outOfStock}
+                        className={`relative text-left rounded-2xl border p-3 transition-all ${
+                          inCart
+                            ? "border-primary/40 bg-primary/5"
+                            : outOfStock
+                            ? "border-white/5 bg-white/[0.02] opacity-50"
+                            : "border-white/5 bg-white/[0.03] hover:border-white/10"
+                        }`}
+                      >
+                        {item.imageUrl && (
+                          <div className="w-full aspect-square rounded-xl overflow-hidden mb-2 bg-white/5">
+                            <Image src={item.imageUrl} alt={item.name} width={200} height={200} className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <p className="font-bold text-xs leading-tight mb-1">{item.name}</p>
+                        <p className="text-primary font-extrabold text-sm">{formatRupiah(item.price)}</p>
 
-                {inCart && (
-                  <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center">
-                    {inCart.qty}
-                  </div>
-                )}
+                        {myStock !== undefined && (
+                          <p className={`text-[9px] mt-1 font-bold ${myStock <= 3 ? "text-red-400" : "text-white/30"}`}>
+                            Stok: {myStock}
+                          </p>
+                        )}
 
-                {outOfStock && (
-                  <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50">
-                    <span className="text-xs font-bold text-red-400">Habis</span>
-                  </div>
-                )}
-              </motion.button>
+                        {inCart && (
+                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center">
+                            {inCart.qty}
+                          </div>
+                        )}
+
+                        {outOfStock && (
+                          <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50">
+                            <span className="text-xs font-bold text-red-400">Habis</span>
+                          </div>
+                        )}
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
-        </div>
       </div>
 
       {/* Floating total bar */}

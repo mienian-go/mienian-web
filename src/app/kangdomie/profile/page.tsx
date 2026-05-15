@@ -212,7 +212,7 @@ export default function KangDoMieProfile() {
                       status: "pending",
                       requestedAt: TS.now(),
                     });
-                    alert("Request withdraw berhasil dikirim! Admin akan memproses dalam 1-3 hari kerja.");
+                    alert("Request withdraw berhasil dikirim! Admin akan memproses dalam 1x24 jam.");
                   } catch (err) {
                     console.error("Withdraw failed:", err);
                     alert("Gagal mengirim request. Coba lagi nanti.");
@@ -234,6 +234,33 @@ export default function KangDoMieProfile() {
             </motion.div>
           ) : null;
         })()}
+
+        {/* Withdraw Info Box */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.17 }}>
+          <div className="rounded-2xl bg-blue-500/5 border border-blue-500/15 p-4 space-y-2">
+            <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+              ℹ️ Ketentuan Penarikan
+            </h4>
+            <ul className="text-[11px] text-white/50 space-y-1.5 leading-relaxed">
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-0.5">•</span>
+                <span>Maksimal proses penarikan <strong className="text-white/70">1 x 24 jam</strong> setelah request dikirim.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-0.5">•</span>
+                <span>Penarikan hanya tersedia <strong className="text-white/70">tanggal 28 s/d akhir bulan</strong>.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-0.5">•</span>
+                <span>Transfer akan dikirim ke rekening yang terdaftar di sistem.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-0.5">•</span>
+                <span>Hubungi admin jika ada kendala penarikan.</span>
+              </li>
+            </ul>
+          </div>
+        </motion.div>
 
         {/* Logout */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
