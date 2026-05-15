@@ -113,12 +113,12 @@ export default function KangDoMieProfile() {
         <div className="relative pt-12 pb-8 px-6 text-center">
           {/* Avatar */}
           <div className="relative w-24 h-24 mx-auto mb-4">
-            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-primary/30 bg-white/5">
+            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-primary/30 bg-gradient-to-br from-primary/30 to-secondary/20">
               {(driver as any).photoURL ? (
                 <Image src={(driver as any).photoURL} alt={driver.name} width={96} height={96} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white/30">
-                  {driver.name.charAt(0)}
+                <div className="w-full h-full flex items-center justify-center text-3xl font-extrabold text-white/70 bg-gradient-to-br from-primary/40 to-secondary/30">
+                  {driver.name.charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
@@ -149,7 +149,7 @@ export default function KangDoMieProfile() {
         {/* Info Cards (read-only) */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
           <h3 className="text-xs font-bold text-white/30 uppercase tracking-widest px-1">Informasi Akun</h3>
-          <div className="card bg-white/[0.03] border border-white/5 rounded-2xl divide-y divide-white/5">
+          <div className="rounded-2xl bg-white/[0.03] border border-white/5 divide-y divide-white/5 overflow-hidden">
             <div className="flex items-center gap-3 p-4">
               <Mail className="w-4 h-4 text-white/30" />
               <div className="flex-1">
@@ -181,7 +181,7 @@ export default function KangDoMieProfile() {
           <h3 className="text-xs font-bold text-white/30 uppercase tracking-widest px-1">Statistik</h3>
           <div className="grid grid-cols-2 gap-3">
             {stats.map((stat, i) => (
-              <div key={i} className={`card bg-white/[0.03] border border-white/5 rounded-2xl p-4 ${i === 0 ? "col-span-2" : ""}`}>
+              <div key={i} className={`bg-white/[0.03] border border-white/5 rounded-2xl p-4 ${i === 0 ? "col-span-2" : ""}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <stat.icon className={`w-4 h-4 ${stat.color}`} />
                   <span className="text-[10px] text-white/40 font-bold uppercase">{stat.label}</span>
