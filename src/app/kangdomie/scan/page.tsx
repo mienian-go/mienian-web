@@ -20,6 +20,7 @@ export default function KangDoMieScan() {
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const [todayAtt, setTodayAtt] = useState<Attendance | null>(null);
+  const [durationMs, setDurationMs] = useState(0);
   const scannerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -89,8 +90,12 @@ export default function KangDoMieScan() {
         const att = await getTodayAttendance(driver.uid);
         setTodayAtt(att);
       }
-    } else {
-      // Check out
+    }
+  };
+
+  const handleCheckOut = async () => {
+    if (!driver) return;
+    if (confirm("Yakin ingin Check-out sekarang?")) {
       const res = await checkOut(driver.uid);
       setResult(res);
       if (res.success) {
@@ -108,6 +113,16 @@ export default function KangDoMieScan() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (todayAtt?.status === "checked_in" && todayAtt?.checkInTime) {
+      const inMs = todayAtt.checkInTime.toMillis ? todayAtt.checkInTime.toMillis() : new Date(todayAtt.checkInTime).getTime();
+      const update = () => setDurationMs(Date.now() - inMs);
+      update();
+      const intv = setInterval(update, 60000);
+      return () => clearInterval(intv);
+    }
+  }, [todayAtt]);
 
   if (loading) {
     return (
@@ -132,7 +147,7 @@ export default function KangDoMieScan() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-[#0f0f1a]/90 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-2xl mx-auto px-4 py-3">
-          <h1 className="font-extrabold text-lg">Scan eCard</h1>
+          <h1 className="font-extrabold text-lg">Scan e-Cart</h1>
           <p className="text-[10px] text-white/40">Absensi Check-in / Check-out harian</p>
         </div>
       </header>
@@ -188,55 +203,80 @@ export default function KangDoMieScan() {
           )}
         </motion.div>
 
-        {/* Scanner Area */}
+        {/* Scanner Area or Checkout Button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="space-y-4"
         >
-          <div
-            ref={containerRef}
-            className="w-full aspect-square max-w-[300px] mx-auto rounded-2xl overflow-hidden border-2 border-dashed border-white/10 bg-white/[0.02] relative"
-          >
-            <div id="qr-reader" className="w-full h-full" />
-            {!scanning && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                <ScanLine className="w-16 h-16 text-white/10" />
-                <p className="text-xs text-white/30 text-center px-4">
-                  {isCheckedOut
-                    ? "Kamu sudah check-in dan check-out hari ini"
-                    : "Tap tombol di bawah untuk mulai scan eCard"}
-                </p>
-              </div>
-            )}
-          </div>
+          {isCheckedIn ? (
+            <div className="space-y-4">
+              {durationMs >= 9 * 3600000 ? (
+                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-red-400">Batas Waktu Maksimal!</p>
+                    <p className="text-xs text-red-400/80 mt-1">Kamu sudah bekerja selama lebih dari 9 jam. Harap segera Check-out.</p>
+                  </div>
+                </div>
+              ) : durationMs >= 7 * 3600000 ? (
+                <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-orange-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-orange-400">Peringatan Jam Kerja</p>
+                    <p className="text-xs text-orange-400/80 mt-1">Kamu sudah bekerja selama lebih dari 7 jam. Persiapkan untuk Check-out (maksimal 9 jam).</p>
+                  </div>
+                </div>
+              ) : null}
 
-          {!isCheckedOut && (
-            <button
-              onClick={scanning ? stopScanning : startScanning}
-              className={`w-full py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
-                scanning
-                  ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                  : isCheckedIn
-                  ? "bg-orange-500 text-white"
-                  : "bg-primary text-white"
-              }`}
-            >
-              {scanning ? (
-                <>
-                  <XCircle className="w-4 h-4" /> Batal Scan
-                </>
-              ) : isCheckedIn ? (
-                <>
-                  <Camera className="w-4 h-4" /> Scan untuk Check-out
-                </>
-              ) : (
-                <>
-                  <Camera className="w-4 h-4" /> Scan eCard untuk Check-in
-                </>
+              <button
+                onClick={handleCheckOut}
+                className="w-full py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/30"
+              >
+                <LogOutIcon className="w-4 h-4" /> Check-out Sekarang
+              </button>
+            </div>
+          ) : (
+            <>
+              <div
+                ref={containerRef}
+                className="w-full aspect-square max-w-[300px] mx-auto rounded-2xl overflow-hidden border-2 border-dashed border-white/10 bg-white/[0.02] relative"
+              >
+                <div id="qr-reader" className="w-full h-full" />
+                {!scanning && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                    <ScanLine className="w-16 h-16 text-white/10" />
+                    <p className="text-xs text-white/30 text-center px-4">
+                      {isCheckedOut
+                        ? "Kamu sudah check-in dan check-out hari ini"
+                        : "Tap tombol di bawah untuk mulai scan e-Cart"}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {!isCheckedOut && (
+                <button
+                  onClick={scanning ? stopScanning : startScanning}
+                  className={`w-full py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                    scanning
+                      ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                      : "bg-primary text-white"
+                  }`}
+                >
+                  {scanning ? (
+                    <>
+                      <XCircle className="w-4 h-4" /> Batal Scan
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="w-4 h-4" /> Scan e-Cart untuk Check-in
+                    </>
+                  )}
+                </button>
               )}
-            </button>
+            </>
           )}
         </motion.div>
 
