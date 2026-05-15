@@ -3,10 +3,13 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGoCart } from "@/context/GoCartContext";
-import { ArrowLeft, ArrowRight, MapPin, Phone, User, Clock, CheckCircle2, Rocket, Loader2, ShoppingCart, ShieldCheck, Bike, Package } from "lucide-react";
+import { ArrowLeft, ArrowRight, MapPin, Phone, User, Clock, CheckCircle2, Rocket, Loader2, ShoppingCart, ShieldCheck, Bike, Package, Navigation } from "lucide-react";
 import Link from "next/link";
 import { formatRupiah } from "@/data/menu";
 import { useAuth } from "@/context/AuthContext";
+import { useLoadScript, Autocomplete } from "@react-google-maps/api";
+
+const libraries: "places"[] = ["places"];
 
 const KOTA_ORIGIN: Record<string, { label: string, disabled?: boolean }> = {
   Jakarta: { label: "Jakarta" },
@@ -21,10 +24,63 @@ export default function CheckoutPage() {
   const { user } = useAuth();
   const [city, setCity] = useState<string>("Jakarta");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyBgj6aPrkcd-B2lWsE0_AdA8PQpbO13R7c",
+    libraries,
+  });
 
   const isPickup = state.orderMode === "pickup";
   const deliveryFee = 0; // Bebas ongkir!
   const grandTotal = totalPrice + deliveryFee + SERVICE_FEE;
+
+  const onPlaceChanged = () => {
+    if (autocomplete) {
+      const place = autocomplete.getPlace();
+      if (place.formatted_address) {
+        dispatch({ type: "SET_DELIVERY_DETAILS", payload: { address: place.formatted_address } });
+      }
+    }
+  };
+
+  const onLoad = (autocompleteInst: google.maps.places.Autocomplete) => {
+    setAutocomplete(autocompleteInst);
+  };
+
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Browser Anda tidak mendukung deteksi lokasi.");
+      return;
+    }
+    setIsDetectingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (!window.google) {
+          setIsDetectingLocation(false);
+          return;
+        }
+        const geocoder = new google.maps.Geocoder();
+        const latlng = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        geocoder.geocode({ location: latlng }, (results, status) => {
+          setIsDetectingLocation(false);
+          if (status === "OK" && results && results[0]) {
+            dispatch({ type: "SET_DELIVERY_DETAILS", payload: { address: results[0].formatted_address } });
+          } else {
+            alert("Gagal mendeteksi alamat dari koordinat.");
+          }
+        });
+      },
+      (error) => {
+        setIsDetectingLocation(false);
+        alert("Gagal mendapatkan lokasi. Pastikan izin lokasi diaktifkan.");
+      }
+    );
+  };
 
   const handleCheckout = async () => {
     if (!state.customerName || !state.whatsapp) {
@@ -243,19 +299,41 @@ export default function CheckoutPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold mb-2">Alamat Pengiriman Lengkap</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-semibold">Alamat Pengiriman (Bisa Diketik & Auto-detect)</label>
+                        <button
+                          type="button"
+                          onClick={detectLocation}
+                          disabled={!isLoaded || isDetectingLocation}
+                          className="flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors bg-primary/10 px-2 py-1.5 rounded-lg disabled:opacity-50"
+                        >
+                          {isDetectingLocation ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Navigation className="w-3.5 h-3.5" />}
+                          Gunakan Lokasi Saat Ini
+                        </button>
+                      </div>
                       <div className="relative">
-                        <div className="absolute top-3 left-0 pl-3 flex items-start pointer-events-none">
-                          <MapPin className="w-5 h-5 text-foreground/40 mt-0.5" />
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                          <MapPin className="w-5 h-5 text-foreground/40" />
                         </div>
-                        <textarea
-                          value={state.address}
-                          onChange={(e) => dispatch({ type: "SET_DELIVERY_DETAILS", payload: { address: e.target.value } })}
-                          placeholder="Contoh: Jl. Sudirman No. 123, Patokan pagar hitam..."
-                          rows={3}
-                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-muted border border-transparent focus:border-primary focus:outline-none transition-colors resize-none"
-                          required
-                        />
+                        {isLoaded ? (
+                          <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged}>
+                            <input
+                              type="text"
+                              value={state.address}
+                              onChange={(e) => dispatch({ type: "SET_DELIVERY_DETAILS", payload: { address: e.target.value } })}
+                              placeholder="Ketik alamat atau gunakan tombol auto-detect..."
+                              className="w-full pl-10 pr-4 py-3 rounded-xl bg-muted border border-transparent focus:border-primary focus:outline-none transition-colors"
+                              required
+                            />
+                          </Autocomplete>
+                        ) : (
+                          <input
+                            type="text"
+                            placeholder="Loading Maps..."
+                            disabled
+                            className="w-full pl-10 pr-4 py-3 rounded-xl bg-muted border border-transparent opacity-50 cursor-not-allowed"
+                          />
+                        )}
                       </div>
                       <div className="mt-2">
                         <motion.p 
