@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingCart, ScanLine, BarChart3, UserCircle } from "lucide-react";
+import { Home, ShoppingCart, ScanLine, BarChart3, UserCircle, ClockIcon } from "lucide-react";
 import Image from "next/image";
 
 const tabs = [
@@ -10,6 +10,7 @@ const tabs = [
   { name: "POS", href: "/kangdomie/pos", icon: ShoppingCart },
   { name: "Scan", href: "/kangdomie/scan", icon: ScanLine },
   { name: "Report", href: "/kangdomie/report", icon: BarChart3 },
+  { name: "History", href: "/kangdomie/history", icon: ClockIcon },
   { name: "Profil", href: "/kangdomie/profile", icon: UserCircle },
 ];
 

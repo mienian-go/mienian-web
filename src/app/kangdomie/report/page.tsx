@@ -13,7 +13,7 @@ import {
 } from "@/lib/firestoreDriverSales";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/kangdomie/BottomNav";
-import { Loader2, TrendingUp, DollarSign, ShoppingBag, Briefcase, Calendar } from "lucide-react";
+import { Loader2, TrendingUp, DollarSign, ShoppingBag, Briefcase, Calendar, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
@@ -32,6 +32,8 @@ export default function KangDoMieReport() {
   const [stats, setStats] = useState({ totalSales: 0, totalCommission: 0, count: 0 });
   const [workDays, setWorkDays] = useState(0);
   const [chartData, setChartData] = useState<any[]>([]);
+
+  const [attendance, setAttendance] = useState<any[]>([]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -63,7 +65,6 @@ export default function KangDoMieReport() {
 
     // Build chart data
     if (period === "daily") {
-      // Group by hour
       const hourMap: Record<number, number> = {};
       salesData.forEach((s) => {
         const h = s.createdAt?.toDate?.()?.getHours?.() || 0;
@@ -84,7 +85,6 @@ export default function KangDoMieReport() {
       });
       setChartData(dayNames.map((name, i) => ({ label: name, amount: dayMap[i] || 0 })));
     } else {
-      // Monthly: group by date
       const dateMap: Record<number, number> = {};
       salesData.forEach((s) => {
         const d = s.createdAt?.toDate?.()?.getDate?.() || 1;
@@ -99,10 +99,35 @@ export default function KangDoMieReport() {
       );
     }
 
-    // Attendance count
+    // Attendance
     const now = new Date();
     const att = await getMonthlyAttendance(driver.uid, now.getFullYear(), now.getMonth() + 1);
+    setAttendance(att);
     setWorkDays(att.length);
+  };
+
+  // Calculate total work duration from attendance records
+  const getWorkDuration = () => {
+    let totalMs = 0;
+    const { start, end } = getDateRange(period);
+    const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+    const endStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
+
+    const filtered = attendance.filter((a) => a.date >= startStr && a.date <= endStr);
+    for (const a of filtered) {
+      if (a.checkInTime && a.checkOutTime) {
+        const inMs = a.checkInTime.toMillis ? a.checkInTime.toMillis() : 0;
+        const outMs = a.checkOutTime.toMillis ? a.checkOutTime.toMillis() : 0;
+        if (outMs > inMs) totalMs += (outMs - inMs);
+      } else if (a.checkInTime && a.status === "checked_in") {
+        // Still checked in — count until now
+        const inMs = a.checkInTime.toMillis ? a.checkInTime.toMillis() : 0;
+        totalMs += (Date.now() - inMs);
+      }
+    }
+    const totalHours = Math.floor(totalMs / 3600000);
+    const totalMinutes = Math.floor((totalMs % 3600000) / 60000);
+    return `${totalHours}j ${totalMinutes}m`;
   };
 
   if (loading) {
@@ -169,6 +194,14 @@ export default function KangDoMieReport() {
               <span className="text-[10px] text-white/40 font-bold uppercase">Hari Kerja</span>
             </div>
             <p className="text-lg font-extrabold text-blue-400">{workDays} hari</p>
+          </div>
+
+          <div className="rounded-2xl bg-white/[0.03] border border-white/5 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="w-4 h-4 text-cyan-400" />
+              <span className="text-[10px] text-white/40 font-bold uppercase">Durasi Kerja</span>
+            </div>
+            <p className="text-lg font-extrabold text-cyan-400">{getWorkDuration()}</p>
           </div>
         </motion.div>
 
