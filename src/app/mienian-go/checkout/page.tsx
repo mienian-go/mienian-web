@@ -299,12 +299,8 @@ export default function CheckoutPage() {
                   <span>{isPickup ? "Ongkos Kirim" : "Ongkos Kirim"}</span>
                   {isPickup ? (
                     <span className="font-bold text-green-500">GRATIS</span>
-                  ) : isFreeDelivery ? (
-                    <span className="font-bold text-green-500">🎉 GRATIS</span>
-                  ) : state.distanceKm > 0 ? (
-                    <span className="font-bold text-foreground">{formatRupiah(deliveryFee)}</span>
                   ) : (
-                    <span className="text-xs italic">Pilih alamat dulu</span>
+                    <span className="font-bold text-green-500">🎉 GRATIS</span>
                   )}
                 </div>
                 <div className="flex justify-between text-sm text-foreground/70">
@@ -322,7 +318,7 @@ export default function CheckoutPage() {
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={handleCheckout}
-                  disabled={isSubmitting || isCalculating || (!isPickup && !state.distanceKm) || (!isPickup && !state.driverId)}
+                  disabled={isSubmitting || (!isPickup && !state.driverId)}
                   className="w-full py-4 bg-primary text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-primary/90 transition-all disabled:opacity-50 mt-8"
                 >
                   {isSubmitting ? (
