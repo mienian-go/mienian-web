@@ -8,7 +8,6 @@ import Image from "next/image";
 const tabs = [
   { name: "Home", href: "/kangdomie/dashboard", icon: Home },
   { name: "POS", href: "/kangdomie/pos", icon: ShoppingCart },
-  { name: "Scan", href: "/kangdomie/scan", icon: ScanLine },
   { name: "Report", href: "/kangdomie/report", icon: BarChart3 },
   { name: "History", href: "/kangdomie/history", icon: ClockIcon },
   { name: "Profil", href: "/kangdomie/profile", icon: UserCircle },
@@ -33,15 +32,7 @@ export default function BottomNav() {
                   : "text-white/40 hover:text-white/70"
               }`}
             >
-              {tab.name === "Scan" ? (
-                <div className={`w-12 h-12 -mt-6 rounded-full flex items-center justify-center shadow-lg ${
-                  isActive ? "bg-primary" : "bg-white/10"
-                }`}>
-                  <Icon className={`w-6 h-6 ${isActive ? "text-white" : "text-white/60"}`} />
-                </div>
-              ) : (
-                <Icon className={`w-5 h-5 ${isActive ? "text-primary" : ""}`} />
-              )}
+              <Icon className={`w-5 h-5 ${isActive ? "text-primary" : ""}`} />
               <span className={`text-[10px] font-bold ${isActive ? "text-primary" : ""}`}>
                 {tab.name}
               </span>

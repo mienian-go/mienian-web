@@ -1,90 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGoCart } from "@/context/GoCartContext";
 import { ArrowLeft, ArrowRight, MapPin, Phone, User, Clock, CheckCircle2, Rocket, Loader2, ShoppingCart, ShieldCheck, Bike, Package } from "lucide-react";
 import Link from "next/link";
 import { formatRupiah } from "@/data/menu";
-import { useLoadScript, Autocomplete } from "@react-google-maps/api";
 import { useAuth } from "@/context/AuthContext";
 
-const libraries: "places"[] = ["places"];
-
-const KOTA_ORIGIN: Record<string, string> = {
-  Jakarta: "Jl. Kelapa Gading No.2, Gandaria Selatan, Cilandak",
-  Bandung: "Ujung Berung Indah, Bandung",
-  Yogyakarta: "Jl. Subali No.2, Sariharjo, Sleman, Yogyakarta"
+const KOTA_ORIGIN: Record<string, { label: string, disabled?: boolean }> = {
+  Jakarta: { label: "Jakarta" },
+  Bandung: { label: "Bandung (Coming Soon)", disabled: true },
+  Yogyakarta: { label: "Yogyakarta (Coming Soon)", disabled: true }
 };
 
-const DELIVERY_FEE_PER_KM = 3000;
-const BASE_DELIVERY_FEE = 10000;
 const SERVICE_FEE = 3000;
-const FREE_DELIVERY_RADIUS = 1; // km
 
 export default function CheckoutPage() {
   const { state, dispatch, totalPrice, totalItems } = useGoCart();
   const { user } = useAuth();
   const [city, setCity] = useState<string>("Jakarta");
-  const [isCalculating, setIsCalculating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
-
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyBgj6aPrkcd-B2lWsE0_AdA8PQpbO13R7c",
-    libraries,
-  });
 
   const isPickup = state.orderMode === "pickup";
-  const isFreeDelivery = !isPickup && state.distanceKm > 0 && state.distanceKm <= FREE_DELIVERY_RADIUS;
-  const deliveryFee = isPickup ? 0 : (isFreeDelivery ? 0 : (state.distanceKm > 0 ? Math.max(BASE_DELIVERY_FEE, Math.ceil(state.distanceKm) * DELIVERY_FEE_PER_KM) : 0));
+  const deliveryFee = 0; // Bebas ongkir!
   const grandTotal = totalPrice + deliveryFee + SERVICE_FEE;
-
-  const calculateDistance = (dest: string, origin: string) => {
-    if (!window.google) return;
-    setIsCalculating(true);
-
-    const service = new google.maps.DistanceMatrixService();
-    service.getDistanceMatrix(
-      {
-        origins: [origin],
-        destinations: [dest],
-        travelMode: google.maps.TravelMode.DRIVING,
-      },
-      (response, status) => {
-        setIsCalculating(false);
-        if (status === "OK" && response && response.rows[0].elements[0].status === "OK") {
-          const distanceKm = response.rows[0].elements[0].distance.value / 1000;
-          dispatch({ type: "SET_DELIVERY_DETAILS", payload: { distanceKm } });
-        } else {
-          dispatch({ type: "SET_DELIVERY_DETAILS", payload: { distanceKm: 0 } });
-          alert("Alamat terlalu jauh atau tidak bisa dijangkau rute mobil.");
-        }
-      }
-    );
-  };
-
-  const onPlaceChanged = () => {
-    if (autocomplete) {
-      const place = autocomplete.getPlace();
-      if (place.formatted_address) {
-        dispatch({ type: "SET_DELIVERY_DETAILS", payload: { address: place.formatted_address } });
-        if (city && KOTA_ORIGIN[city]) {
-          calculateDistance(place.formatted_address, KOTA_ORIGIN[city]);
-        }
-      }
-    }
-  };
-
-  const onLoad = (autocompleteInst: google.maps.places.Autocomplete) => {
-    setAutocomplete(autocompleteInst);
-  };
-
-  useEffect(() => {
-    if (city && state.address && window.google) {
-      calculateDistance(state.address, KOTA_ORIGIN[city]);
-    }
-  }, [city]);
 
   const handleCheckout = async () => {
     if (!state.customerName || !state.whatsapp) {
@@ -93,10 +33,6 @@ export default function CheckoutPage() {
     }
     if (!isPickup && !state.address) {
       alert("Harap lengkapi Alamat Pengiriman.");
-      return;
-    }
-    if (!isPickup && state.distanceKm === 0) {
-      alert("Silakan pilih alamat dari saran Google Maps agar sistem dapat menghitung ongkos kirim.");
       return;
     }
 
@@ -274,12 +210,13 @@ export default function CheckoutPage() {
                       {Object.keys(KOTA_ORIGIN).map((k) => (
                         <button
                           key={k}
+                          disabled={KOTA_ORIGIN[k].disabled}
                           onClick={() => setCity(k)}
-                          className={`px-4 py-2 text-sm rounded-xl font-bold border-2 transition-all ${
+                          className={`px-4 py-2 text-sm rounded-xl font-bold border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                             city === k ? "bg-secondary/10 border-secondary text-secondary" : "bg-card border-card-border hover:border-secondary/50 text-foreground/70"
                           }`}
                         >
-                          {k}
+                          {KOTA_ORIGIN[k].label}
                         </button>
                       ))}
                     </div>
@@ -293,60 +230,42 @@ export default function CheckoutPage() {
                         {Object.keys(KOTA_ORIGIN).map((k) => (
                           <button
                             key={k}
+                            disabled={KOTA_ORIGIN[k].disabled}
                             onClick={() => setCity(k)}
-                            className={`flex-1 min-w-[100px] py-2 text-sm rounded-xl font-bold border-2 transition-all ${
+                            className={`flex-1 min-w-[100px] py-2 text-sm rounded-xl font-bold border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                               city === k ? "bg-primary/10 border-primary text-primary" : "bg-card border-card-border hover:border-primary/50 text-foreground/70"
                             }`}
                           >
-                            {k}
+                            {KOTA_ORIGIN[k].label}
                           </button>
                         ))}
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold mb-2">Alamat Pengiriman (Ketik di Bawah)</label>
+                      <label className="block text-sm font-semibold mb-2">Alamat Pengiriman Lengkap</label>
                       <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <MapPin className="w-5 h-5 text-foreground/40" />
+                        <div className="absolute top-3 left-0 pl-3 flex items-start pointer-events-none">
+                          <MapPin className="w-5 h-5 text-foreground/40 mt-0.5" />
                         </div>
-                        {isLoaded ? (
-                          <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged}>
-                             <input
-                              type="text"
-                              value={state.address}
-                              onChange={(e) => dispatch({ type: "SET_DELIVERY_DETAILS", payload: { address: e.target.value } })}
-                              placeholder="Cari alamat di Google Maps..."
-                              className="w-full pl-10 pr-4 py-3 rounded-xl bg-muted border border-transparent focus:border-primary focus:outline-none transition-colors"
-                              required
-                            />
-                          </Autocomplete>
-                        ) : (
-                          <input
-                            type="text"
-                            placeholder="Loading Maps..."
-                            disabled
-                            className="w-full pl-10 pr-4 py-3 rounded-xl bg-muted border border-transparent opacity-50 cursor-not-allowed"
-                          />
-                        )}
+                        <textarea
+                          value={state.address}
+                          onChange={(e) => dispatch({ type: "SET_DELIVERY_DETAILS", payload: { address: e.target.value } })}
+                          placeholder="Contoh: Jl. Sudirman No. 123, Patokan pagar hitam..."
+                          rows={3}
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-muted border border-transparent focus:border-primary focus:outline-none transition-colors resize-none"
+                          required
+                        />
                       </div>
-                      {isCalculating && <p className="text-xs text-primary mt-2 animate-pulse flex items-center gap-1"><Rocket className="w-3 h-3"/> Menghitung jarak pengiriman...</p>}
-                      {state.distanceKm > 0 && !isCalculating && (
-                        <div className="mt-2">
-                          <p className="text-xs text-green-500 font-bold flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> Jarak terhitung: {state.distanceKm.toFixed(1)} km
-                          </p>
-                          {isFreeDelivery && (
-                            <motion.p 
-                              initial={{ opacity: 0, scale: 0.9 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              className="text-xs text-secondary font-extrabold mt-1 flex items-center gap-1"
-                            >
-                              🎉 GRATIS ONGKIR! (Radius &lt; {FREE_DELIVERY_RADIUS}km)
-                            </motion.p>
-                          )}
-                        </div>
-                      )}
+                      <div className="mt-2">
+                        <motion.p 
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="text-xs text-secondary font-extrabold flex items-center gap-1"
+                        >
+                          🎉 GRATIS ONGKIR SELURUH KOTA!
+                        </motion.p>
+                      </div>
                     </div>
                   </>
                 )}

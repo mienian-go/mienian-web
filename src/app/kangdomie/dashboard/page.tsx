@@ -405,21 +405,40 @@ export default function KangDoMieDashboard() {
               </h3>
               <span className="text-[10px] text-white/30">{menuItems.length} item</span>
             </div>
-            <div className="grid grid-cols-2 gap-2 max-h-[250px] overflow-y-auto pr-1 no-scrollbar">
-              {menuItems.map((item: any) => {
-                const myStock = (driver as any)?.inventory?.[item.id];
-                return (
-                <div key={item.id} className="rounded-xl bg-white/[0.03] border border-white/5 p-3">
-                  <p className="font-bold text-xs leading-tight mb-1 truncate">{item.name}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-primary font-bold">{formatRupiahLocal(item.price)}</span>
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${myStock !== undefined && myStock <= 3 ? "bg-red-500/20 text-red-400" : "bg-white/5 text-white/40"}`}>
-                      {myStock !== undefined ? `Stok: ${myStock}` : "—"}
-                    </span>
-                  </div>
-                </div>
-                );
-              })}
+            <div className="max-h-[250px] overflow-y-auto pr-1 no-scrollbar space-y-4">
+              {[
+                { id: "mie", label: "🍜 Mie" },
+                { id: "topping-reguler", label: "🥚 Topping Reguler" },
+                { id: "topping-premium", label: "🥩 Topping Premium" },
+                { id: "topping-super", label: "⭐ Topping Super" },
+              ]
+                .filter((cat) => menuItems.some((m: any) => m.category === cat.id))
+                .map((cat) => {
+                  const items = menuItems.filter((m: any) => m.category === cat.id);
+                  return (
+                    <div key={cat.id}>
+                      <h4 className="text-[11px] font-extrabold text-white/50 uppercase tracking-wider mb-2 px-1">
+                        {cat.label}
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {items.map((item: any) => {
+                          const myStock = (driver as any)?.inventory?.[item.id];
+                          return (
+                            <div key={item.id} className="rounded-xl bg-white/[0.03] border border-white/5 p-3">
+                              <p className="font-bold text-xs leading-tight mb-1 truncate">{item.name}</p>
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] text-primary font-bold">{formatRupiahLocal(item.price)}</span>
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${myStock !== undefined && myStock <= 3 ? "bg-red-500/20 text-red-400" : "bg-white/5 text-white/40"}`}>
+                                  {myStock !== undefined ? `Stok: ${myStock}` : "—"}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </motion.div>
         )}
