@@ -389,13 +389,34 @@ export default function CustomerDashboard() {
               <p className="text-xs text-foreground/50 mb-4 leading-relaxed">
                 Ada kendala dengan pesanan Anda? Hubungi Customer Service kami melalui WhatsApp untuk respon cepat.
               </p>
-              <a 
-                href="https://wa.me/6285216706922" 
-                target="_blank" 
-                className="w-full py-3 bg-green-500 text-white rounded-xl text-center font-bold text-sm flex items-center justify-center gap-2 hover:bg-green-600 transition-all"
-              >
-                Chat WhatsApp
-              </a>
+              {(() => {
+                const hasPaidActiveOrder = orders.some(o => 
+                  o.status !== 'pending_payment' && 
+                  o.status !== 'payment_failed' && 
+                  o.status !== 'payment_expired' && 
+                  o.status !== 'cancelled' && 
+                  o.status !== 'completed'
+                );
+                return (
+                  <a 
+                    href={hasPaidActiveOrder ? "https://wa.me/6285216706922" : "#"} 
+                    target={hasPaidActiveOrder ? "_blank" : undefined}
+                    onClick={(e) => {
+                      if (!hasPaidActiveOrder) {
+                        e.preventDefault();
+                        alert("Chat Customer Service baru bisa digunakan jika Anda memiliki pesanan yang sedang diproses (sudah dibayar).");
+                      }
+                    }}
+                    className={`w-full py-3 rounded-xl text-center font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                      hasPaidActiveOrder 
+                        ? "bg-green-500 text-white hover:bg-green-600" 
+                        : "bg-green-500/20 text-green-500/50 cursor-not-allowed"
+                    }`}
+                  >
+                    Chat WhatsApp
+                  </a>
+                );
+              })()}
             </div>
           </div>
 
@@ -459,7 +480,7 @@ export default function CustomerDashboard() {
                               </span>
                             </div>
                             <h4 className="font-bold text-lg mt-0.5">
-                              {order.source === 'mienian_go' 
+                              {(order.source === 'mienian_go' || order.orderId?.startsWith('GO') || order.id?.startsWith('GO'))
                                 ? `Mienian GO ${order.orderType === 'pickup' ? '(Self-Pickup)' : '(Delivery)'}` 
                                 : (order.packageName || "Katering Reguler")}
                             </h4>
@@ -475,15 +496,15 @@ export default function CustomerDashboard() {
                         <div className="flex items-center gap-2 text-xs">
                           <CalendarIcon className="w-3.5 h-3.5 text-foreground/30" />
                           <div>
-                            <p className="text-foreground/30 font-bold uppercase text-[9px]">{order.source === 'mienian_go' ? 'Tgl Pesanan' : 'Tanggal Event'}</p>
-                            <p className="font-bold">{order.source === 'mienian_go' ? new Date(order.createdAt?.toMillis ? order.createdAt.toMillis() : Date.now()).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : (order.eventDate || order.event?.date || "-")}</p>
+                            <p className="text-foreground/30 font-bold uppercase text-[9px]">{(order.source === 'mienian_go' || order.orderId?.startsWith('GO') || order.id?.startsWith('GO')) ? 'Tgl Pesanan' : 'Tanggal Event'}</p>
+                            <p className="font-bold">{(order.source === 'mienian_go' || order.orderId?.startsWith('GO') || order.id?.startsWith('GO')) ? new Date(order.createdAt?.toMillis ? order.createdAt.toMillis() : Date.now()).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : (order.eventDate || order.event?.date || "-")}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 text-xs">
                           <MapPin className="w-3.5 h-3.5 text-foreground/30" />
                           <div className="truncate">
                             <p className="text-foreground/30 font-bold uppercase text-[9px]">Lokasi</p>
-                            <p className="font-bold truncate max-w-[120px]">{order.source === 'mienian_go' ? (order.orderType === 'pickup' ? 'Ambil di Gerobak' : order.address) : (order.city || order.event?.city || "-")}</p>
+                            <p className="font-bold truncate max-w-[120px] max-h-[3rem] text-wrap">{(order.source === 'mienian_go' || order.orderId?.startsWith('GO') || order.id?.startsWith('GO')) ? (order.orderType === 'pickup' ? 'Ambil di Gerobak' : order.address) : (order.city || order.event?.city || "-")}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 text-xs">

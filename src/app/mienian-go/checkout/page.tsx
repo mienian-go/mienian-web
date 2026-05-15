@@ -117,6 +117,7 @@ export default function CheckoutPage() {
       
       await setDoc(doc(db, "orders", orderId), {
         orderId,
+        source: "mienian_go",
         orderType: isPickup ? "pickup" : "delivery",
         orderMode: state.orderMode,
         userId: user?.uid || null,
