@@ -238,8 +238,8 @@ export default function KangDoMiePOS() {
                 }`}
               >
                 {item.imageUrl && (
-                  <div className="w-full h-20 rounded-xl overflow-hidden mb-2 bg-white/5">
-                    <Image src={item.imageUrl} alt={item.name} width={200} height={80} className="w-full h-full object-cover" />
+                  <div className="w-full aspect-square rounded-xl overflow-hidden mb-2 bg-white/5">
+                    <Image src={item.imageUrl} alt={item.name} width={200} height={200} className="w-full h-full object-cover" />
                   </div>
                 )}
                 <p className="font-bold text-xs leading-tight mb-1">{item.name}</p>
