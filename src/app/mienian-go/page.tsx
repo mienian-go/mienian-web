@@ -74,12 +74,30 @@ export default function MienianGO() {
     fetchMenu();
   }, []);
 
+  const [rawLocations, setRawLocations] = useState<any[]>([]);
+
   useEffect(() => {
     const unsub = subscribeToKangDoMieLocations((locations) => {
-      setAvailableKangCount(locations.filter(l => l.status === "available").length);
+      setRawLocations(locations);
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    const updateCount = () => {
+      const now = Date.now();
+      const count = rawLocations.filter((k) => {
+        if (k.status !== "available") return false;
+        if (!k.lastUpdated) return true;
+        const diff = now - k.lastUpdated.toMillis();
+        return diff <= 120000;
+      });
+      setAvailableKangCount(count.length);
+    };
+    updateCount();
+    const interval = setInterval(updateCount, 5000);
+    return () => clearInterval(interval);
+  }, [rawLocations]);
 
   const categoriesToShow = [
     { id: "mie", title: "Pilihan Mie", emoji: "🍜" },

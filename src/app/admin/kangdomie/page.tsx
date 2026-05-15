@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, query, getDocs, doc, updateDoc, deleteDoc, orderBy, setDoc, Timestamp } from "firebase/firestore";
+import { collection, query, getDocs, doc, updateDoc, deleteDoc, orderBy, setDoc, Timestamp, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getMonthlyAttendance, getDriverCommissionForPeriod, getDateRange, type Attendance } from "@/lib/firestoreDriverSales";
 import { Loader2, CheckCircle2, XCircle, Truck, MapPin, Phone, User, Trash2, Shield, Hash, Edit3, QrCode, Eye, Calendar, DollarSign, TrendingUp, Briefcase, Clock, Package, Plus, Minus } from "lucide-react";
@@ -147,6 +147,23 @@ export default function AdminKangDoMiePage() {
         [`inventory.${itemId}`]: newStock,
         updatedAt: Timestamp.now(),
       });
+      
+      // Log to history
+      if (delta !== 0) {
+        const itemObj = menuItems.find(m => m.id === itemId);
+        await addDoc(collection(db, "kangdomie_inventory_logs"), {
+          driverId,
+          itemId,
+          itemName: itemObj ? itemObj.name : itemId,
+          delta,
+          previousStock: currentStock,
+          newStock,
+          type: delta > 0 ? "refill" : "adjustment",
+          createdAt: Timestamp.now(),
+          createdBy: "admin"
+        });
+      }
+
       setDrivers(prev => prev.map(d => d.uid === driverId ? {
         ...d,
         inventory: { ...(d.inventory || {}), [itemId]: newStock }
@@ -498,11 +515,16 @@ export default function AdminKangDoMiePage() {
                                 </button>
                                 <button
                                   onClick={() => {
-                                    const defaultVal = DEFAULT_STOCK[item.category] ?? 10;
-                                    const diff = defaultVal - stock;
-                                    if (diff > 0) updateDriverStock(selectedDriver.uid, item.id, stock, diff);
+                                    const inputStr = window.prompt(`Berapa jumlah stok ${item.name} yang ingin ditambahkan? (Misal: 3)`);
+                                    if (!inputStr) return;
+                                    const diff = parseInt(inputStr, 10);
+                                    if (isNaN(diff) || diff <= 0) {
+                                      alert("Masukkan angka yang valid dan lebih dari 0.");
+                                      return;
+                                    }
+                                    updateDriverStock(selectedDriver.uid, item.id, stock, diff);
                                   }}
-                                  disabled={processing === `stock_${item.id}` || stock >= (DEFAULT_STOCK[item.category] ?? 10)}
+                                  disabled={processing === `stock_${item.id}`}
                                   className="ml-1 text-[10px] bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 px-2 py-1 rounded font-bold transition-colors disabled:opacity-30 disabled:hover:bg-emerald-500/10"
                                   title="Refill item ini ke batas maksimal (default)"
                                 >
