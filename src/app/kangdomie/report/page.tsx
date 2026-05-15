@@ -13,7 +13,8 @@ import {
 } from "@/lib/firestoreDriverSales";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/kangdomie/BottomNav";
-import { Loader2, TrendingUp, DollarSign, ShoppingBag, Briefcase, Calendar, Clock } from "lucide-react";
+import { Loader2, TrendingUp, DollarSign, ShoppingBag, Briefcase, Calendar, Clock, ScanLine } from "lucide-react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
@@ -142,9 +143,18 @@ export default function KangDoMieReport() {
     <div className="min-h-screen bg-[#0f0f1a] text-white pb-24">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-[#0f0f1a]/90 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-2xl mx-auto px-4 py-3">
-          <h1 className="font-extrabold text-lg">Laporan Penjualan</h1>
-          <p className="text-[10px] text-white/40">{driver?.name} — {driver?.gerobakId}</p>
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div>
+            <h1 className="font-extrabold text-lg">Laporan Penjualan</h1>
+            <p className="text-[10px] text-white/40">{driver?.name} — {driver?.gerobakId}</p>
+          </div>
+          <Link
+            href="/kangdomie/scan"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-bold hover:bg-primary/20 transition-colors"
+          >
+            <ScanLine className="w-3.5 h-3.5" />
+            Scan e-Cart
+          </Link>
         </div>
       </header>
 
