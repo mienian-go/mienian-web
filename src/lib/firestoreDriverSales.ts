@@ -70,15 +70,21 @@ export async function getSalesByDriver(
   startDate: Date,
   endDate: Date
 ): Promise<KangDoMieSale[]> {
+  // Query without orderBy to avoid composite index requirement
   const q = query(
     collection(db, "kangdomie_sales"),
     where("driverId", "==", driverId),
     where("createdAt", ">=", Timestamp.fromDate(startDate)),
-    where("createdAt", "<=", Timestamp.fromDate(endDate)),
-    orderBy("createdAt", "desc")
+    where("createdAt", "<=", Timestamp.fromDate(endDate))
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as KangDoMieSale));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() } as KangDoMieSale))
+    .sort((a, b) => {
+      const aMs = a.createdAt?.toMillis?.() || 0;
+      const bMs = b.createdAt?.toMillis?.() || 0;
+      return bMs - aMs;
+    });
 }
 
 /** Get commission totals for a driver in a period */

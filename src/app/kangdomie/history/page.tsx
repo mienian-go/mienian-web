@@ -5,7 +5,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { getDriver, type KangDoMieDriver } from "@/lib/firestoreDriver";
 import { getTodayAttendance } from "@/lib/firestoreDriverSales";
-import { collection, query, where, orderBy, getDocs, addDoc, Timestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/kangdomie/BottomNav";
 import {
@@ -100,8 +100,7 @@ export default function KangDoMieHistory() {
         collection(db, "kangdomie_inventory_logs"),
         where("driverId", "==", driver.uid),
         where("createdAt", ">=", startTs),
-        where("createdAt", "<=", endTs),
-        orderBy("createdAt", "desc")
+        where("createdAt", "<=", endTs)
       );
       const invSnap = await getDocs(invQ);
       for (const d of invSnap.docs) {
@@ -126,8 +125,7 @@ export default function KangDoMieHistory() {
         collection(db, "kangdomie_reports"),
         where("driverId", "==", driver.uid),
         where("createdAt", ">=", startTs),
-        where("createdAt", "<=", endTs),
-        orderBy("createdAt", "desc")
+        where("createdAt", "<=", endTs)
       );
       const repSnap = await getDocs(repQ);
       for (const d of repSnap.docs) {
@@ -152,8 +150,7 @@ export default function KangDoMieHistory() {
         collection(db, "kangdomie_sales"),
         where("driverId", "==", driver.uid),
         where("createdAt", ">=", startTs),
-        where("createdAt", "<=", endTs),
-        orderBy("createdAt", "desc")
+        where("createdAt", "<=", endTs)
       );
       const salesSnap = await getDocs(salesQ);
       for (const d of salesSnap.docs) {
