@@ -28,17 +28,18 @@ import {
 } from "lucide-react";
 
 const STATUS_FLOW: Record<string, { next: string; label: string; color: string }> = {
-  paid: { next: "preparing", label: "Terima Pesanan", color: "bg-green-500" },
+  accepted: { next: "delivering", label: "Siap Antar 🛺", color: "bg-blue-500" },
+  delivering: { next: "preparing", label: "Sudah Sampai 📍", color: "bg-purple-500" },
   preparing: { next: "cooking", label: "Mulai Masak 🔥", color: "bg-orange-500" },
-  cooking: { next: "delivering", label: "Siap Antar 🛺", color: "bg-blue-500" },
-  delivering: { next: "delivered", label: "Sudah Sampai ✅", color: "bg-emerald-500" },
+  cooking: { next: "delivered", label: "Selesai Masak ✅", color: "bg-emerald-500" },
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  paid: "Menunggu",
-  preparing: "Diterima",
-  cooking: "Sedang Dimasak 🔥",
+  paid: "Pesanan Baru",
+  accepted: "Diterima",
   delivering: "Dalam Perjalanan 🛺",
+  preparing: "Sudah Sampai 📍",
+  cooking: "Sedang Dimasak 🔥",
   delivered: "Selesai ✅",
 };
 
@@ -250,24 +251,10 @@ export default function KangDoMieDashboard() {
     setProcessingOrder(orderId);
     try {
       await acceptOrder(orderId, driver.uid);
-      setActiveTab("my");
-    } catch (err) {
-      console.error("Failed to accept:", err);
-    }
-    setProcessingOrder(null);
-  };
 
-  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
-    if (!driver) return;
-    setProcessingOrder(orderId);
-    try {
-      await updateOrderStatusDriver(orderId, newStatus);
-
-      // Find the order data to get items
-      const order = myOrders.find((o) => o.id === orderId);
-
-      // When cooking starts → decrease inventory
-      if (newStatus === "cooking" && order?.items) {
+      // Decrease inventory on accept
+      const order = [...availableOrders, ...myOrders].find((o) => o.id === orderId);
+      if (order?.items) {
         const { doc: fbDoc, updateDoc: fbUpdate, increment: fbIncrement } = await import("firebase/firestore");
         const driverRef = fbDoc(db, "kangdomie_drivers", driver.uid);
         const inventoryUpdates: Record<string, any> = {};
@@ -283,28 +270,44 @@ export default function KangDoMieDashboard() {
         }
       }
 
+      setActiveTab("my");
+    } catch (err) {
+      console.error("Failed to accept:", err);
+    }
+    setProcessingOrder(null);
+  };
+
+  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+    if (!driver) return;
+    setProcessingOrder(orderId);
+    try {
+      await updateOrderStatusDriver(orderId, newStatus);
+
       // When delivered → record sale for report & history
-      if (newStatus === "delivered" && order) {
-        try {
-          const { recordSale } = await import("@/lib/firestoreDriverSales");
-          const saleItems = (order.items || []).map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            qty: item.quantity || item.qty || 1,
-            price: item.price,
-          }));
-          const totalAmount = order.costs?.grandTotal || order.costs?.subtotal || saleItems.reduce((s: number, i: any) => s + i.price * i.qty, 0);
-          await recordSale({
-            driverId: driver.uid,
-            driverName: driver.name,
-            orderId: order.orderId || orderId,
-            items: saleItems,
-            totalAmount,
-            saleType: "online",
-          });
-          console.log("Sale recorded for order", orderId);
-        } catch (saleErr) {
-          console.error("Failed to record sale:", saleErr);
+      if (newStatus === "delivered") {
+        const order = myOrders.find((o) => o.id === orderId);
+        if (order) {
+          try {
+            const { recordSale } = await import("@/lib/firestoreDriverSales");
+            const saleItems = (order.items || []).map((item: any) => ({
+              id: item.id,
+              name: item.name,
+              qty: item.quantity || item.qty || 1,
+              price: item.price,
+            }));
+            const totalAmount = order.costs?.grandTotal || order.costs?.subtotal || saleItems.reduce((s: number, i: any) => s + i.price * i.qty, 0);
+            await recordSale({
+              driverId: driver.uid,
+              driverName: driver.name,
+              orderId: order.orderId || orderId,
+              items: saleItems,
+              totalAmount,
+              saleType: "online",
+            });
+            console.log("Sale recorded for order", orderId);
+          } catch (saleErr) {
+            console.error("Failed to record sale:", saleErr);
+          }
         }
       }
     } catch (err) {

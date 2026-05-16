@@ -23,6 +23,7 @@ export default function OrdersPage() {
     pending: { label: "Menunggu Upload", color: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30" },
     payment_verifying: { label: "Perlu Verifikasi", color: "bg-amber-500/20 text-amber-500 border-amber-500/30" },
     paid: { label: "Lunas (DOKU)", color: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30" },
+    accepted: { label: "Diterima Driver", color: "bg-blue-500/20 text-blue-400 border-blue-400/30" },
     verified: { label: "Lunas / Verified", color: "bg-blue-500/20 text-blue-500 border-blue-500/30" },
     preparing: { label: "Persiapan", color: "bg-fuchsia-500/20 text-fuchsia-500 border-fuchsia-500/30" },
     cooking: { label: "Sedang Dimasak", color: "bg-orange-500/20 text-orange-500 border-orange-500/30" },

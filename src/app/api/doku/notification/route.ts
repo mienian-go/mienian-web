@@ -120,14 +120,13 @@ export async function POST(req: NextRequest) {
             if (orderSnap.exists()) {
               const orderData = orderSnap.data();
 
-              // Auto-assign selected KangDoMie driver for delivery orders
+              // Pre-assign selected KangDoMie driver (status stays "paid" until driver accepts)
               if (orderData.driverId && orderData.orderType === "delivery" && !orderData.assignedDriver) {
                 await updateDoc(orderRef, {
                   assignedDriver: orderData.driverId,
-                  status: "preparing",
                   updatedAt: Timestamp.now(),
                 });
-                console.log(`Auto-assigned driver ${orderData.driverId} to order ${firestoreId}`);
+                console.log(`Pre-assigned driver ${orderData.driverId} to order ${firestoreId}`);
               }
 
               // Award loyalty points using firestore/lite to prevent Vercel hang

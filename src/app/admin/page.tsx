@@ -30,8 +30,8 @@ export default function AdminDashboard() {
 
         orders.forEach(o => {
           if (o.status === "payment_uploaded") pending++;
-          if (["verified", "preparing", "paid", "cooking", "delivering"].includes(o.status)) active++;
-          if (["verified", "preparing", "completed", "paid", "cooking", "delivering", "delivered"].includes(o.status)) {
+          if (["verified", "preparing", "paid", "accepted", "cooking", "delivering"].includes(o.status)) active++;
+          if (["verified", "preparing", "completed", "paid", "accepted", "cooking", "delivering", "delivered"].includes(o.status)) {
             totalRev += o.costs?.grandTotal || o.totalPrice || 0;
           }
         });

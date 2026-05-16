@@ -119,7 +119,7 @@ export function subscribeToUnassignedOrders(city: string, callback: (orders: Kan
 export async function acceptOrder(orderId: string, driverUid: string): Promise<void> {
   await updateDoc(doc(db, "orders", orderId), {
     assignedDriver: driverUid,
-    status: "preparing",
+    status: "accepted",
     updatedAt: Timestamp.now(),
   });
 }

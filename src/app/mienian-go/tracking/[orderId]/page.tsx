@@ -15,10 +15,11 @@ import Link from "next/link";
 
 const STATUS_STEPS = [
   { key: "paid", icon: CheckCircle2, label: "Pesanan Masuk", copy: "Pesanan masuk, cuy! ✅", color: "text-green-400" },
-  { key: "preparing", icon: Package, label: "Diterima Driver", copy: "KangDoMie udah ambil pesananmu!", color: "text-blue-400" },
-  { key: "cooking", icon: Flame, label: "Sedang Dimasak", copy: "Mie lagi direbus... sabar ya! 🔥", color: "text-orange-400" },
+  { key: "accepted", icon: Package, label: "Diterima Driver", copy: "KangDoMie udah ambil pesananmu!", color: "text-blue-400" },
   { key: "delivering", icon: Truck, label: "Dalam Perjalanan", copy: "KangDoMie lagi gaspol ke arahmu! 🛺", color: "text-blue-400" },
-  { key: "delivered", icon: PartyPopper, label: "Sudah Sampai", copy: "Udah nyampe! Selamat makan! 🎉", color: "text-emerald-400" },
+  { key: "preparing", icon: MapPin, label: "Sudah Sampai", copy: "KangDoMie udah nyampe di lokasimu! 📍", color: "text-purple-400" },
+  { key: "cooking", icon: Flame, label: "Sedang Dimasak", copy: "Mie lagi direbus... sabar ya! 🔥", color: "text-orange-400" },
+  { key: "delivered", icon: PartyPopper, label: "Selesai", copy: "Selamat makan! 🎉", color: "text-emerald-400" },
 ];
 
 function formatRupiah(num: number) {
