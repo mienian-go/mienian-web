@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Zap, Gift, TrendingUp } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { subscribeToUserPoints, initUserPoints, type UserPoints } from "@/lib/firestoreGo";
+import Link from "next/link";
 
 const LEVEL_THRESHOLDS = [0, 500, 2000, 5000, 10000, 25000];
 const LEVEL_NAMES = ["Newbie", "Reguler", "Mania", "Sultan", "Legend", "God Tier"];
@@ -119,10 +120,10 @@ export default function MienianPowerBar() {
           <Gift className="w-3.5 h-3.5" />
           Tuker Poin
         </button>
-        <button className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-colors">
+        <Link href="/dashboard" className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-colors">
           <TrendingUp className="w-3.5 h-3.5" />
           Riwayat
-        </button>
+        </Link>
       </div>
     </motion.div>
   );

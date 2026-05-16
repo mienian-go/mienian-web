@@ -91,6 +91,10 @@ export default function CheckoutPage() {
       alert("Harap lengkapi Alamat Pengiriman.");
       return;
     }
+    if (!isPickup && state.distanceKm > 1) {
+      alert("Alamat pengiriman di luar jangkauan. Maksimal jarak pengiriman adalah 1 KM dari KangDoMie.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -263,42 +267,10 @@ export default function CheckoutPage() {
                         <p className="text-xs text-foreground/50">Pesanan akan disiapkan, kamu tinggal ambil di gerobak</p>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-3 mt-3">
-                      {Object.keys(KOTA_ORIGIN).map((k) => (
-                        <button
-                          key={k}
-                          disabled={KOTA_ORIGIN[k].disabled}
-                          onClick={() => setCity(k)}
-                          className={`px-4 py-2 text-sm rounded-xl font-bold border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                            city === k ? "bg-secondary/10 border-secondary text-secondary" : "bg-card border-card-border hover:border-secondary/50 text-foreground/70"
-                          }`}
-                        >
-                          {KOTA_ORIGIN[k].label}
-                        </button>
-                      ))}
-                    </div>
                   </div>
                 ) : (
                   /* Delivery Mode */
                   <>
-                    <div>
-                      <label className="block text-sm font-semibold mb-2">Pilih Area Mienian GO Terdekat</label>
-                      <div className="flex flex-wrap gap-3">
-                        {Object.keys(KOTA_ORIGIN).map((k) => (
-                          <button
-                            key={k}
-                            disabled={KOTA_ORIGIN[k].disabled}
-                            onClick={() => setCity(k)}
-                            className={`flex-1 min-w-[100px] py-2 text-sm rounded-xl font-bold border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                              city === k ? "bg-primary/10 border-primary text-primary" : "bg-card border-card-border hover:border-primary/50 text-foreground/70"
-                            }`}
-                          >
-                            {KOTA_ORIGIN[k].label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <label className="block text-sm font-semibold">Alamat Pengiriman (Bisa Diketik & Auto-detect)</label>
@@ -342,7 +314,7 @@ export default function CheckoutPage() {
                           animate={{ opacity: 1, scale: 1 }}
                           className="text-xs text-secondary font-extrabold flex items-center gap-1"
                         >
-                          🎉 GRATIS ONGKIR SELURUH KOTA!
+                          🎉 GRATIS ONGKIR DENGAN JARAK MAKSIMAL 1KM
                         </motion.p>
                       </div>
                     </div>
