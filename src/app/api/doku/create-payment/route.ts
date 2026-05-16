@@ -44,7 +44,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Build DOKU request payload
-    const baseUrl = req.nextUrl.origin;
+    // Selalu gunakan domain utama agar webhook tidak nyasar ke domain alias Vercel
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://mienian-web.vercel.app";
+    
     const dokuPayload: any = {
       order: {
         amount: Math.round(amount),
