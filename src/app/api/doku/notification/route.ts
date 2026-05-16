@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { doc, updateDoc, getDoc, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { earnPoints } from "@/lib/firestoreGo";
+import { doc, updateDoc, getDoc, setDoc, Timestamp } from "firebase/firestore/lite";
+import { getFirestore } from "firebase/firestore/lite";
+import app from "@/lib/firebase";
 
+const db = getFirestore(app);
 
 function verifyNotificationSignature(
   clientId: string,
@@ -129,12 +130,49 @@ export async function POST(req: NextRequest) {
                 console.log(`Auto-assigned driver ${orderData.driverId} to order ${firestoreId}`);
               }
 
-              // Award loyalty points
+              // Award loyalty points using firestore/lite to prevent Vercel hang
               const userId = orderData.userId;
               const totalAmount = orderData.costs?.grandTotal || orderData.totalPrice || amount;
               if (userId) {
-                const earned = await earnPoints(userId, totalAmount, orderData.customerName);
-                console.log(`Awarded ${earned} points to user ${userId} for order ${firestoreId}`);
+                const pointsEarned = Math.floor(totalAmount / 1000) * 100; // 100 points per Rp 1.000
+                if (pointsEarned > 0) {
+                  const userPointsRef = doc(db, "user_points", userId);
+                  const userPointsSnap = await getDoc(userPointsRef);
+                  
+                  const LEVEL_THRESHOLDS = [0, 500, 2000, 5000, 10000, 25000];
+                  const calcLevel = (pts: number) => {
+                    for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+                      if (pts >= LEVEL_THRESHOLDS[i]) return i;
+                    }
+                    return 0;
+                  };
+
+                  if (userPointsSnap.exists()) {
+                    const currentData = userPointsSnap.data();
+                    const newPoints = (currentData.points || 0) + pointsEarned;
+                    const newLevel = calcLevel(newPoints);
+                    await updateDoc(userPointsRef, {
+                      points: newPoints,
+                      totalSpent: (currentData.totalSpent || 0) + totalAmount,
+                      totalOrders: (currentData.totalOrders || 0) + 1,
+                      level: newLevel,
+                      updatedAt: Timestamp.now(),
+                    });
+                  } else {
+                    const newLevel = calcLevel(pointsEarned);
+                    await setDoc(userPointsRef, {
+                      userId,
+                      displayName: orderData.customerName || "User",
+                      points: pointsEarned,
+                      totalSpent: totalAmount,
+                      totalOrders: 1,
+                      level: newLevel,
+                      createdAt: Timestamp.now(),
+                      updatedAt: Timestamp.now(),
+                    });
+                  }
+                  console.log(`Awarded ${pointsEarned} points to user ${userId} for order ${firestoreId}`);
+                }
               }
             }
           } catch (pointsErr) {
