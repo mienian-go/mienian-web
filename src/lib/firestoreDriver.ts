@@ -6,7 +6,6 @@ import {
   updateDoc,
   query,
   where,
-  orderBy,
   getDocs,
   onSnapshot,
   Timestamp,
@@ -75,29 +74,45 @@ export interface KangDoMieOrder {
 }
 
 export function subscribeToDriverOrders(driverUid: string, callback: (orders: KangDoMieOrder[]) => void) {
+  // Query without orderBy to avoid requiring composite index
   const q = query(
     collection(db, "orders"),
-    where("assignedDriver", "==", driverUid),
-    orderBy("createdAt", "desc")
-  );
-  return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as KangDoMieOrder)));
-  });
-}
-
-export function subscribeToUnassignedOrders(city: string, callback: (orders: KangDoMieOrder[]) => void) {
-  // Get paid delivery orders without assigned driver
-  const q = query(
-    collection(db, "orders"),
-    where("status", "==", "paid"),
-    where("orderType", "==", "delivery"),
-    orderBy("createdAt", "desc")
+    where("assignedDriver", "==", driverUid)
   );
   return onSnapshot(q, (snap) => {
     const orders = snap.docs
       .map((d) => ({ id: d.id, ...d.data() } as KangDoMieOrder))
-      .filter((o) => !o.assignedDriver);
+      .sort((a, b) => {
+        const aTime = a.createdAt?.toMillis?.() || a.createdAt?.getTime?.() || 0;
+        const bTime = b.createdAt?.toMillis?.() || b.createdAt?.getTime?.() || 0;
+        return bTime - aTime; // desc
+      });
     callback(orders);
+  }, (error) => {
+    console.error("subscribeToDriverOrders error:", error);
+    callback([]);
+  });
+}
+
+export function subscribeToUnassignedOrders(city: string, callback: (orders: KangDoMieOrder[]) => void) {
+  // Query only by status to avoid composite index requirement
+  const q = query(
+    collection(db, "orders"),
+    where("status", "==", "paid")
+  );
+  return onSnapshot(q, (snap) => {
+    const orders = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() } as KangDoMieOrder))
+      .filter((o) => o.orderType === "delivery" && !o.assignedDriver)
+      .sort((a, b) => {
+        const aTime = a.createdAt?.toMillis?.() || a.createdAt?.getTime?.() || 0;
+        const bTime = b.createdAt?.toMillis?.() || b.createdAt?.getTime?.() || 0;
+        return bTime - aTime; // desc
+      });
+    callback(orders);
+  }, (error) => {
+    console.error("subscribeToUnassignedOrders error:", error);
+    callback([]);
   });
 }
 
