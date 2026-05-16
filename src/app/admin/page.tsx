@@ -30,8 +30,10 @@ export default function AdminDashboard() {
 
         orders.forEach(o => {
           if (o.status === "payment_uploaded") pending++;
-          if (["verified", "preparing"].includes(o.status)) active++;
-          if (["verified", "preparing", "completed"].includes(o.status)) totalRev += o.totalPrice;
+          if (["verified", "preparing", "paid", "cooking", "delivering"].includes(o.status)) active++;
+          if (["verified", "preparing", "completed", "paid", "cooking", "delivering", "delivered"].includes(o.status)) {
+            totalRev += o.costs?.grandTotal || o.totalPrice || 0;
+          }
         });
 
         setStats({
@@ -160,8 +162,8 @@ export default function AdminDashboard() {
                   {recentOrders.map((order) => (
                     <tr key={order.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-6 py-4 font-mono font-medium">{order.orderId}</td>
-                      <td className="px-6 py-4">{order.event?.picName || "-"}</td>
-                      <td className="px-6 py-4">{order.event?.date || "-"}</td>
+                      <td className="px-6 py-4">{order.customerName || order.event?.picName || "-"}</td>
+                      <td className="px-6 py-4">{order.event?.date || (order.createdAt ? new Date(order.createdAt.seconds * 1000).toLocaleDateString("id-ID") : "-")}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded text-xs font-bold ${
                            order.status === "pending" ? "bg-zinc-500/20 text-zinc-400" :

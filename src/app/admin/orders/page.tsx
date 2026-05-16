@@ -165,12 +165,16 @@ export default function OrdersPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 font-semibold uppercase tracking-wider text-xs">
-                      {formatRupiah(order.totalPrice)}
+                      {formatRupiah(order.costs?.grandTotal || order.totalPrice || 0)}
                     </td>
                     <td className="px-6 py-4 text-center">
                        {order.payment?.method ? (
                          <span className="px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] font-bold uppercase text-foreground/70">
                            {order.payment.method}
+                         </span>
+                       ) : order.source === 'mienian_go' ? (
+                         <span className="px-2 py-1 rounded bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold uppercase text-blue-400">
+                           DOKU
                          </span>
                        ) : "-"}
                     </td>

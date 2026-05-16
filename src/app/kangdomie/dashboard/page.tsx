@@ -258,9 +258,55 @@ export default function KangDoMieDashboard() {
   };
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+    if (!driver) return;
     setProcessingOrder(orderId);
     try {
       await updateOrderStatusDriver(orderId, newStatus);
+
+      // Find the order data to get items
+      const order = myOrders.find((o) => o.id === orderId);
+
+      // When cooking starts → decrease inventory
+      if (newStatus === "cooking" && order?.items) {
+        const { doc: fbDoc, updateDoc: fbUpdate, increment: fbIncrement } = await import("firebase/firestore");
+        const driverRef = fbDoc(db, "kangdomie_drivers", driver.uid);
+        const inventoryUpdates: Record<string, any> = {};
+        for (const item of order.items) {
+          const qty = item.quantity || item.qty || 1;
+          inventoryUpdates[`inventory.${item.id}`] = fbIncrement(-qty);
+        }
+        try {
+          await fbUpdate(driverRef, inventoryUpdates);
+          console.log("Inventory decreased for order", orderId);
+        } catch (invErr) {
+          console.error("Failed to decrease inventory:", invErr);
+        }
+      }
+
+      // When delivered → record sale for report & history
+      if (newStatus === "delivered" && order) {
+        try {
+          const { recordSale } = await import("@/lib/firestoreDriverSales");
+          const saleItems = (order.items || []).map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            qty: item.quantity || item.qty || 1,
+            price: item.price,
+          }));
+          const totalAmount = order.costs?.grandTotal || order.costs?.subtotal || saleItems.reduce((s: number, i: any) => s + i.price * i.qty, 0);
+          await recordSale({
+            driverId: driver.uid,
+            driverName: driver.name,
+            orderId: order.orderId || orderId,
+            items: saleItems,
+            totalAmount,
+            saleType: "online",
+          });
+          console.log("Sale recorded for order", orderId);
+        } catch (saleErr) {
+          console.error("Failed to record sale:", saleErr);
+        }
+      }
     } catch (err) {
       console.error("Failed to update:", err);
     }
