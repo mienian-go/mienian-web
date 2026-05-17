@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Zap, Gift, TrendingUp } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { subscribeToUserPoints, initUserPoints, type UserPoints } from "@/lib/firestoreGo";
@@ -14,6 +14,7 @@ const LEVEL_COLORS = ["#9E9E9E", "#4CAF50", "#FF9800", "#E91E63", "#9C27B0", "#F
 export default function MienianPowerBar() {
   const { user } = useAuth();
   const [data, setData] = useState<UserPoints | null>(null);
+  const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -116,15 +117,61 @@ export default function MienianPowerBar() {
 
       {/* Quick Actions */}
       <div className="flex gap-2">
-        <button className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-secondary/10 hover:bg-secondary/20 text-secondary text-xs font-bold transition-colors">
-          <Gift className="w-3.5 h-3.5" />
-          Tuker Poin
+        <button 
+          onClick={() => setShowQR(true)}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-secondary/10 hover:bg-secondary/20 text-secondary text-xs font-bold transition-colors"
+        >
+          <Zap className="w-3.5 h-3.5" />
+          QR Member
         </button>
         <Link href="/dashboard" className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-colors">
           <TrendingUp className="w-3.5 h-3.5" />
           Riwayat
         </Link>
       </div>
+
+      {/* QR Modal */}
+      <AnimatePresence>
+        {showQR && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+              onClick={() => setShowQR(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-sm bg-card p-6 rounded-3xl shadow-xl border border-border text-center"
+            >
+              <h3 className="text-xl font-bold mb-2">QR E-Card Mienian</h3>
+              <p className="text-xs text-foreground/60 mb-6">Tunjukkan QR ini ke KangDoMie saat beli langsung di gerobak untuk dapetin poin!</p>
+              
+              <div className="bg-white p-4 rounded-2xl inline-block shadow-sm mb-6">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${user.uid}`}
+                  alt="QR Code Member"
+                  className="w-48 h-48 mx-auto"
+                />
+              </div>
+
+              <div className="bg-secondary/10 text-secondary px-4 py-2 rounded-xl text-xs font-bold mb-6">
+                {levelName} Member • {points.toLocaleString("id-ID")} poin
+              </div>
+
+              <button 
+                onClick={() => setShowQR(false)}
+                className="w-full py-3 rounded-xl bg-muted hover:bg-muted/80 text-sm font-bold transition-colors"
+              >
+                Tutup
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

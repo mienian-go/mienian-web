@@ -540,8 +540,52 @@ export default function AdminKangDoMiePage() {
                     {/* QR Code */}
                     {selectedDriver.qrCode && (
                       <div className="mt-4 p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                        <p className="text-xs font-bold text-foreground/40 uppercase mb-2 flex items-center gap-1"><QrCode className="w-3 h-3" /> eCard QR Data</p>
-                        <p className="text-sm font-mono bg-white/5 px-3 py-2 rounded-lg">{selectedDriver.qrCode}</p>
+                        <p className="text-xs font-bold text-foreground/40 uppercase mb-4 flex items-center gap-1"><QrCode className="w-3 h-3" /> eCard Absensi Gerobak</p>
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                          <div className="bg-white p-3 rounded-xl shadow-sm">
+                            <img 
+                              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${selectedDriver.qrCode}`}
+                              alt="QR Code Gerobak"
+                              className="w-32 h-32"
+                            />
+                          </div>
+                          <div className="flex-1 text-center sm:text-left">
+                            <p className="text-xs text-foreground/60 mb-2">Cetak QR ini dan tempel di gerobak untuk discan oleh KangDoMie saat mulai bekerja.</p>
+                            <p className="text-[10px] font-mono text-foreground/40 bg-white/5 px-2 py-1 rounded inline-block mb-3">{selectedDriver.qrCode}</p>
+                            <div>
+                              <button 
+                                onClick={() => {
+                                  const win = window.open();
+                                  if (win) {
+                                    win.document.write(`
+                                      <html>
+                                        <head>
+                                          <title>QR Code - ${selectedDriver.gerobakId}</title>
+                                          <style>
+                                            body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+                                            img { width: 300px; height: 300px; margin-bottom: 20px; }
+                                            h1 { margin: 0 0 10px; font-size: 24px; }
+                                            p { margin: 0; font-size: 14px; color: #666; }
+                                          </style>
+                                        </head>
+                                        <body>
+                                          <h1>Mienian Stall - ${selectedDriver.gerobakId}</h1>
+                                          <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${selectedDriver.qrCode}" />
+                                          <p>Silakan scan QR ini dari aplikasi KangDoMie untuk Check-In</p>
+                                          <script>setTimeout(() => window.print(), 500);</script>
+                                        </body>
+                                      </html>
+                                    `);
+                                    win.document.close();
+                                  }
+                                }}
+                                className="px-4 py-2 bg-primary/20 text-primary rounded-lg text-xs font-bold hover:bg-primary/30 transition-colors"
+                              >
+                                Cetak QR Code
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
