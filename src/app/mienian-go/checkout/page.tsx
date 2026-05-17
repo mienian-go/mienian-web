@@ -96,8 +96,24 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!state.driverId) {
+      alert("Kamu belum memilih KangDoMie. Silakan kembali ke menu dan pilih KangDoMie di peta.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      // Verify driver is still active
+      const { getDoc, doc, setDoc } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
+      
+      const driverSnap = await getDoc(doc(db, "kangdomie_drivers", state.driverId));
+      if (!driverSnap.exists() || driverSnap.data().status !== "available") {
+        alert("Maaf, KangDoMie yang Anda pilih saat ini sudah tidak aktif atau penuh. Silakan kembali ke peta dan pilih KangDoMie lain.");
+        setIsSubmitting(false);
+        return;
+      }
+
       const orderId = `GO${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 999)}`;
       
       const res = await fetch("/api/doku/create-payment", {
@@ -115,9 +131,6 @@ export default function CheckoutPage() {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal membuat pembayaran Doku");
-
-      const { doc, setDoc } = await import("firebase/firestore");
-      const { db } = await import("@/lib/firebase");
       
       await setDoc(doc(db, "orders", orderId), {
         orderId,
