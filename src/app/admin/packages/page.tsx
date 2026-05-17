@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Check, X as XIcon, RefreshCw, Loader2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Check, X as XIcon, RefreshCw, Loader2, ImageIcon, UploadCloud } from "lucide-react";
 import { collection, query, orderBy, onSnapshot, doc, addDoc, updateDoc, deleteDoc, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
 import { formatRupiah } from "@/data/menu";
 import Modal from "@/components/admin/Modal";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 export default function PackagesPage() {
   const [packages, setPackages] = useState<any[]>([]);
@@ -14,6 +16,7 @@ export default function PackagesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -24,6 +27,7 @@ export default function PackagesPage() {
     isActive: true,
     comingSoon: false,
     sortOrder: 0,
+    imageUrl: "",
   });
 
   // Real-time listener for packages
@@ -48,6 +52,7 @@ export default function PackagesPage() {
         isActive: pkg.isActive ?? true,
         comingSoon: pkg.comingSoon ?? false,
         sortOrder: pkg.sortOrder || 0,
+        imageUrl: pkg.imageUrl || "",
       });
     } else {
       setEditingId(null);
@@ -60,6 +65,7 @@ export default function PackagesPage() {
         isActive: true,
         comingSoon: false,
         sortOrder: packages.length * 10,
+        imageUrl: "",
       });
     }
     setModalOpen(true);
@@ -308,6 +314,76 @@ export default function PackagesPage() {
                 className="w-full px-4 py-2 bg-background border border-white/10 rounded-lg focus:border-primary focus:outline-none resize-none"
                 placeholder="Detail isi paket"
               />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium mb-1 text-foreground/70">Gambar Paket</label>
+              <div className="flex flex-col sm:flex-row gap-4 items-start">
+                <div className="relative w-32 h-32 rounded-xl border-2 border-dashed border-white/20 bg-background flex flex-col items-center justify-center overflow-hidden hover:border-primary transition-colors cursor-pointer group">
+                  {formData.imageUrl ? (
+                    <>
+                      <Image src={formData.imageUrl} alt="Preview" fill className="object-cover" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <ImageIcon className="w-6 h-6 text-white" />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud className="w-8 h-8 text-white/30 mb-2" />
+                      <span className="text-[10px] font-bold text-white/30 text-center px-2">Upload Gambar</span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploadingImage(true);
+                      try {
+                        const fileName = `packages/${Date.now()}_${file.name}`;
+                        const storageRef = ref(storage, fileName);
+                        const uploadTask = uploadBytesResumable(storageRef, file);
+                        uploadTask.on("state_changed", null, 
+                          (error) => {
+                            console.error("Upload error", error);
+                            alert("Gagal mengupload gambar.");
+                            setUploadingImage(false);
+                          },
+                          async () => {
+                            const url = await getDownloadURL(uploadTask.snapshot.ref);
+                            setFormData({...formData, imageUrl: url});
+                            setUploadingImage(false);
+                          }
+                        );
+                      } catch (err) {
+                        setUploadingImage(false);
+                        alert("Terjadi kesalahan saat upload.");
+                      }
+                    }}
+                    disabled={uploadingImage}
+                  />
+                  {uploadingImage && (
+                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10">
+                      <Loader2 className="w-6 h-6 text-primary animate-spin mb-1" />
+                      <span className="text-[9px] font-bold text-primary">Uploading...</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-foreground/50 mb-2">
+                    Format: JPG, PNG, WebP (Rasio 1:1 disarankan). Maksimal ukuran file 2MB.
+                  </p>
+                  <input
+                    type="text"
+                    value={formData.imageUrl}
+                    onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+                    placeholder="Atau paste URL gambar langsung..."
+                    className="w-full px-3 py-2 text-xs bg-background border border-white/10 rounded-lg focus:border-primary focus:outline-none"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="sm:col-span-2 flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/5">
