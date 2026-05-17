@@ -97,10 +97,59 @@ export const getOrders = async (): Promise<Order[]> => {
 
 export const updateOrderStatus = async (orderId: string, status: string) => {
   const orderRef = doc(db, "orders", orderId);
+  const orderSnap = await getDoc(orderRef);
+  
   await updateDoc(orderRef, {
     status,
     updatedAt: Timestamp.now(),
   });
+
+  if (orderSnap.exists()) {
+    const orderData = orderSnap.data();
+
+    // Award points if the order becomes verified/paid for the first time
+    if ((status === "verified" || status === "paid") && orderData.status !== "verified" && orderData.status !== "paid") {
+      let userId = orderData.userId;
+
+      // If no explicit userId (like Guest Catering), try to find by WhatsApp
+      if (!userId && orderData.event?.whatsapp) {
+        let rawWa = orderData.event.whatsapp;
+        // Normalize: if starts with 0, change to 62. If starts with +, remove +
+        rawWa = rawWa.replace(/^\+/, '');
+        const normalizedWa = rawWa.startsWith('0') ? '62' + rawWa.substring(1) : rawWa;
+        
+        const usersRef = collection(db, "users");
+        
+        // Check exact match first
+        let userSnap = await getDocs(query(usersRef, where("whatsapp", "==", rawWa)));
+        
+        // If not found, check normalized match
+        if (userSnap.empty && rawWa !== normalizedWa) {
+          userSnap = await getDocs(query(usersRef, where("whatsapp", "==", normalizedWa)));
+        }
+        
+        // Also check if the DB has '0' instead of '62'
+        if (userSnap.empty && normalizedWa.startsWith('62')) {
+           const zeroWa = '0' + normalizedWa.substring(2);
+           userSnap = await getDocs(query(usersRef, where("whatsapp", "==", zeroWa)));
+        }
+
+        if (!userSnap.empty) {
+          userId = userSnap.docs[0].id;
+        }
+      }
+
+      if (userId) {
+        const totalAmount = orderData.costs?.grandTotal || orderData.totalPrice || 0;
+        try {
+          const { earnPoints } = await import("@/lib/firestoreGo");
+          await earnPoints(userId, totalAmount, orderData.event?.picName || orderData.customerName || "Customer");
+        } catch (err) {
+          console.error("Failed to add points to catering customer:", err);
+        }
+      }
+    }
+  }
 };
 
 // SETTINGS
