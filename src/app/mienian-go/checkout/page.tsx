@@ -107,11 +107,34 @@ export default function CheckoutPage() {
       const { getDoc, doc, setDoc } = await import("firebase/firestore");
       const { db } = await import("@/lib/firebase");
       
-      const driverSnap = await getDoc(doc(db, "kangdomie_drivers", state.driverId));
-      if (!driverSnap.exists() || driverSnap.data().status !== "available") {
-        alert("Maaf, KangDoMie yang Anda pilih saat ini sudah tidak aktif atau penuh. Silakan kembali ke peta dan pilih KangDoMie lain.");
+      const [driverSnap, locSnap] = await Promise.all([
+        getDoc(doc(db, "kangdomie_drivers", state.driverId)),
+        getDoc(doc(db, "kangdomie_locations", state.driverId))
+      ]);
+      
+      if (!driverSnap.exists() || !locSnap.exists()) {
+        alert("Maaf, KangDoMie yang Anda pilih tidak ditemukan. Silakan kembali ke peta dan pilih KangDoMie lain.");
         setIsSubmitting(false);
         return;
+      }
+
+      const driverData = driverSnap.data();
+      const locData = locSnap.data();
+
+      if (!driverData.isOnline || locData.status !== "available") {
+        alert("Maaf, KangDoMie yang Anda pilih saat ini sudah offline atau sedang mengantar pesanan lain. Silakan kembali ke peta dan pilih KangDoMie lain.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (driverData.isCooking) {
+        const confirmWait = window.confirm(
+          "KangDoMie yang Anda pilih sedang sibuk memasak pesanan pembeli di tempat.\n\nPesanan Anda mungkin akan sedikit tertunda. Apakah Anda ingin TETAP PESAN & MENUNGGU?\n\n(Klik OK untuk tetap pesan, atau Cancel untuk cari KangDoMie lain)"
+        );
+        if (!confirmWait) {
+          setIsSubmitting(false);
+          return;
+        }
       }
 
       const orderId = `GO${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 999)}`;
