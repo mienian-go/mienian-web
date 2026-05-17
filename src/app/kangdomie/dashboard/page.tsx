@@ -24,8 +24,9 @@ import Image from "next/image";
 import {
   Loader2, LogOut, MapPin, Power, Package, Clock, CheckCircle2,
   Navigation, Phone, User, ChevronRight, Truck, Flame, AlertCircle,
-  MessageCircle, Send, X, DollarSign, ShoppingBag,
+  MessageCircle, Send, X, DollarSign, ShoppingBag, Map
 } from "lucide-react";
+import { useLoadScript, GoogleMap, HeatmapLayer, Marker } from "@react-google-maps/api";
 
 const STATUS_FLOW: Record<string, { next: string; label: string; color: string }> = {
   accepted: { next: "delivering", label: "Siap Antar 🛺", color: "bg-blue-500" },
@@ -60,6 +61,13 @@ export default function KangDoMieDashboard() {
   const [todayCommission, setTodayCommission] = useState(0);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [showMap, setShowMap] = useState(false);
+  const [heatmapData, setHeatmapData] = useState<google.maps.LatLng[]>([]);
+
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyBgj6aPrkcd-B2lWsE0_AdA8PQpbO13R7c",
+    libraries: ["visualization"],
+  });
 
   // Timer for cooking
   useEffect(() => {
@@ -148,6 +156,28 @@ export default function KangDoMieDashboard() {
     });
     return () => unsub();
   }, []);
+
+  // Fetch heatmap data (recent orders with lat/lng)
+  useEffect(() => {
+    const fetchHeatmap = async () => {
+      const { getDocs, limit } = await import("firebase/firestore");
+      const q = query(collection(db, "orders"), orderBy("createdAt", "desc"), limit(200));
+      const snap = await getDocs(q);
+      const points: google.maps.LatLng[] = [];
+      snap.forEach(doc => {
+        const data = doc.data();
+        if (data.lat && data.lng) {
+          if (window.google) {
+            points.push(new window.google.maps.LatLng(data.lat, data.lng));
+          }
+        }
+      });
+      setHeatmapData(points);
+    };
+    if (isLoaded) {
+      fetchHeatmap();
+    }
+  }, [isLoaded]);
 
   // GPS tracking
   const startGPS = useCallback(() => {

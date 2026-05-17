@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getDriver, type KangDoMieDriver } from "@/lib/firestoreDriver";
@@ -12,7 +12,7 @@ import BottomNav from "@/components/kangdomie/BottomNav";
 import Image from "next/image";
 import {
   Loader2, Plus, Minus, Trash2, ShoppingCart, Check, X,
-  DollarSign, Award, ChevronDown,
+  DollarSign, Award, ChevronDown, QrCode, Camera, ScanLine
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -45,6 +45,11 @@ export default function KangDoMiePOS() {
   const [success, setSuccess] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
   const [driverInventory, setDriverInventory] = useState<Record<string, number>>({});
+  
+  // Scanner state
+  const [showScanner, setShowScanner] = useState(false);
+  const [scannedUserId, setScannedUserId] = useState<string | null>(null);
+  const scannerRef = useRef<any>(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -155,14 +160,62 @@ export default function KangDoMiePOS() {
         });
       }
 
+      // If a customer was scanned, give them points
+      if (scannedUserId) {
+        try {
+          const { earnPoints } = await import("@/lib/firestoreGo");
+          await earnPoints(scannedUserId, totalAmount, `Walk-in`);
+        } catch (pointErr) {
+          console.error("Failed to add points to customer:", pointErr);
+        }
+      }
+
       setCart([]);
       setShowCart(false);
+      setScannedUserId(null);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       console.error("Checkout failed:", err);
     }
     setProcessing(false);
+  };
+
+  // QR Scanner logic
+  const startScanner = async () => {
+    setShowScanner(true);
+    setScannedUserId(null);
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const scanner = new Html5Qrcode("pos-qr-reader");
+      scannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        async (decodedText: string) => {
+          await scanner.stop();
+          scannerRef.current = null;
+          setShowScanner(false);
+          setScannedUserId(decodedText);
+        },
+        () => {} // ignore errors
+      );
+    } catch (err) {
+      console.error("Scanner error:", err);
+      alert("Tidak bisa mengakses kamera.");
+      setShowScanner(false);
+    }
+  };
+
+  const stopScanner = async () => {
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop();
+      } catch (e) {}
+      scannerRef.current = null;
+    }
+    setShowScanner(false);
   };
 
   if (loading) {
@@ -293,7 +346,7 @@ export default function KangDoMiePOS() {
         <motion.div
           initial={{ y: 100 }}
           animate={{ y: 0 }}
-          className="fixed bottom-20 left-4 right-4 z-40 max-w-2xl mx-auto"
+          className="fixed bottom-24 left-4 right-4 z-40 max-w-2xl mx-auto"
         >
           <button
             onClick={() => setShowCart(true)}
@@ -367,10 +420,36 @@ export default function KangDoMiePOS() {
                     <span className="text-white/50 flex items-center gap-1"><Award className="w-3 h-3 text-yellow-400" /> Komisi</span>
                     <span className="font-bold text-yellow-400">+{formatRupiah(commission)}</span>
                   </div>
+                  
+                  {/* Scan Pelanggan untuk Poin Mienian Power */}
+                  <div className="pt-3 border-t border-white/10 mt-3">
+                    <p className="text-xs text-white/50 mb-2 font-bold text-center">Mienian Power Pelanggan</p>
+                    {scannedUserId ? (
+                      <div className="flex items-center justify-between bg-primary/10 border border-primary/30 rounded-xl p-3">
+                        <div className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-primary" />
+                          <div className="text-xs">
+                            <p className="font-bold text-primary">Member Discan!</p>
+                            <p className="text-white/60">UID: {scannedUserId.slice(0, 8)}...</p>
+                          </div>
+                        </div>
+                        <button onClick={() => setScannedUserId(null)} className="text-xs text-white/50 hover:text-white">Batal</button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={startScanner}
+                        className="w-full py-3 rounded-xl border border-dashed border-white/20 text-white/60 text-sm font-bold flex items-center justify-center gap-2 hover:bg-white/5 transition-colors"
+                      >
+                        <ScanLine className="w-4 h-4" />
+                        Scan QR Profil Pelanggan
+                      </button>
+                    )}
+                  </div>
+
                   <button
                     onClick={handleCheckout}
                     disabled={processing}
-                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-primary to-[#FF6B6B] font-extrabold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-primary to-[#FF6B6B] font-extrabold text-sm flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
                   >
                     {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                     Selesai Transaksi
@@ -378,6 +457,43 @@ export default function KangDoMiePOS() {
                 </div>
               )}
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* QR Scanner Modal */}
+      <AnimatePresence>
+        {showScanner && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4"
+          >
+            <div className="w-full max-w-sm">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-white text-lg">Scan QR Pelanggan</h3>
+                <button onClick={stopScanner} className="p-2 bg-white/10 rounded-full text-white hover:bg-white/20">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="bg-black rounded-3xl overflow-hidden border-2 border-primary/50 aspect-square relative shadow-2xl shadow-primary/20">
+                <div id="pos-qr-reader" className="w-full h-full" />
+                
+                {/* Scanning overlay UI */}
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                  <div className="w-48 h-48 border-2 border-primary/50 rounded-xl relative">
+                    <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-primary rounded-tl-lg" />
+                    <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-primary rounded-tr-lg" />
+                    <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-primary rounded-bl-lg" />
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-primary rounded-br-lg" />
+                  </div>
+                </div>
+              </div>
+              <p className="text-center text-sm text-white/50 mt-6">
+                Arahkan kamera ke QR E-Card yang ada di web pelanggan (Tombol "QR Member" di profil).
+              </p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

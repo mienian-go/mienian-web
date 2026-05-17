@@ -60,7 +60,16 @@ export default function CheckoutPage() {
     if (autocomplete) {
       const place = autocomplete.getPlace();
       if (place.formatted_address) {
-        dispatch({ type: "SET_DELIVERY_DETAILS", payload: { address: place.formatted_address } });
+        const lat = place.geometry?.location?.lat() || null;
+        const lng = place.geometry?.location?.lng() || null;
+        dispatch({ 
+          type: "SET_DELIVERY_DETAILS", 
+          payload: { 
+            address: place.formatted_address,
+            lat,
+            lng
+          } 
+        });
       }
     }
   };
@@ -89,7 +98,14 @@ export default function CheckoutPage() {
         geocoder.geocode({ location: latlng }, (results, status) => {
           setIsDetectingLocation(false);
           if (status === "OK" && results && results[0]) {
-            dispatch({ type: "SET_DELIVERY_DETAILS", payload: { address: results[0].formatted_address } });
+            dispatch({ 
+              type: "SET_DELIVERY_DETAILS", 
+              payload: { 
+                address: results[0].formatted_address,
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              } 
+            });
           } else {
             alert("Gagal mendeteksi alamat dari koordinat.");
           }
@@ -190,6 +206,8 @@ export default function CheckoutPage() {
         city: city,
         address: isPickup ? `Pickup — ${city}` : state.address,
         distanceKm: isPickup ? 0 : state.distanceKm,
+        lat: isPickup ? null : state.lat,
+        lng: isPickup ? null : state.lng,
         driverId: state.driverId || null,
         driverName: state.driverName || null,
         items: state.items,

@@ -327,6 +327,13 @@ export default function OrdersPage() {
                   {selectedOrder.status === "payment_verifying" && (
                     <div className="bg-amber-500/10 border border-amber-500/30 text-amber-500 p-3 rounded-lg text-sm mb-4 text-center">
                       User telah mengupload bukti. Silakan verifikasi!
+                      <button
+                        onClick={() => handleStatusChange(selectedOrder.source === 'mienian_go' ? 'paid' : 'verified')}
+                        disabled={savingStatus}
+                        className="w-full mt-3 py-2 rounded-lg bg-amber-500 text-white font-bold hover:bg-amber-600 transition-colors"
+                      >
+                        {savingStatus ? <Loader2 className="w-4 h-4 animate-spin mx-auto"/> : "Approve Pembayaran"}
+                      </button>
                     </div>
                   )}
 

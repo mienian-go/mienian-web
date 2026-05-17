@@ -301,11 +301,57 @@ export default function NewBlogPostPage() {
 
         {/* Content */}
         <div className="card p-6">
-          <label className="block text-xs font-bold text-foreground/50 uppercase tracking-wider mb-2">
-            <FileText className="w-3.5 h-3.5 inline mr-1" /> Konten Artikel *
-          </label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-xs font-bold text-foreground/50 uppercase tracking-wider">
+              <FileText className="w-3.5 h-3.5 inline mr-1" /> Konten Artikel *
+            </label>
+            <div className="relative">
+              <input 
+                type="file" 
+                accept="image/*"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                title="Upload gambar ke dalam artikel"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (!file.type.startsWith("image/")) return alert("Harus gambar");
+                  
+                  const maxSize = 5 * 1024 * 1024;
+                  let processedFile = file;
+                  if (file.size > maxSize) {
+                    try {
+                      processedFile = await compressImage(file, maxSize);
+                    } catch (err) {
+                      return alert("Gagal kompres gambar");
+                    }
+                  }
+                  
+                  // Optimistic UI could be added, but we just show a browser alert for simplicity in this small tool
+                  const fileName = `blog-inline/${Date.now()}-${processedFile.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
+                  const storageRef = ref(storage, fileName);
+                  const uploadTask = uploadBytesResumable(storageRef, processedFile);
+                  
+                  uploadTask.on(
+                    "state_changed",
+                    () => {},
+                    () => alert("Gagal upload gambar inline"),
+                    async () => {
+                      const url = await getDownloadURL(uploadTask.snapshot.ref);
+                      setForm(prev => ({
+                        ...prev,
+                        content: prev.content + `\n\n![Gambar](${url})\n\n`
+                      }));
+                    }
+                  );
+                }}
+              />
+              <button className="text-[11px] font-bold bg-primary/20 text-primary px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-primary/30 transition-colors pointer-events-none">
+                <ImageIcon className="w-3 h-3" /> Insert Image
+              </button>
+            </div>
+          </div>
           <p className="text-[11px] text-foreground/30 mb-3">
-            Gunakan ## untuk heading besar, ### untuk sub-heading, **teks** untuk bold.
+            Gunakan ## untuk heading besar, ### untuk sub-heading, **teks** untuk bold, atau klik Insert Image.
           </p>
           <textarea
             value={form.content}
