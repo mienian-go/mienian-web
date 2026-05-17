@@ -411,7 +411,7 @@ export default function KangDoMiePOS() {
               </div>
 
               {cart.length > 0 && (
-                <div className="p-4 border-t border-white/10 space-y-3">
+                <div className="p-4 pb-24 border-t border-white/10 space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-white/50">Total</span>
                     <span className="font-extrabold text-lg">{formatRupiah(totalAmount)}</span>
