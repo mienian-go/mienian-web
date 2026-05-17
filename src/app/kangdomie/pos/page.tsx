@@ -452,7 +452,7 @@ export default function KangDoMiePOS() {
                     className="w-full py-4 rounded-2xl bg-gradient-to-r from-primary to-[#FF6B6B] font-extrabold text-sm flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
                   >
                     {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                    Selesai Transaksi
+                    Bayar
                   </button>
                 </div>
               )}

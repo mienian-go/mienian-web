@@ -547,6 +547,104 @@ export default function KangDoMieDashboard() {
         </div>
 
         {/* ========== ORDER LIST ========== */}
+        {activeTab === "available" && (
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-extrabold text-sm flex items-center gap-2">
+              <Flame className="w-4 h-4 text-primary" /> Pesanan Masuk
+            </h2>
+            <button 
+              onClick={() => setShowMap(!showMap)} 
+              className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors flex items-center gap-1 ${showMap ? 'bg-primary text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+            >
+              <Map className="w-3 h-3" />
+              {showMap ? "Tutup Peta" : "Peta & Heatmap"}
+            </button>
+          </div>
+        )}
+
+        {/* Heatmap Section */}
+        <AnimatePresence>
+          {activeTab === "available" && showMap && isLoaded && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-4 overflow-hidden rounded-2xl border border-white/10"
+            >
+              <div className="h-[250px] w-full relative">
+                <GoogleMap
+                  mapContainerStyle={{ width: "100%", height: "100%" }}
+                  center={userLocation || { lat: -6.200000, lng: 106.816666 }} // Default Jakarta if no GPS
+                  zoom={13}
+                  options={{
+                    disableDefaultUI: true,
+                    styles: [
+                      { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+                      { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+                      { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+                      { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+                      { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+                      { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#263c3f" }] },
+                      { featureType: "poi.park", elementType: "labels.text.fill", stylers: [{ color: "#6b9a76" }] },
+                      { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] },
+                      { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#212a37" }] },
+                      { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9ca5b3" }] },
+                      { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#746855" }] },
+                      { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#1f2835" }] },
+                      { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#f3d19c" }] },
+                      { featureType: "transit", elementType: "geometry", stylers: [{ color: "#2f3948" }] },
+                      { featureType: "transit.station", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+                      { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] },
+                      { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#515c6d" }] },
+                      { featureType: "water", elementType: "labels.text.stroke", stylers: [{ color: "#17263c" }] }
+                    ]
+                  }}
+                >
+                  {userLocation && (
+                    <Marker 
+                      position={userLocation} 
+                      icon={{
+                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#FF4500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>'),
+                        scaledSize: new window.google.maps.Size(32, 32),
+                        anchor: new window.google.maps.Point(16, 32)
+                      }}
+                    />
+                  )}
+                  {heatmapData.length > 0 && (
+                    <HeatmapLayer 
+                      data={heatmapData}
+                      options={{
+                        radius: 30,
+                        opacity: 0.8,
+                        gradient: [
+                          "rgba(0, 255, 255, 0)",
+                          "rgba(0, 255, 255, 1)",
+                          "rgba(0, 191, 255, 1)",
+                          "rgba(0, 127, 255, 1)",
+                          "rgba(0, 63, 255, 1)",
+                          "rgba(0, 0, 255, 1)",
+                          "rgba(0, 0, 223, 1)",
+                          "rgba(0, 0, 191, 1)",
+                          "rgba(0, 0, 159, 1)",
+                          "rgba(0, 0, 127, 1)",
+                          "rgba(63, 0, 91, 1)",
+                          "rgba(127, 0, 63, 1)",
+                          "rgba(191, 0, 31, 1)",
+                          "rgba(255, 0, 0, 1)"
+                        ]
+                      }}
+                    />
+                  )}
+                </GoogleMap>
+              </div>
+              <div className="bg-white/5 p-2 text-[10px] text-white/70 flex items-center gap-2">
+                <AlertCircle className="w-3 h-3 text-primary" />
+                <p>Heatmap (Merah = Zona Ramai Pesanan)</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="space-y-3">
           <AnimatePresence mode="popLayout">
             {activeTab === "available" ? (
