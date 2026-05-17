@@ -48,6 +48,9 @@ export interface BookingState {
   
   // Step 5: Checkout
   paymentType: PaymentType;
+  
+  // Promo
+  appliedPromo: any | null;
 
   // Real-time Calculations
   calculations: {
@@ -58,6 +61,7 @@ export interface BookingState {
     staffFee: number;
     transportFee: number;
     extraFee: number;
+    promoDiscountAmount: number;
     grandTotal: number;
     payNow: number;
     isValidReguler: boolean;
@@ -77,6 +81,8 @@ export type BookingAction =
   | { type: "SET_LINE_ITEM"; payload: { category: "mie"|"toppingReg"|"toppingReg2"|"toppingPrem"|"toppingSuper"|"odeng"; items: LineItem[] } }
   | { type: "SELECT_PACKAGE"; payload: { packageId: string } }
   | { type: "SET_PACKAGES"; payload: { packages: any[] } }
+  | { type: "APPLY_PROMO"; payload: { promo: any } }
+  | { type: "REMOVE_PROMO" }
   | { type: "RESET_WIZARD" };
 
 const initialState: BookingState = {
@@ -102,6 +108,7 @@ const initialState: BookingState = {
   odeng: [],
   affiliateCode: "",
   paymentType: "full",
+  appliedPromo: null,
   calculations: {
     basePrice: 0,
     extraPrice: 0,
@@ -110,6 +117,7 @@ const initialState: BookingState = {
     staffFee: 0,
     transportFee: 0,
     extraFee: 0,
+    promoDiscountAmount: 0,
     grandTotal: 0,
     payNow: 0,
     isValidReguler: true,
@@ -240,15 +248,28 @@ function calculateTotals(state: BookingState): BookingState["calculations"] {
     transportFee = 0; // perWay * 2; // PP Trip
   }
 
-  // 5. Final Totals
+  // 5. Promo Discount Calculation
+  const totalFoodOnly = basePrice + extraPrice;
+  let promoDiscountAmount = 0;
+  if (state.appliedPromo) {
+    if (totalFoodOnly >= (state.appliedPromo.minPurchase || 0)) {
+       if (state.appliedPromo.type === "percent") {
+         promoDiscountAmount = (totalFoodOnly * state.appliedPromo.value) / 100;
+       } else {
+         promoDiscountAmount = state.appliedPromo.value;
+       }
+       promoDiscountAmount = Math.min(promoDiscountAmount, totalFoodOnly);
+    }
+  }
+
+  // 6. Final Totals
   const SERVICE_FEE = 5000;
-  const serviceFee = (basePrice + extraPrice) > 0 ? SERVICE_FEE : 0;
-  const grandTotal = basePrice + extraPrice + staffFee + extraFee + transportFee + serviceFee;
+  const serviceFee = totalFoodOnly > 0 ? SERVICE_FEE : 0;
+  
+  const grandTotal = Math.max(0, totalFoodOnly - promoDiscountAmount) + staffFee + extraFee + transportFee + serviceFee;
   const payNow = state.paymentType === "dp" ? Math.ceil(grandTotal * 0.5) : grandTotal;
 
   // validations
-  // total order exclude transport, staff, and extra fees (only food)
-  const totalFoodOnly = basePrice + extraPrice;
   const isValidReguler = isReguler ? totalFoodOnly >= 700000 : true;
   
   let isDpAllowed = true;
@@ -268,6 +289,7 @@ function calculateTotals(state: BookingState): BookingState["calculations"] {
     staffFee,
     transportFee,
     extraFee,
+    promoDiscountAmount,
     grandTotal,
     payNow,
     isValidReguler,
@@ -303,6 +325,12 @@ function reducer(state: BookingState, action: BookingAction): BookingState {
         toppingSuper: [],
         odeng: []
       };
+      break;
+    case "APPLY_PROMO":
+      newState = { ...state, appliedPromo: action.payload.promo };
+      break;
+    case "REMOVE_PROMO":
+      newState = { ...state, appliedPromo: null };
       break;
     case "RESET_WIZARD":
       return initialState;

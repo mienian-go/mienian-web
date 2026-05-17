@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGoCart } from "@/context/GoCartContext";
-import { ArrowLeft, ArrowRight, MapPin, Phone, User, Clock, CheckCircle2, Rocket, Loader2, ShoppingCart, ShieldCheck, Bike, Package, Navigation } from "lucide-react";
+import { ArrowLeft, ArrowRight, MapPin, Phone, User, Clock, CheckCircle2, Rocket, Loader2, ShoppingCart, ShieldCheck, Bike, Package, Navigation, Tag } from "lucide-react";
 import Link from "next/link";
 import { formatRupiah } from "@/data/menu";
 import { useAuth } from "@/context/AuthContext";
 import { useLoadScript, Autocomplete } from "@react-google-maps/api";
 import { subscribeToUserPoints, redeemPoints } from "@/lib/firestoreGo";
-import { useEffect } from "react";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const libraries: "places"[] = ["places"];
 
@@ -32,6 +33,12 @@ export default function CheckoutPage() {
   const [userPoints, setUserPoints] = useState(0);
   const [usePoints, setUsePoints] = useState(false);
 
+  // Promo states
+  const [promoCodeInput, setPromoCodeInput] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<any>(null);
+  const [promoError, setPromoError] = useState("");
+  const [validatingPromo, setValidatingPromo] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     const unsub = subscribeToUserPoints(user.uid, (data) => {
@@ -49,12 +56,70 @@ export default function CheckoutPage() {
   const deliveryFee = 0; // Bebas ongkir!
   const subTotalAll = totalPrice + deliveryFee + SERVICE_FEE;
   
+  // 1. Calculate points discount
   let pointsDiscountAmount = 0;
   if (usePoints) {
     pointsDiscountAmount = Math.min(userPoints, subTotalAll);
   }
   
-  const grandTotal = subTotalAll - pointsDiscountAmount;
+  // 2. Calculate promo discount based on subTotalAll
+  let promoDiscountAmount = 0;
+  if (appliedPromo) {
+    if (subTotalAll >= (appliedPromo.minPurchase || 0)) {
+       if (appliedPromo.type === "percent") {
+         promoDiscountAmount = (subTotalAll * appliedPromo.value) / 100;
+       } else {
+         promoDiscountAmount = appliedPromo.value;
+       }
+       // Don't let discount exceed total
+       promoDiscountAmount = Math.min(promoDiscountAmount, subTotalAll - pointsDiscountAmount);
+    } else {
+       // if minPurchase is no longer met, clear promo
+       setAppliedPromo(null);
+       setPromoError(`Promo butuh minimal transaksi ${formatRupiah(appliedPromo.minPurchase)}`);
+    }
+  }
+
+  const grandTotal = Math.max(0, subTotalAll - pointsDiscountAmount - promoDiscountAmount);
+
+  const applyPromoCode = async () => {
+    if (!promoCodeInput.trim()) return;
+    setValidatingPromo(true);
+    setPromoError("");
+    setAppliedPromo(null);
+
+    try {
+      const q = query(collection(db, "promos"), where("code", "==", promoCodeInput.trim().toUpperCase()));
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        setPromoError("Kode promo tidak valid atau tidak ditemukan.");
+        setValidatingPromo(false);
+        return;
+      }
+
+      const promo = { id: snap.docs[0].id, ...snap.docs[0].data() } as any;
+
+      if (!promo.isActive) {
+        setPromoError("Kode promo ini sudah tidak aktif.");
+      } else if (promo.service !== "go" && promo.service !== "both") {
+        setPromoError("Kode promo ini tidak berlaku untuk Mienian GO.");
+      } else if (promo.expiryDate && promo.expiryDate.seconds * 1000 < Date.now()) {
+        setPromoError("Kode promo sudah kadaluarsa.");
+      } else if (promo.maxUsage && promo.usageCount >= promo.maxUsage) {
+        setPromoError("Kode promo sudah melewati batas kuota penggunaan.");
+      } else if (subTotalAll < (promo.minPurchase || 0)) {
+        setPromoError(`Minimal pembelian untuk promo ini adalah ${formatRupiah(promo.minPurchase)}`);
+      } else {
+        setAppliedPromo(promo);
+        setPromoCodeInput("");
+      }
+    } catch (err) {
+      console.error(err);
+      setPromoError("Terjadi kesalahan saat memvalidasi promo.");
+    }
+    setValidatingPromo(false);
+  };
 
   const onPlaceChanged = () => {
     if (autocomplete) {
@@ -195,6 +260,14 @@ export default function CheckoutPage() {
         await redeemPoints(user.uid, pointsDiscountAmount);
       }
       
+      // Increment promo usage if used
+      if (appliedPromo) {
+        const { updateDoc, increment } = await import("firebase/firestore");
+        await updateDoc(doc(db, "promos", appliedPromo.id), {
+          usageCount: increment(1)
+        });
+      }
+
       await setDoc(doc(db, "orders", orderId), {
         orderId,
         source: "mienian_go",
@@ -211,11 +284,13 @@ export default function CheckoutPage() {
         driverId: state.driverId || null,
         driverName: state.driverName || null,
         items: state.items,
+        promoCode: appliedPromo ? appliedPromo.code : null,
         costs: {
           subtotal: totalPrice,
           deliveryFee: deliveryFee,
           serviceFee: SERVICE_FEE,
           pointsDiscount: pointsDiscountAmount,
+          promoDiscount: promoDiscountAmount,
           grandTotal: grandTotal,
         },
         status: grandTotal === 0 ? "paid" : "pending_payment",
@@ -459,6 +534,62 @@ export default function CheckoutPage() {
                     </label>
                   </div>
                 )}
+
+                {/* PROMO SECTION */}
+                <div className="pt-4 pb-2">
+                  {!appliedPromo ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Tag className="w-4 h-4 text-foreground/40" />
+                          </div>
+                          <input
+                            type="text"
+                            value={promoCodeInput}
+                            onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
+                            placeholder="Makin hemat pakai promo!"
+                            className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-muted border border-transparent focus:border-primary focus:outline-none transition-colors text-sm font-semibold uppercase"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={applyPromoCode}
+                          disabled={!promoCodeInput.trim() || validatingPromo}
+                          className="px-4 py-2.5 bg-primary text-white text-sm font-bold rounded-lg disabled:opacity-50 transition-opacity"
+                        >
+                          {validatingPromo ? <Loader2 className="w-4 h-4 animate-spin" /> : "Pakai"}
+                        </button>
+                      </div>
+                      {promoError && (
+                        <p className="text-primary text-xs font-medium">{promoError}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-primary/10 border border-primary/20">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center">
+                          <Tag className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-primary">{appliedPromo.code}</p>
+                          <p className="text-[10px] text-foreground/60">Promo Berhasil Dipakai</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-primary">- {formatRupiah(promoDiscountAmount)}</span>
+                        <button
+                          type="button"
+                          onClick={() => setAppliedPromo(null)}
+                          className="text-foreground/40 hover:text-red-500 transition-colors"
+                          title="Hapus Promo"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="pt-6 mt-6 border-t border-card-border">

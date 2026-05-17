@@ -21,6 +21,7 @@ import {
   FileText,
   ShieldAlert,
   Truck,
+  Tag,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -31,6 +32,7 @@ const navItems = [
   { name: "Affiliates", href: "/admin/affiliates", icon: UserCheck },
   { name: "Menu Stall", href: "/admin/packages", icon: PackageSearch },
   { name: "Menu GO", href: "/admin/menu", icon: Utensils },
+  { name: "Promo", href: "/admin/promo", icon: Tag },
   { name: "Blog", href: "/admin/blog", icon: FileText },
   { name: "KangDoMie", href: "/admin/kangdomie", icon: Truck },
   { name: "Jadwal GO", href: "/admin/schedule", icon: Calendar },

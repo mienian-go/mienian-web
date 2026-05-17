@@ -90,6 +90,8 @@ export default function ConfirmPage() {
             ? [{ name: "Paket Reguler (A la carte)", qty: c.totalPorsi }] 
             : [{ name: state.packageId, qty: 1 }],
         totalPrice: c.grandTotal,
+        promoCode: state.appliedPromo ? state.appliedPromo.code : null,
+        promoDiscount: c.promoDiscountAmount || 0,
         event: {
             picName: state.name,
             whatsapp: state.whatsapp,
@@ -109,6 +111,19 @@ export default function ConfirmPage() {
       // 3. Save to Firestore
       const docId = await createOrder(orderData);
       
+      // 4. Increment promo usage if used
+      if (state.appliedPromo) {
+        try {
+          const { updateDoc, doc, increment } = await import("firebase/firestore");
+          const { db } = await import("@/lib/firebase");
+          await updateDoc(doc(db, "promos", state.appliedPromo.id), {
+            usageCount: increment(1)
+          });
+        } catch (err) {
+          console.error("Failed to increment promo usage", err);
+        }
+      }
+
       // Navigate to success page (Success expects to read orderId from CartContext or self-generating. 
       // We'll pass it as URL param since we already removed CartContext from this page).
       router.push(`/catering/success?id=${docId}&orderId=${orderDisplayId}`);
