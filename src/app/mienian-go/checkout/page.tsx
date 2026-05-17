@@ -8,6 +8,8 @@ import Link from "next/link";
 import { formatRupiah } from "@/data/menu";
 import { useAuth } from "@/context/AuthContext";
 import { useLoadScript, Autocomplete } from "@react-google-maps/api";
+import { subscribeToUserPoints, redeemPoints } from "@/lib/firestoreGo";
+import { useEffect } from "react";
 
 const libraries: "places"[] = ["places"];
 
@@ -26,6 +28,17 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  
+  const [userPoints, setUserPoints] = useState(0);
+  const [usePoints, setUsePoints] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    const unsub = subscribeToUserPoints(user.uid, (data) => {
+      setUserPoints(data?.points || 0);
+    });
+    return () => unsub();
+  }, [user]);
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyBgj6aPrkcd-B2lWsE0_AdA8PQpbO13R7c",
@@ -34,7 +47,14 @@ export default function CheckoutPage() {
 
   const isPickup = state.orderMode === "pickup";
   const deliveryFee = 0; // Bebas ongkir!
-  const grandTotal = totalPrice + deliveryFee + SERVICE_FEE;
+  const subTotalAll = totalPrice + deliveryFee + SERVICE_FEE;
+  
+  let pointsDiscountAmount = 0;
+  if (usePoints) {
+    pointsDiscountAmount = Math.min(userPoints, subTotalAll);
+  }
+  
+  const grandTotal = subTotalAll - pointsDiscountAmount;
 
   const onPlaceChanged = () => {
     if (autocomplete) {
@@ -153,7 +173,11 @@ export default function CheckoutPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal membuat pembayaran Doku");
+      if (!res.ok && grandTotal > 0) throw new Error(data.error || "Gagal membuat pembayaran Doku");
+
+      if (usePoints && pointsDiscountAmount > 0 && user?.uid) {
+        await redeemPoints(user.uid, pointsDiscountAmount);
+      }
       
       await setDoc(doc(db, "orders", orderId), {
         orderId,
@@ -173,15 +197,18 @@ export default function CheckoutPage() {
           subtotal: totalPrice,
           deliveryFee: deliveryFee,
           serviceFee: SERVICE_FEE,
+          pointsDiscount: pointsDiscountAmount,
           grandTotal: grandTotal,
         },
-        status: "pending_payment",
+        status: grandTotal === 0 ? "paid" : "pending_payment",
         createdAt: new Date(),
       });
 
       dispatch({ type: "CLEAR_CART" });
 
-      if (data.paymentUrl) {
+      if (grandTotal === 0) {
+        window.location.href = `/mienian-go/tracking/${orderId}`;
+      } else if (data.paymentUrl) {
         window.location.href = data.paymentUrl;
       } else {
         throw new Error("URL pembayaran tidak ditemukan");
@@ -394,6 +421,26 @@ export default function CheckoutPage() {
                   <span>Biaya Layanan</span>
                   <span className="font-bold text-foreground">{formatRupiah(SERVICE_FEE)}</span>
                 </div>
+                
+                {userPoints > 0 && (
+                  <div className="pt-2">
+                    <label className="flex items-center gap-3 text-sm text-foreground/80 cursor-pointer p-3 rounded-xl bg-secondary/5 border border-secondary/20 hover:bg-secondary/10 transition-colors">
+                      <input 
+                        type="checkbox" 
+                        checked={usePoints}
+                        onChange={(e) => setUsePoints(e.target.checked)}
+                        className="w-4 h-4 rounded border-secondary/30 text-secondary focus:ring-secondary/50 accent-secondary cursor-pointer"
+                      />
+                      <div className="flex-1">
+                        <p className="font-bold text-secondary text-xs">Pakai Poin Member</p>
+                        <p className="text-[10px] text-foreground/50 leading-tight mt-0.5">Saldo: {userPoints.toLocaleString('id-ID')} poin</p>
+                      </div>
+                      <span className="font-bold text-secondary text-xs text-right">
+                        - {formatRupiah(usePoints ? pointsDiscountAmount : Math.min(userPoints, subTotalAll))}
+                      </span>
+                    </label>
+                  </div>
+                )}
               </div>
 
               <div className="pt-6 mt-6 border-t border-card-border">

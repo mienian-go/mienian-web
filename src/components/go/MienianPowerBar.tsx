@@ -35,9 +35,8 @@ export default function MienianPowerBar() {
 
   const points = data?.points || 0;
   const level = data?.level || 0;
-  const currentThreshold = LEVEL_THRESHOLDS[level] || 0;
-  const nextThreshold = LEVEL_THRESHOLDS[level + 1] || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1];
-  const progress = Math.min(((points - currentThreshold) / (nextThreshold - currentThreshold)) * 100, 100);
+  const maxThreshold = LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]; // 25000
+  const progress = Math.min((points / maxThreshold) * 100, 100);
   const levelName = LEVEL_NAMES[level] || "Newbie";
   const levelColor = LEVEL_COLORS[level] || "#9E9E9E";
 
@@ -103,8 +102,8 @@ export default function MienianPowerBar() {
           />
         </div>
         <div className="flex justify-between mt-1.5">
-          <p className="text-[10px] text-foreground/40">{points.toLocaleString("id-ID")} poin</p>
-          <p className="text-[10px] text-foreground/40">{nextThreshold.toLocaleString("id-ID")} poin</p>
+          <p className="text-[10px] text-foreground/40">0 poin</p>
+          <p className="text-[10px] text-foreground/40">{maxThreshold.toLocaleString("id-ID")} poin (Max)</p>
         </div>
       </div>
 
