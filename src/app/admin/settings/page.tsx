@@ -20,6 +20,7 @@ export default function SettingsPage() {
     instagramHandle: "",
     tiktokHandle: "",
     enableManualPayment: false,
+    dokuEnabled: true,
   });
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export default function SettingsPage() {
             instagramHandle: data.instagramHandle || "@mienian_id",
             tiktokHandle: data.tiktokHandle || "@mienian_id",
             enableManualPayment: data.enableManualPayment || false,
+            dokuEnabled: data.dokuEnabled ?? true,
           });
         }
       } catch (err) {
@@ -146,14 +148,30 @@ export default function SettingsPage() {
                   <input
                     type="checkbox"
                     className="sr-only peer"
+                    checked={formData.dokuEnabled}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, dokuEnabled: e.target.checked }))}
+                  />
+                  <div className="w-11 h-6 bg-muted border border-card-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+                <div className="text-sm">
+                  <p className="font-bold">Aktifkan DOKU Payment Gateway</p>
+                  <p className="text-xs text-foreground/50">VA, QRIS otomatis, E-Wallet, kartu kredit.</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
                     checked={formData.enableManualPayment}
                     onChange={(e) => setFormData((prev) => ({ ...prev, enableManualPayment: e.target.checked }))}
                   />
                   <div className="w-11 h-6 bg-muted border border-card-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
                 <div className="text-sm">
-                  <p className="font-bold">Aktifkan Pembayaran Manual</p>
-                  <p className="text-xs text-foreground/50">Tampilkan opsi transfer bank & QRIS di halaman checkout.</p>
+                  <p className="font-bold">Aktifkan Transfer Manual</p>
+                  <p className="text-xs text-foreground/50">Transfer bank BSI / QRIS manual + upload bukti bayar.</p>
                 </div>
               </div>
             </div>

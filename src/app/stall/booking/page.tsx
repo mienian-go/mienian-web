@@ -7,10 +7,11 @@ import { Step2Location } from "@/components/catering/wizard/Step2Location";
 import { Step3Stall } from "@/components/catering/wizard/Step3Stall";
 import { Step4Menu } from "@/components/catering/wizard/Step4Menu";
 import { Step5Checkout } from "@/components/catering/wizard/Step5Checkout";
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 const steps = [
   { id: 1, title: "Profil & Acara" },
@@ -22,7 +23,20 @@ const steps = [
 
 function BookingWizard() {
   const [currentStep, setCurrentStep] = useState(1);
-  const { state } = useBooking();
+  const { state, dispatch } = useBooking();
+  const searchParams = useSearchParams();
+
+  // Pre-select event type from query param: ?category=wedding / reguler
+  useEffect(() => {
+    const category = searchParams.get("category");
+    if (category === "wedding" && !state.eventType) {
+      dispatch({ type: "SET_FIELD", payload: { field: "eventType", value: "Wedding" } });
+    }
+    const aff = searchParams.get("aff") || searchParams.get("ref");
+    if (aff) {
+      dispatch({ type: "SET_FIELD", payload: { field: "affiliateCode", value: aff } });
+    }
+  }, []);
 
   const handleNext = () => {
     // Local validation logic per step before advancing
@@ -165,7 +179,10 @@ function BookingWizard() {
   );
 }
 
-// Ensure BookingProvider is wrapping the wizard, even though RootLayout has it.
-// This is to prevent overlapping context issues if needed, but RootLayout has it globally.
-// We will just export the component.
-export default BookingWizard;
+export default function BookingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-foreground/50">Memuat Formulir...</div>}>
+      <BookingWizard />
+    </Suspense>
+  );
+}

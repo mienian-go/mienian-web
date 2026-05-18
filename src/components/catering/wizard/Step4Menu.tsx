@@ -235,6 +235,9 @@ export function Step4Menu() {
              className="w-full px-4 py-3 rounded-xl bg-muted border border-transparent focus:border-primary focus:outline-none transition-colors appearance-none text-sm font-bold"
            >
              <option value="">-- Pilih Paket --</option>
+             {state.eventType !== "Wedding" && (
+               <option value="reguler">Paket Reguler (A la carte) — Min. Rp 700.000</option>
+             )}
              {state.packages.filter(p => p.category === "wedding" && !p.comingSoon).map(p => (
                 <option key={p.id} value={p.id}>{p.name} — Rp {p.price.toLocaleString("id-ID")} | {p.portions} Porsi</option>
              ))}
