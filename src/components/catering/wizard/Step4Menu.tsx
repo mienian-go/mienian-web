@@ -24,7 +24,8 @@ export function Step4Menu() {
   // Helpers to add rows
   const addRow = (category: "mie" | "toppingReg" | "toppingPrem" | "odeng") => {
     const list = state[category];
-    if (category === "mie" && list.length >= 3) return;
+    const maxVariants = selectedPkg?.maxMieVariants || 3;
+    if (category === "mie" && list.length >= maxVariants) return;
     if (category === "toppingReg" && list.length >= 3) return;
     
     dispatch({
@@ -41,6 +42,22 @@ export function Step4Menu() {
   };
 
   const updateRow = (category: "mie" | "toppingReg" | "toppingPrem" | "odeng", id: string, field: "name" | "qty", val: string | number) => {
+    if (field === "qty" && !isReguler && targetPorsi > 0) {
+      const newVal = Number(val) || 0;
+      const otherRowsTotal = state[category]
+        .filter(i => i.id !== id)
+        .reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
+      
+      // For mie category: enforce that total can't go below package minimum
+      if (category === "mie" && (otherRowsTotal + newVal) < targetPorsi) {
+        const minForThisRow = targetPorsi - otherRowsTotal;
+        dispatch({
+          type: "SET_LINE_ITEM",
+          payload: { category, items: state[category].map(i => i.id === id ? { ...i, [field]: Math.max(newVal, minForThisRow) } : i) }
+        });
+        return;
+      }
+    }
     dispatch({
       type: "SET_LINE_ITEM",
       payload: { category, items: state[category].map(i => i.id === id ? { ...i, [field]: val } : i) }
@@ -200,7 +217,7 @@ export function Step4Menu() {
               <div className="relative w-24 sm:w-32 shrink-0">
                 <input
                   type="number"
-                  min="0"
+                  min={!isReguler && key === "mie" && targetPorsi > 0 ? targetPorsi - state.mie.filter(i => i.id !== row.id).reduce((s, i) => s + (Number(i.qty) || 0), 0) : 0}
                   value={row.qty || ""}
                   onChange={(e) => updateRow(key, row.id, "qty", parseInt(e.target.value) || 0)}
                   placeholder="Porsi"
