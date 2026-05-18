@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useCart } from "@/context/CartContext";
 import { useBooking } from "@/context/BookingContext";
 import { Home, MessageCircle, Copy, Check, PartyPopper } from "lucide-react";
 
@@ -54,7 +53,6 @@ function Confetti() {
 }
 
 export default function SuccessPage() {
-  const { dispatch: dispatchCart } = useCart();
   const { state: stateBooking, dispatch: dispatchBooking } = useBooking();
   const [copied, setCopied] = useState(false);
   const [orderId, setOrderId] = useState("");
@@ -91,7 +89,6 @@ export default function SuccessPage() {
   };
 
   const handleGoHome = () => {
-    dispatchCart({ type: "CLEAR_CART" });
     dispatchBooking({ type: "RESET_WIZARD" });
   };
 

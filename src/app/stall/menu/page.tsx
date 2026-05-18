@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingCart, Plus, Check, ArrowRight, Lock } from "lucide-react";
+import { ArrowRight, Lock } from "lucide-react";
 import Link from "next/link";
-import { useCart } from "@/context/CartContext";
 import { getMenuItems, getCateringPackages } from "@/lib/firestore";
 import {
   categoryLabels,
@@ -16,7 +15,6 @@ type Tab = "menu" | "wedding" | "corporate";
 
 export default function CateringMenu() {
   const [activeTab, setActiveTab] = useState<Tab>("wedding");
-  const { state, dispatch, totalPrice, totalItems } = useCart();
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [cateringPackages, setCateringPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,22 +47,6 @@ export default function CateringMenu() {
 
   const weddingPackages = cateringPackages.filter((p) => p.category === "wedding");
   const corporatePackages = cateringPackages.filter((p) => p.category === "corporate");
-
-  const isInCart = (id: string) => state.items.some((i) => i.id === id);
-
-  const addPackage = (pkg: typeof cateringPackages[0]) => {
-    dispatch({
-      type: "ADD_ITEM",
-      payload: {
-        id: pkg.id,
-        name: pkg.name,
-        price: pkg.price,
-        portions: pkg.portions,
-        quantity: 1,
-        category: pkg.category,
-      },
-    });
-  };
 
   return (
     <div className="flex flex-col overflow-hidden pt-24 pb-32">
@@ -174,16 +156,13 @@ export default function CateringMenu() {
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {weddingPackages.map((pkg, i) => {
-                  const inCart = isInCart(pkg.id);
                   return (
                     <motion.div
                       key={pkg.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
-                      className={`card p-6 sm:p-8 flex flex-col justify-between ${
-                        inCart ? "border-tertiary/40 bg-tertiary/5" : ""
-                      }`}
+                      className="card p-6 sm:p-8 flex flex-col justify-between hover:-translate-y-1 hover:shadow-lg transition-all"
                     >
                       <div>
                         <div className="flex items-start justify-between mb-4">
@@ -199,25 +178,12 @@ export default function CateringMenu() {
                           {formatRupiah(pkg.price)}
                         </p>
                       </div>
-                      <button
-                        onClick={() => !inCart && addPackage(pkg)}
-                        disabled={inCart}
-                        className={`btn btn-md w-full ${
-                          inCart
-                            ? "bg-tertiary/10 text-tertiary cursor-default"
-                            : "btn-primary"
-                        }`}
+                      <Link
+                        href="/stall/booking?category=wedding"
+                        className="btn btn-primary btn-md w-full flex items-center justify-center gap-2"
                       >
-                        {inCart ? (
-                          <>
-                            <Check className="w-4 h-4" /> Udah di Keranjang
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="w-4 h-4" /> Pilih Paket
-                          </>
-                        )}
-                      </button>
+                        Pesan Sekarang <ArrowRight className="w-4 h-4" />
+                      </Link>
                     </motion.div>
                   );
                 })}
@@ -259,33 +225,6 @@ export default function CateringMenu() {
         )}
       </div>
 
-      {/* ============ FLOATING CART BAR ============ */}
-      <AnimatePresence>
-        {totalItems > 0 && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-0 left-0 right-0 z-50 glass-panel border-t border-glass-border shadow-2xl shadow-black/10"
-          >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <ShoppingCart className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-foreground/50">{totalItems} paket dipilih</p>
-                  <p className="text-xl font-extrabold text-primary">{formatRupiah(totalPrice)}</p>
-                </div>
-              </div>
-              <Link href="/stall/cart" className="btn btn-primary btn-md">
-                Checkout
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

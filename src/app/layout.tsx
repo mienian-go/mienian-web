@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Outfit, Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { CartProvider } from "@/context/CartContext";
 import { BookingProvider } from "@/context/BookingContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { GoCartProvider } from "@/context/GoCartContext";
@@ -50,11 +49,9 @@ export default function RootLayout({
         >
           <AuthProvider>
             <BookingProvider>
-              <CartProvider>
-                <GoCartProvider>
-                  <ConditionalLayout>{children}</ConditionalLayout>
-                </GoCartProvider>
-              </CartProvider>
+              <GoCartProvider>
+                <ConditionalLayout>{children}</ConditionalLayout>
+              </GoCartProvider>
             </BookingProvider>
           </AuthProvider>
         </ThemeProvider>

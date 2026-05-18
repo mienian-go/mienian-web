@@ -66,7 +66,7 @@ export function Footer() {
             <h4 className="font-bold mb-4 text-white">Catering</h4>
             <ul className="space-y-3 text-sm text-white/60">
               <li><Link href="/stall/menu" className="hover:text-secondary transition-colors">Menu & Paket</Link></li>
-              <li><Link href="/stall/cart" className="hover:text-secondary transition-colors">Keranjang</Link></li>
+              <li><Link href="/stall/booking" className="hover:text-secondary transition-colors">Booking Wizard</Link></li>
               <li>
                 <a href="https://wa.me/6285216706922" target="_blank" rel="noopener noreferrer" className="hover:text-secondary transition-colors">
                   Chat Admin

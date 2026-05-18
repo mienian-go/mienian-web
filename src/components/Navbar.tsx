@@ -3,9 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ThemeToggle } from "./ThemeToggle";
-import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
-import { ShoppingCart, Menu, X, User } from "lucide-react";
+import { Menu, X, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,7 +21,6 @@ const navLinks = [
 export function Navbar() {
   const { user } = useAuth();
   const pathname = usePathname();
-  const { totalItems } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -134,27 +132,6 @@ export function Navbar() {
                 Login / Daftar
               </Link>
             )}
-            
-            {/* Cart Button */}
-            <Link
-              href="/stall/cart"
-              className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all ${
-                scrolled || !isHomePage
-                  ? "bg-muted hover:bg-accent text-foreground" 
-                  : "bg-white/10 hover:bg-white/20 text-white"
-              }`}
-            >
-              <ShoppingCart className="w-5 h-5" />
-              {totalItems > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg"
-                >
-                  {totalItems}
-                </motion.span>
-              )}
-            </Link>
 
             {/* Mobile Hamburger */}
             <button
