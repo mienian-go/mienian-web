@@ -37,7 +37,7 @@ export interface CateringPackage {
   category: "wedding" | "corporate";
   isActive?: boolean;
   comingSoon?: boolean;
-  image?: string;
+  imageUrl?: string;
   sortOrder?: number;
   [key: string]: any;
 }

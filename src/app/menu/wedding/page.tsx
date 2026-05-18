@@ -53,7 +53,7 @@ export default function WeddingInfoPage() {
         <h2 className="text-xl font-bold mb-6">Pilih Paket Wedding</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
           {weddingPackages.map((pkg, idx) => {
-            const imgSrc = pkg.image || `/images/paket-wedding-${(idx % 6) + 1}.jpg`;
+            const imgSrc = pkg.imageUrl || `/images/paket-wedding-${(idx % 6) + 1}.jpg`;
             return (
               <motion.div
                 key={pkg.id}

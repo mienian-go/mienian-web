@@ -120,7 +120,7 @@ export function PackageShowcase() {
                   title={pkg.name}
                   price={pkg.price}
                   portions={pkg.portions}
-                  image={pkg.image || `/images/paket-wedding-${(index % 5) + 1}.jpg`}
+                  image={pkg.imageUrl || `/images/paket-wedding-${(index % 5) + 1}.jpg`}
                   href="/menu/wedding"
                   isComingSoon={pkg.comingSoon}
                 />
