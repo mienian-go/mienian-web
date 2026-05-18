@@ -1,11 +1,12 @@
 "use client";
 
 import { useBooking, CityCode } from "@/context/BookingContext";
-import { CopyPlus, Trash2, MapPin, Rocket, CheckCircle2, PartyPopper } from "lucide-react";
+import { CopyPlus, Trash2, MapPin, Rocket, CheckCircle2, PartyPopper, Tag, Loader2 } from "lucide-react";
 import { useEffect, useState, Suspense } from "react";
 import { useLoadScript, Autocomplete } from "@react-google-maps/api";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import { collection, query, where, getDocs, doc, updateDoc, increment } from "firebase/firestore";
 import { createOrder, updateUserProfile, getUserProfile } from "@/lib/firestore";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -54,6 +55,50 @@ function WeddingBookingContent() {
   const [authError, setAuthError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  // Promo states
+  const [promoCodeInput, setPromoCodeInput] = useState("");
+  const [promoError, setPromoError] = useState("");
+  const [validatingPromo, setValidatingPromo] = useState(false);
+
+  const applyPromoCode = async () => {
+    if (!promoCodeInput.trim()) return;
+    setValidatingPromo(true);
+    setPromoError("");
+    dispatch({ type: "REMOVE_PROMO" });
+
+    try {
+      const q = query(collection(db, "promos"), where("code", "==", promoCodeInput.trim().toUpperCase()));
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        setPromoError("Kode promo tidak valid atau tidak ditemukan.");
+        setValidatingPromo(false);
+        return;
+      }
+
+      const promo = { id: snap.docs[0].id, ...snap.docs[0].data() } as any;
+
+      if (!promo.isActive) {
+        setPromoError("Kode promo ini sudah tidak aktif.");
+      } else if (promo.service !== "stall" && promo.service !== "both") {
+        setPromoError("Kode promo ini tidak berlaku untuk Catering / Wedding.");
+      } else if (promo.expiryDate && promo.expiryDate.seconds * 1000 < Date.now()) {
+        setPromoError("Kode promo sudah kadaluarsa.");
+      } else if (promo.maxUsage && promo.usageCount >= promo.maxUsage) {
+        setPromoError("Kode promo sudah melewati batas kuota penggunaan.");
+      } else if ((state.calculations.basePrice + state.calculations.extraPrice) < (promo.minPurchase || 0)) {
+        setPromoError(`Minimal pembelian untuk promo ini adalah Rp ${(promo.minPurchase || 0).toLocaleString("id-ID")}`);
+      } else {
+        dispatch({ type: "APPLY_PROMO", payload: { promo } });
+        setPromoCodeInput("");
+      }
+    } catch (err) {
+      console.error(err);
+      setPromoError("Terjadi kesalahan saat memvalidasi promo.");
+    }
+    setValidatingPromo(false);
+  };
 
   // Setup state on mount
   useEffect(() => {
@@ -256,6 +301,8 @@ function WeddingBookingContent() {
           toppingSuper: state.toppingSuper
         },
         costs: state.calculations,
+        promoCode: state.appliedPromo ? state.appliedPromo.code : null,
+        promoDiscount: state.calculations.promoDiscountAmount || 0,
         affiliateCode: state.affiliateCode || "",
         status: "pending_payment",
         paymentMethod: "doku",
@@ -263,6 +310,17 @@ function WeddingBookingContent() {
       };
 
       const orderId = await createOrder(orderData);
+
+      // Increment promo usage if used
+      if (state.appliedPromo) {
+        try {
+          await updateDoc(doc(db, "promos", state.appliedPromo.id), {
+            usageCount: increment(1)
+          });
+        } catch (err) {
+          console.error("Failed to increment promo usage", err);
+        }
+      }
 
       // Call DOKU Checkout API
       try {
@@ -801,6 +859,62 @@ function WeddingBookingContent() {
                 <div className="flex justify-between items-center text-foreground/60">
                   <span>Biaya Layanan</span>
                   <span>Rp {state.calculations.serviceFee.toLocaleString("id-ID")}</span>
+                </div>
+              )}
+            </div>
+
+            {/* PROMO SECTION */}
+            <div className="py-5 border-t border-dashed border-card-border/50 relative z-10">
+              {!state.appliedPromo ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Tag className="w-4 h-4 text-foreground/40" />
+                      </div>
+                      <input
+                        type="text"
+                        value={promoCodeInput}
+                        onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
+                        placeholder="Punya kode promo?"
+                        className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-muted border border-transparent focus:border-primary focus:outline-none transition-colors text-sm font-semibold uppercase"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={applyPromoCode}
+                      disabled={!promoCodeInput.trim() || validatingPromo}
+                      className="px-4 py-2.5 bg-primary text-white text-sm font-bold rounded-lg disabled:opacity-50 transition-opacity"
+                    >
+                      {validatingPromo ? <Loader2 className="w-4 h-4 animate-spin" /> : "Pakai"}
+                    </button>
+                  </div>
+                  {promoError && (
+                    <p className="text-primary text-xs font-medium">{promoError}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-primary/10 border border-primary/20">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center">
+                      <Tag className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-primary">{state.appliedPromo.code}</p>
+                      <p className="text-[10px] text-foreground/60">Promo Berhasil Dipakai</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-primary">- Rp {state.calculations.promoDiscountAmount.toLocaleString("id-ID")}</span>
+                    <button
+                      type="button"
+                      onClick={() => dispatch({ type: "REMOVE_PROMO" })}
+                      className="text-foreground/40 hover:text-red-500 transition-colors"
+                      title="Hapus Promo"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
