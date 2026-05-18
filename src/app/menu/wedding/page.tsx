@@ -49,35 +49,35 @@ export default function WeddingInfoPage() {
           </ul>
         </div>
 
-        {/* Package Cards */}
+        {/* Package Cards — Horizontal Scroll */}
         <h2 className="text-xl font-bold mb-6">Pilih Paket Wedding</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
-          {weddingPackages.map((pkg, idx) => {
-            const imgSrc = pkg.imageUrl || `/images/paket-wedding-${(idx % 6) + 1}.jpg`;
-            return (
-              <motion.div
-                key={pkg.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                className="bg-card rounded-2xl border border-card-border shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all"
-              >
-                <div className="aspect-[4/3] w-full bg-muted relative overflow-hidden">
-                  <img src={imgSrc} alt={pkg.name} className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-                </div>
-                <div className="p-5">
-                  <h3 className="font-bold text-sm mb-1">{pkg.name}</h3>
-                  <div className="flex items-baseline gap-1.5 mb-4">
-                    <span className="text-lg font-extrabold text-secondary">{formatRupiah(pkg.price)}</span>
-                    <span className="text-[10px] text-foreground/50">/ {pkg.portions} porsi</span>
+        <div className="relative -mx-4 px-4 overflow-x-auto no-scrollbar pb-6 mb-12">
+          <div className="flex gap-5 snap-x">
+            {weddingPackages.slice(0, 5).map((pkg, idx) => {
+              const imgSrc = pkg.imageUrl || `/images/paket-wedding-${(idx % 6) + 1}.jpg`;
+              return (
+                <motion.div
+                  key={pkg.id}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.06 }}
+                  className="snap-start shrink-0 w-[220px] sm:w-[240px] bg-card rounded-2xl border border-card-border shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all"
+                >
+                  <div className="aspect-square w-full bg-muted relative overflow-hidden">
+                    <img src={imgSrc} alt={pkg.name} className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                   </div>
-                  {pkg.description && (
-                    <p className="text-xs text-foreground/60 mb-4 line-clamp-2">{pkg.description}</p>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
+                  <div className="p-4">
+                    <h3 className="font-bold text-sm mb-1 line-clamp-2 min-h-[2.5rem]">{pkg.name}</h3>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-base font-extrabold text-secondary">{formatRupiah(pkg.price)}</span>
+                      <span className="text-[10px] text-foreground/50">/ {pkg.portions} porsi</span>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+            <div className="snap-start shrink-0 w-2 sm:hidden"></div>
+          </div>
         </div>
 
         {/* CTA */}

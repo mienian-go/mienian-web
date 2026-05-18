@@ -19,9 +19,9 @@ interface PackageCardProps {
 
 const PackageCard = ({ title, price, portions, image, href, isComingSoon }: PackageCardProps) => {
   const CardContent = (
-    <div className="relative w-[280px] sm:w-[320px] bg-white rounded-[24px] overflow-hidden shadow-xl shadow-black/10 border border-black/5 flex flex-col group shrink-0 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl">
+       <div className="relative w-[220px] sm:w-[240px] bg-white rounded-[24px] overflow-hidden shadow-xl shadow-black/10 border border-black/5 flex flex-col group shrink-0 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl">
       {/* Image Area — the pre-designed image fills this */}
-      <div className="relative w-full aspect-[4/5] overflow-hidden">
+      <div className="relative w-full aspect-square overflow-hidden">
         <Image
           src={image}
           alt={title}
@@ -108,7 +108,7 @@ export function PackageShowcase() {
         {/* Horizontal Scroll Container */}
         <div className="relative -mx-4 sm:-mx-6 lg:-mx-8 overflow-x-auto no-scrollbar pb-12 pt-4">
           <div className="flex gap-6 px-4 sm:px-6 lg:px-8">
-            {weddingPkgs.map((pkg, index) => (
+            {weddingPkgs.slice(0, 5).map((pkg, index) => (
               <motion.div
                 key={pkg.id}
                 initial={{ opacity: 0, x: 20 }}
