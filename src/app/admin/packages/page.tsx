@@ -28,6 +28,13 @@ export default function PackagesPage() {
     comingSoon: false,
     sortOrder: 0,
     imageUrl: "",
+    extraPortionPrice: 0,
+    maxMieVariants: 3,
+    includedToppingReg: 0,
+    includedToppingReg2: 0,
+    includedToppingPrem: 0,
+    includedToppingSuper: 0,
+    isPaketOdeng: false,
   });
 
   // Real-time listener for packages
@@ -53,6 +60,13 @@ export default function PackagesPage() {
         comingSoon: pkg.comingSoon ?? false,
         sortOrder: pkg.sortOrder || 0,
         imageUrl: pkg.imageUrl || "",
+        extraPortionPrice: pkg.extraPortionPrice || 0,
+        maxMieVariants: pkg.maxMieVariants || 3,
+        includedToppingReg: pkg.includedToppingReg || 0,
+        includedToppingReg2: pkg.includedToppingReg2 || 0,
+        includedToppingPrem: pkg.includedToppingPrem || 0,
+        includedToppingSuper: pkg.includedToppingSuper || 0,
+        isPaketOdeng: pkg.isPaketOdeng || false,
       });
     } else {
       setEditingId(null);
@@ -66,6 +80,13 @@ export default function PackagesPage() {
         comingSoon: false,
         sortOrder: packages.length * 10,
         imageUrl: "",
+        extraPortionPrice: 0,
+        maxMieVariants: 3,
+        includedToppingReg: 0,
+        includedToppingReg2: 0,
+        includedToppingPrem: 0,
+        includedToppingSuper: 0,
+        isPaketOdeng: false,
       });
     }
     setModalOpen(true);
@@ -303,6 +324,96 @@ export default function PackagesPage() {
                 onChange={(e) => setFormData({...formData, sortOrder: Number(e.target.value)})}
                 className="w-full px-4 py-2 bg-background border border-white/10 rounded-lg focus:border-primary focus:outline-none"
               />
+            </div>
+            
+            <div className="sm:col-span-2 pt-4 border-t border-white/10 mt-2">
+              <h4 className="text-sm font-bold text-primary mb-3">Logic Pemesanan (Advanced)</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-foreground/70">Harga Ekstra Porsi (Rp)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.extraPortionPrice || ""}
+                    onChange={(e) => setFormData({...formData, extraPortionPrice: Number(e.target.value)})}
+                    placeholder="Otomatis dari Harga/Porsi"
+                    className="w-full px-4 py-2 bg-background border border-white/10 rounded-lg focus:border-primary focus:outline-none"
+                  />
+                  <p className="text-[10px] text-foreground/50 mt-1">Biarkan 0 untuk hitung otomatis (Harga/Porsi minimum)</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-foreground/70">Maks. Pilihan Varian Mie</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={formData.maxMieVariants || ""}
+                    onChange={(e) => setFormData({...formData, maxMieVariants: Number(e.target.value)})}
+                    className="w-full px-4 py-2 bg-background border border-white/10 rounded-lg focus:border-primary focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-foreground/70">Topping Reguler (Per Porsi)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.includedToppingReg || ""}
+                    onChange={(e) => setFormData({...formData, includedToppingReg: Number(e.target.value)})}
+                    className="w-full px-4 py-2 bg-background border border-white/10 rounded-lg focus:border-primary focus:outline-none"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-foreground/70">Topping Reguler 2 (Per Porsi)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.includedToppingReg2 || ""}
+                    onChange={(e) => setFormData({...formData, includedToppingReg2: Number(e.target.value)})}
+                    className="w-full px-4 py-2 bg-background border border-white/10 rounded-lg focus:border-primary focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-foreground/70">Topping Premium (Per Porsi)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.includedToppingPrem || ""}
+                    onChange={(e) => setFormData({...formData, includedToppingPrem: Number(e.target.value)})}
+                    className="w-full px-4 py-2 bg-background border border-white/10 rounded-lg focus:border-primary focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-foreground/70">Topping Super (Per Porsi)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.includedToppingSuper || ""}
+                    onChange={(e) => setFormData({...formData, includedToppingSuper: Number(e.target.value)})}
+                    className="w-full px-4 py-2 bg-background border border-white/10 rounded-lg focus:border-primary focus:outline-none"
+                  />
+                </div>
+                
+                <div className="sm:col-span-2 flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5">
+                  <div>
+                    <p className="font-semibold text-sm">Mode Paket Odeng</p>
+                    <p className="text-[10px] text-foreground/50">Gunakan item premium (Odeng) sebagai basis porsi (bukan mie)</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.isPaketOdeng}
+                      onChange={(e) => setFormData({...formData, isPaketOdeng: e.target.checked})}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div className="sm:col-span-2">

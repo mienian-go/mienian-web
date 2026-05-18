@@ -47,11 +47,13 @@ export function Step4Menu() {
     });
   };
 
+  const selectedPkg = state.packages.find(p => p.id === state.packageId);
+  
   // Visibility logic matching Vanilla JS updateVisibility()
   const showMie = isReguler || pkgName.toLowerCase().includes("mie") || pkgName.toLowerCase().includes("paket");
-  const showTopReg = isReguler || pkgName.includes("Satu Topping") || pkgName.includes("Dua Topping") || pkgName.includes("Komplit") || pkgName.includes("Paket Odeng");
-  const showPrem = isReguler || pkgName.includes("Premium");
-  const showOdeng = pkgName.includes("Odeng") || pkgName.includes("Komplit");
+  const showTopReg = isReguler || !!selectedPkg?.includedToppingReg || !!selectedPkg?.includedToppingReg2 || pkgName.includes("Satu Topping") || pkgName.includes("Dua Topping") || pkgName.includes("Komplit") || pkgName.includes("Paket Odeng");
+  const showPrem = isReguler || !!selectedPkg?.includedToppingPrem || pkgName.includes("Premium");
+  const showOdeng = !!selectedPkg?.isPaketOdeng || pkgName.includes("Odeng") || pkgName.includes("Komplit");
 
   // On Package Change -> Reset & initialize required rows
   const handlePackageChange = (val: string) => {
@@ -73,19 +75,26 @@ export function Step4Menu() {
 
     // Init rows based on package requirements
     const tReg = [];
-    if (tn.includes("Satu Topping")) tReg.push({ id: crypto.randomUUID(), name: "", qty: pkg.portions });
-    if (tn.includes("Dua Topping") || tn.includes("Komplit") || tn.includes("Paket Odeng")) {
-      tReg.push({ id: crypto.randomUUID(), name: "", qty: pkg.portions });
-      tReg.push({ id: crypto.randomUUID(), name: "", qty: pkg.portions });
+    if (pkg.includedToppingReg) tReg.push({ id: crypto.randomUUID(), name: "", qty: pkg.portions });
+    if (pkg.includedToppingReg2) tReg.push({ id: crypto.randomUUID(), name: "", qty: pkg.portions });
+    
+    // Fallback for old
+    if (tReg.length === 0) {
+      if (tn.includes("Satu Topping")) tReg.push({ id: crypto.randomUUID(), name: "", qty: pkg.portions });
+      if (tn.includes("Dua Topping") || tn.includes("Komplit") || tn.includes("Paket Odeng")) {
+        tReg.push({ id: crypto.randomUUID(), name: "", qty: pkg.portions });
+        tReg.push({ id: crypto.randomUUID(), name: "", qty: pkg.portions });
+      }
     }
     dispatch({ type: "SET_LINE_ITEM", payload: { category: "toppingReg", items: tReg } });
 
     const tPrem = [];
-    if (tn.includes("Premium")) tPrem.push({ id: crypto.randomUUID(), name: "", qty: pkg.portions });
+    if (pkg.includedToppingPrem) tPrem.push({ id: crypto.randomUUID(), name: "", qty: pkg.portions });
+    if (tPrem.length === 0 && tn.includes("Premium")) tPrem.push({ id: crypto.randomUUID(), name: "", qty: pkg.portions });
     dispatch({ type: "SET_LINE_ITEM", payload: { category: "toppingPrem", items: tPrem } });
 
     const tOdeng = [];
-    if (tn.includes("Odeng") || tn.includes("Komplit")) {
+    if (pkg.isPaketOdeng || tn.includes("Odeng") || tn.includes("Komplit")) {
       tOdeng.push({ id: crypto.randomUUID(), name: "", qty: pkg.portions });
       tOdeng.push({ id: crypto.randomUUID(), name: "", qty: 0 }); // Second odeng defaults to 0
     }
@@ -259,7 +268,7 @@ export function Step4Menu() {
             isReguler ? "Ketikan jumlah porsi manual per baris." : "Jumlah varian mie harus disebar minimal sesuai porsi paket di atas.", 
             "mie", 
             DAFTAR_MIE, 
-            3,
+            selectedPkg?.maxMieVariants || 3,
             UtensilsCrossed
           )}
 

@@ -171,30 +171,30 @@ function calculateTotals(state: BookingState): BookingState["calculations"] {
   } else if (pkg) {
     const basePorsi = pkg.portions;
     basePrice = pkg.price;
-    const isPaketOdeng = pkg.name === "Paket Odeng";
+    const isPaketOdeng = pkg.isPaketOdeng || false;
     const primaryQty = isPaketOdeng ? totalTopPremInput : totalMieInput;
     totalPorsi = primaryQty > basePorsi ? primaryQty : basePorsi;
     
     extraPackagePorsi = totalPorsi > basePorsi ? totalPorsi - basePorsi : 0;
-    const packagePerPorsiPrice = pkg.price / pkg.portions;
+    const packagePerPorsiPrice = pkg.extraPortionPrice ? pkg.extraPortionPrice : (pkg.price / pkg.portions);
     extraPackagePrice = extraPackagePorsi * packagePerPorsiPrice;
     
-    let reqTopReg = 0;
-    let reqTopReg2 = 0;
-    let reqTopPrem = 0;
-    let reqTopSuper = 0;
+    let reqTopReg = (pkg.includedToppingReg || 0) * totalPorsi;
+    let reqTopReg2 = (pkg.includedToppingReg2 || 0) * totalPorsi;
+    let reqTopPrem = (pkg.includedToppingPrem || 0) * totalPorsi;
+    let reqTopSuper = (pkg.includedToppingSuper || 0) * totalPorsi;
     
-    if (pkg.name.includes("Satu Topping")) {
+    // Fallback for old hardcoded packages that don't have dynamic settings yet
+    if (!pkg.includedToppingReg && pkg.name.includes("Satu Topping")) {
       reqTopReg = totalPorsi;
-    } else if (pkg.name.includes("Dua Topping")) {
+    } else if (!pkg.includedToppingReg && !pkg.includedToppingReg2 && pkg.name.includes("Dua Topping")) {
       reqTopReg = totalPorsi;
       reqTopReg2 = totalPorsi;
     }
-    
-    if (pkg.name.includes("Premium") || pkg.name.includes("Komplit") || pkg.name.includes("Odeng")) {
+    if (!pkg.includedToppingPrem && (pkg.name.includes("Premium") || pkg.name.includes("Komplit") || pkg.name.includes("Odeng"))) {
       reqTopPrem = totalPorsi;
     }
-    if (pkg.name.includes("Super") || pkg.name.includes("Komplit")) {
+    if (!pkg.includedToppingSuper && (pkg.name.includes("Super") || pkg.name.includes("Komplit"))) {
       reqTopSuper = totalPorsi;
     }
 

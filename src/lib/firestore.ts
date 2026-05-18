@@ -39,6 +39,16 @@ export interface CateringPackage {
   comingSoon?: boolean;
   imageUrl?: string;
   sortOrder?: number;
+  
+  // Dynamic Package Settings
+  extraPortionPrice?: number;
+  maxMieVariants?: number;
+  includedToppingReg?: number;
+  includedToppingReg2?: number;
+  includedToppingPrem?: number;
+  includedToppingSuper?: number;
+  isPaketOdeng?: boolean;
+  
   [key: string]: any;
 }
 
