@@ -11,7 +11,7 @@ const FALLBACK_QUESTS = [
     title: "Mie Siang Hemat!",
     description: "Pesen mie jam 11:00 - 14:00",
     reward: "Ekstra Topping GRATIS",
-    emoji: "🍳",
+    emoji: "🍜",
     isActive: true,
     expiresAt: null,
     createdAt: null,
@@ -40,7 +40,7 @@ const FALLBACK_QUESTS = [
 
 export default function DailyQuestWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [currentQuest, setCurrentQuest] = useState(0);
+  const [currentQuest, setCurrentQuest] = useState(1); // Set to index 1 ("Double Power!") as active initial like screenshot
   const [dismissed, setDismissed] = useState(false);
   const [quests, setQuests] = useState<DailyQuest[]>([]);
 
@@ -63,13 +63,13 @@ export default function DailyQuestWidget() {
     if (!isOpen || quests.length === 0) return;
     const interval = setInterval(() => {
       setCurrentQuest((prev) => (prev + 1) % quests.length);
-    }, 4000);
+    }, 5000);
     return () => clearInterval(interval);
   }, [isOpen, quests.length]);
 
-  // Show after 2 seconds
+  // Show after 1.5 seconds
   useEffect(() => {
-    const timer = setTimeout(() => setIsOpen(true), 2000);
+    const timer = setTimeout(() => setIsOpen(true), 1500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -81,64 +81,71 @@ export default function DailyQuestWidget() {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 20, scale: 0.9 }}
-          className="fixed bottom-24 right-4 z-40 w-[280px]"
+          initial={{ opacity: 0, y: 30, scale: 0.95, x: "-50%" }}
+          animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
+          exit={{ opacity: 0, y: 30, scale: 0.95, x: "-50%" }}
+          className="fixed bottom-[92px] left-1/2 z-45 w-[calc(100%-32px)] max-w-[340px]"
         >
-          <div className="card p-0 overflow-hidden border-secondary/30 shadow-2xl shadow-secondary/10">
+          <div className="card p-0 overflow-hidden border border-[#FFB300]/20 shadow-[0_12px_40px_rgba(0,0,0,0.15)] rounded-2xl">
             {/* Header */}
-            <div className="bg-gradient-to-r from-secondary to-[#FFD54F] p-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Flame className="w-4 h-4 text-white" />
-                <span className="text-xs font-extrabold text-white uppercase tracking-wider">Daily Quest</span>
+            <div className="bg-[#FFB300] px-4 py-2.5 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Flame className="w-4 h-4 text-white fill-white animate-pulse" />
+                <span className="text-[10px] font-black text-white uppercase tracking-widest">
+                  DAILY QUEST
+                </span>
               </div>
               <button 
                 onClick={() => setDismissed(true)}
-                className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40 transition-colors"
+                className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
               >
                 <X className="w-3 h-3 text-white" />
               </button>
             </div>
 
             {/* Quest Content */}
-            <div className="p-4">
+            <div className="p-5 bg-card">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={quest.id}
-                  initial={{ opacity: 0, x: 20 }}
+                  initial={{ opacity: 0, x: 12 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
+                  exit={{ opacity: 0, x: -12 }}
+                  transition={{ duration: 0.25 }}
+                  className="flex items-start gap-4"
                 >
-                  <div className="flex items-start gap-3 mb-3">
-                    <span className="text-2xl">{quest.emoji}</span>
-                    <div>
-                      <h4 className="font-bold text-sm">{quest.title}</h4>
-                      <p className="text-[11px] text-foreground/50">{quest.description}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary/10 text-secondary">
-                      <Gift className="w-3 h-3" />
-                      <span className="text-[10px] font-bold">{quest.reward}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-foreground/30">
-                      <Clock className="w-3 h-3" />
-                      <span className="text-[10px]">Hari ini</span>
-                    </div>
+                  <span className="text-4xl shrink-0 mt-0.5 select-none">{quest.emoji}</span>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <h4 className="font-extrabold text-base leading-tight text-foreground">
+                      {quest.title}
+                    </h4>
+                    <p className="text-xs text-foreground/50 leading-normal">
+                      {quest.description}
+                    </p>
                   </div>
                 </motion.div>
               </AnimatePresence>
 
-              {/* Dots indicator */}
-              <div className="flex justify-center gap-1.5 mt-3">
+              {/* Reward Badge & Time Limit */}
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-card-border/50">
+                <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-[#FFB300]/10 text-[#FFB300] border border-[#FFB300]/15">
+                  <Gift className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-black">{quest.reward}</span>
+                </div>
+                <div className="flex items-center gap-1 text-foreground/40 text-[10px] font-semibold">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Hari ini</span>
+                </div>
+              </div>
+
+              {/* Dots Pagination Indicators */}
+              <div className="flex justify-center gap-1.5 mt-4">
                 {quests.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => setCurrentQuest(i)}
-                    className={`w-1.5 h-1.5 rounded-full transition-all ${
-                      i === currentQuest ? "bg-secondary w-4" : "bg-foreground/20"
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      i === currentQuest ? "bg-[#FFB300] w-4" : "bg-foreground/15 hover:bg-foreground/25"
                     }`}
                   />
                 ))}

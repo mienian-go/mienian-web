@@ -224,6 +224,10 @@ export default function CheckoutPage() {
 
       if (!driverData.isOnline || locData.status !== "available") {
         alert("Maaf, KangDoMie yang Anda pilih saat ini sudah offline atau sedang mengantar pesanan lain. Silakan kembali ke peta dan pilih KangDoMie lain.");
+        dispatch({
+          type: "SET_DELIVERY_DETAILS",
+          payload: { driverId: undefined, driverName: undefined }
+        });
         setIsSubmitting(false);
         return;
       }
@@ -240,7 +244,8 @@ export default function CheckoutPage() {
 
       const orderId = `GO${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 999)}`;
       
-      const res = await fetch("/api/doku/create-payment", {
+      const apiBase = process.env.NEXT_PUBLIC_BASE_URL || "https://mienian-web.vercel.app";
+      const res = await fetch(`${apiBase}/api/doku/create-payment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -249,7 +254,7 @@ export default function CheckoutPage() {
           customerName: state.customerName,
           customerEmail: "no-email@mienian.id",
           invoiceNumber: `INV-${orderId}-${Date.now().toString().slice(-6)}`,
-          callbackUrl: `${window.location.origin}/mienian-go/tracking/${orderId}`,
+          callbackUrl: `${apiBase}/mienian-go/tracking?id=${orderId}`,
         })
       });
 
@@ -294,16 +299,15 @@ export default function CheckoutPage() {
           promoDiscount: promoDiscountAmount,
           grandTotal: grandTotal,
         },
-        status: grandTotal === 0 ? "paid" : "pending_payment",
+        status: grandTotal === 0 ? "waiting_driver" : "waiting_driver",
+        paymentUrl: grandTotal > 0 ? data.paymentUrl : null,
         createdAt: new Date(),
       });
 
       dispatch({ type: "CLEAR_CART" });
 
-      if (grandTotal === 0) {
-        window.location.href = `/mienian-go/tracking/${orderId}`;
-      } else if (data.paymentUrl) {
-        window.location.href = data.paymentUrl;
+      if (grandTotal === 0 || data.paymentUrl) {
+        window.location.href = `/mienian-go/tracking?id=${orderId}`;
       } else {
         throw new Error("URL pembayaran tidak ditemukan");
       }

@@ -160,7 +160,8 @@ export function Step5Checkout() {
 
       // Call DOKU
       try {
-        const dokuRes = await fetch("/api/doku/create-payment", {
+        const apiBase = process.env.NEXT_PUBLIC_BASE_URL || "https://mienian-web.vercel.app";
+        const dokuRes = await fetch(`${apiBase}/api/doku/create-payment`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -182,7 +183,7 @@ export function Step5Checkout() {
       }
 
       // Fallback
-      router.push(`/payment/${orderId}`);
+      router.push(`/payment?id=${orderId}`);
     } catch (error: any) {
       const msg = error?.message || error?.code || "Unknown error";
       alert(`Gagal membuat order:\n${msg}`);

@@ -2,62 +2,105 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Sparkles, ShieldCheck, Clock, Utensils, ArrowRight, Loader2, ShoppingCart, Plus, Minus, Bike, MessageCircle, Trophy } from "lucide-react";
-import Link from "next/link";
 import Image from "next/image";
+import { 
+  MapPin, 
+  ShoppingCart, 
+  Menu as MenuIcon,
+  Home,
+  Bike,
+  QrCode,
+  Store,
+  User,
+  ChevronRight,
+  Info,
+  Loader2,
+  Gift,
+  ArrowRight
+} from "lucide-react";
+import Link from "next/link";
 import { formatRupiah } from "@/data/menu";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { subscribeToKangDoMieLocations } from "@/lib/firestoreGo";
+import { db, auth } from "@/lib/firebase";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { updateUserProfile, getUserProfile, getOrdersByUserId } from "@/lib/firestore";
+import { subscribeToKangDoMieLocations, subscribeToUserPoints } from "@/lib/firestoreGo";
 import { useGoCart } from "@/context/GoCartContext";
 import { useAuth } from "@/context/AuthContext";
 import NearbyKangDoMieMap from "@/components/NearbyKangDoMieMap";
-import MienianPowerBar from "@/components/go/MienianPowerBar";
-import DailyQuestWidget from "@/components/go/DailyQuestWidget";
-
-const container = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.08 } },
-};
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } },
-};
+import CustomizationSheet from "@/components/go/CustomizationSheet";
+import QuickCartDrawer from "@/components/go/QuickCartDrawer";
+import BottomNavigation from "@/components/BottomNavigation";
 
 const scheduleData = [
-  { day: "Senin - Rabu", area: "Jakarta Selatan — Kemang, Blok M, Tebet", time: "17:00 - 23:00" },
-  { day: "Kamis - Jumat", area: "Jakarta Pusat — Sudirman, Menteng", time: "17:00 - 23:00" },
+  { day: "Senin - Rabu", area: "Jakarta — Tebet & Sudirman", time: "16:00 - 22:00" },
+  { day: "Kamis - Jumat", area: "Jakarta — Menteng & Kemang", time: "17:00 - 23:00" },
   { day: "Sabtu - Minggu", area: "Bandung — Dago, Braga, Pasteur", time: "15:00 - 23:00" },
 ];
 
 export default function MienianGO() {
   const { state, dispatch, totalItems, totalPrice } = useGoCart();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"menu" | "go" | "qr" | "stall" | "akun">("menu");
+  const [selectedCustomItem, setSelectedCustomItem] = useState<any | null>(null);
+  const [showCartDrawer, setShowCartDrawer] = useState(false);
+
+  // Profile Loyalty State
+  const [orderHistory, setOrderHistory] = useState<any[]>([]);
+  const [userPoints, setUserPoints] = useState(0);
+
+  // Auth Modal States
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isLoginMode, setIsLoginMode] = useState(true);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
+
+  // Data States
   const [dbMenuItems, setDbMenuItems] = useState<any[]>([]);
   const [isLoadingMenu, setIsLoadingMenu] = useState(true);
   const [availableKangCount, setAvailableKangCount] = useState(0);
+  const [rawLocations, setRawLocations] = useState<any[]>([]);
+  const [promos, setPromos] = useState<any[]>([
+    { id: 1, image: "/images/promo_slide_1.png" },
+    { id: 2, image: "/images/promo_slide_2.png" },
+    { id: 3, image: "/images/promo_slide_3.png" },
+    { id: 4, image: "/images/promo_slide_4.png" }
+  ]);
+  const [showNoKangDoMieModal, setShowNoKangDoMieModal] = useState(false);
+  const [userAddress, setUserAddress] = useState("Mencari lokasi...");
 
-  const handleAddToCart = (item: any) => {
-    dispatch({
-      type: "ADD_ITEM",
-      payload: {
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        quantity: 1,
-        category: item.category,
-      }
-    });
-  };
+  // Get user location + reverse geocode address
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, lng } = { latitude: pos.coords.latitude, lng: pos.coords.longitude };
+        try {
+          const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyBgj6aPrkcd-B2lWsE0_AdA8PQpbO13R7c";
+          const res = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${lng}&key=${apiKey}&language=id`
+          );
+          const data = await res.json();
+          if (data.results && data.results.length > 0) {
+            setUserAddress(data.results[0].formatted_address);
+          }
+        } catch (err) {
+          console.error("Reverse geocode error:", err);
+          setUserAddress("Lokasi tidak diketahui");
+        }
+      },
+      () => {
+        setUserAddress("Izin lokasi ditolak");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, []);
 
-  const getItemQuantity = (id: string) => {
-    return state.items.find((i) => i.id === id)?.quantity || 0;
-  };
-
-  const handleUpdateQuantity = (id: string, newQty: number) => {
-    dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity: newQty } });
-  };
-
+  // Fetch Menu catalog
   useEffect(() => {
     async function fetchMenu() {
       try {
@@ -74,8 +117,7 @@ export default function MienianGO() {
     fetchMenu();
   }, []);
 
-  const [rawLocations, setRawLocations] = useState<any[]>([]);
-
+  // Fetch Active Locations
   useEffect(() => {
     const unsub = subscribeToKangDoMieLocations((locations) => {
       setRawLocations(locations);
@@ -83,21 +125,132 @@ export default function MienianGO() {
     return () => unsub();
   }, []);
 
+  // Track Online Drivers & Auto-Verify selected driver status
   useEffect(() => {
-    const updateCount = () => {
+    const updateCountAndVerifyDriver = () => {
       const now = Date.now();
-      const count = rawLocations.filter((k) => {
+      const activeDrivers = rawLocations.filter((k) => {
         if (k.status !== "available") return false;
-        if (!k.lastUpdated) return true;
-        const diff = now - k.lastUpdated.toMillis();
-        return diff <= 120000;
+        if (!k.lastUpdated) return false;
+        try {
+          const diff = now - k.lastUpdated.toMillis();
+          return diff <= 45000; // 45 seconds buffer
+        } catch { return false; }
       });
-      setAvailableKangCount(count.length);
+      setAvailableKangCount(activeDrivers.length);
+
+      // Verify currently selected driver is still active/online
+      if (state.driverId) {
+        const isCurrentDriverActive = activeDrivers.some((d) => d.id === state.driverId);
+        if (!isCurrentDriverActive) {
+          dispatch({
+            type: "SET_DELIVERY_DETAILS",
+            payload: { driverId: undefined, driverName: undefined }
+          });
+        }
+      }
     };
-    updateCount();
-    const interval = setInterval(updateCount, 5000);
+    updateCountAndVerifyDriver();
+    const interval = setInterval(updateCountAndVerifyDriver, 5000);
     return () => clearInterval(interval);
-  }, [rawLocations]);
+  }, [rawLocations, state.driverId, dispatch]);
+
+  // Subscribe to loyalty points and fetch order history on user change
+  useEffect(() => {
+    if (!user) {
+      setOrderHistory([]);
+      setUserPoints(0);
+      return;
+    }
+
+    const uid = user.uid;
+
+    const unsubPoints = subscribeToUserPoints(uid, (data) => {
+      setUserPoints(data?.points || 0);
+    });
+
+    async function fetchHistory() {
+      try {
+        const history = await getOrdersByUserId(uid);
+        setOrderHistory(history);
+      } catch (e) {
+        console.error("Order history fetch error:", e);
+      }
+    }
+    fetchHistory();
+
+    return () => unsubPoints();
+  }, [user]);
+
+  // Fetch Promos
+  useEffect(() => {
+    async function fetchPromos() {
+      try {
+        const q = query(collection(db, "promos"), orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          const promoItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const validPromos = promoItems.filter((p: any) => p.image && typeof p.image === 'string' && p.image.length > 5);
+          if (validPromos.length > 0) {
+            setPromos(validPromos);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching promos, using fallback:", error);
+      }
+    }
+    fetchPromos();
+  }, []);
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+    setIsSubmittingAuth(true);
+    try {
+      if (isLoginMode) {
+        const userCredential = await signInWithEmailAndPassword(auth, authEmail, authPassword);
+        const userProfile = await getUserProfile(userCredential.user.uid);
+        if (!userProfile) {
+          await auth.signOut();
+          setAuthError("Email ini terdaftar sebagai Affiliate/Admin. Silakan gunakan email pembeli biasa.");
+          setIsSubmittingAuth(false);
+          return;
+        }
+      } else {
+        const userCredential = await createUserWithEmailAndPassword(auth, authEmail, authPassword);
+        await updateUserProfile(userCredential.user.uid, {
+          email: authEmail,
+          name: authEmail.split("@")[0],
+          whatsapp: "",
+        });
+      }
+      setShowAuthModal(false);
+      setAuthEmail("");
+      setAuthPassword("");
+    } catch (err: any) {
+      setAuthError(err.message || "Gagal Autentikasi");
+    } finally {
+      setIsSubmittingAuth(false);
+    }
+  };
+
+  const handleAddToCart = (item: any, quantity: number, notes: string) => {
+    dispatch({
+      type: "ADD_ITEM",
+      payload: {
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity,
+        category: item.category,
+        notes: notes || undefined,
+      }
+    });
+  };
+
+  const getItemQuantity = (id: string) => {
+    return state.items.find((i) => i.id === id)?.quantity || 0;
+  };
 
   const categoriesToShow = [
     { id: "mie", title: "Pilihan Mie", emoji: "🍜" },
@@ -105,354 +258,339 @@ export default function MienianGO() {
     { id: "topping-premium", title: "Pilihan Topping Premium", emoji: "🥩" },
   ];
 
-  const displayName = user?.displayName?.split(" ")[0] || null;
+  const displayName = user?.email?.split("@")[0] || null;
 
   return (
-    <div className="flex flex-col overflow-hidden">
-      {/* ============ HUB HEADER ============ */}
-      <section className="relative pt-24 pb-8 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-background to-background" />
-        <div className="absolute top-10 right-10 w-64 h-64 bg-secondary/10 rounded-full blur-[100px]" />
-
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="relative z-10 max-w-7xl mx-auto"
-        >
-          {/* Greeting */}
-          <motion.div variants={item} className="mb-6">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight">
-              {displayName ? (
-                <>Mau Indomie pakai topping apa, <span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary to-[#FFD54F]">{displayName}</span>? 🍜</>
-              ) : (
-                <>Mau makan <span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary to-[#FFD54F]">Indomie</span> apa hari ini?</>
-              )}
-            </h1>
-          </motion.div>
-
-          {/* Mienian Power + Quick Actions */}
-          <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-            {/* Power Bar */}
-            <MienianPowerBar />
-
-            {/* Quick Stats */}
-            <div className="card p-5 sm:p-6 flex flex-col justify-between">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Bike className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-widest text-foreground/40 font-bold">KangDoMie Aktif</p>
-                  <p className="text-xl font-extrabold leading-tight">{availableKangCount} <span className="text-sm text-foreground/50 font-medium">di sekitarmu</span></p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Link
-                  href="#menu-go"
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-colors"
-                >
-                  <ShoppingCart className="w-3.5 h-3.5" />
-                  Pesan Sekarang
-                </Link>
-                <Link
-                  href="/mienian-go/leaderboard"
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-muted hover:bg-muted/80 text-foreground/70 text-xs font-bold transition-colors"
-                >
-                  <Trophy className="w-3.5 h-3.5" />
-                  Leaderboard
-                </Link>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      </section>
-
-      {/* ============ NEARBY KANGDOMIE MAP ============ */}
-      <NearbyKangDoMieMap />
-
-      {/* ============ USP ============ */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
-            <h2 className="text-3xl sm:text-5xl font-extrabold mb-4">
-              Beda dari Warmindo <span className="gradient-text">Biasa</span>
-            </h2>
-            <p className="text-foreground/60 text-lg max-w-xl mx-auto">
-              Tiga alasan kenapa antrean gerobak Mienian selalu panjang.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: <ShieldCheck className="w-8 h-8" />,
-                title: "Standar Kebersihan Tinggi",
-                desc: "Gerobak kita selalu bersih, peralatan steril, dan bahan baku fresh setiap hari. No compromise!",
-                color: "tertiary",
-              },
-              {
-                icon: <Utensils className="w-8 h-8" />,
-                title: "Menu Super Variatif",
-                desc: "10+ varian mie dan topping premium — dari Goreng Aceh sampai Beef Enoki. Bosen? Impossible.",
-                color: "secondary",
-              },
-              {
-                icon: <Clock className="w-8 h-8" />,
-                title: "Rasa Konsisten 24/7",
-                desc: "SOP ketat biar rasa dari mangkok pertama sampai terakhir tetap sama mantapnya. Gak pake untung-untungan.",
-                color: "primary",
-              },
-            ].map((f, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.15 }}
-                className="card p-8 group text-center"
-              >
-                <div className={`w-16 h-16 rounded-2xl bg-${f.color}/10 text-${f.color} flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform`}>
-                  {f.icon}
-                </div>
-                <h3 className="text-xl font-bold mb-3">{f.title}</h3>
-                <p className="text-foreground/60 leading-relaxed">{f.desc}</p>
-              </motion.div>
-            ))}
-          </div>
+    <div className="flex flex-col min-h-screen bg-[#F8F9FA] pb-24 relative overflow-x-hidden">
+      
+      {/* ============ GREEN HEADER AREA ============ */}
+      <div className="relative bg-gradient-to-r from-[#006837] to-[#8CC63F] pt-12 pb-24 px-4 sm:px-6 lg:px-8 overflow-hidden rounded-b-[2rem]">
+        {/* Decorative background shapes */}
+        <div className="absolute inset-0 opacity-10">
+           <svg className="absolute w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+             <path d="M0,100 L100,0 L100,100 Z" fill="white" />
+           </svg>
         </div>
-      </section>
 
-      {/* ============ MENU HIGHLIGHTS ============ */}
-      <section id="menu-go" className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/50">
-        <div className="max-w-7xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-            <h2 className="text-3xl sm:text-5xl font-extrabold mb-4">
-              Menu <span className="gradient-text">Andalan</span>
-            </h2>
-            {state.driverName ? (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm font-medium mb-4 text-primary">
-                <Bike className="w-4 h-4" />
-                <span>Memesan dari KangDoMie: <strong>{state.driverName}</strong></span>
-              </div>
-            ) : (
-              <p className="text-foreground/60 text-lg max-w-xl mx-auto">
-                Semua varian mie cuma {formatRupiah(8500)} — topping mulai dari {formatRupiah(3500)}. Affordable tapi premium!
-              </p>
+        <div className="relative z-10 max-w-md mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+             <div className="w-11 h-11 flex items-center justify-center drop-shadow-md shrink-0">
+               <Image src="/images/mienian-logo-new.png" alt="Mienian" width={44} height={44} className="object-contain" />
+             </div>
+             <div className="flex flex-col justify-center">
+               {user ? (
+                 <>
+                   <h1 className="text-white text-[13px] font-semibold opacity-90">Halo, {displayName}</h1>
+                   <p className="text-white text-[15px] font-black tracking-tight leading-tight max-w-[200px]">
+                     Mau makan mie pakai topping apa hari ini?
+                   </p>
+                 </>
+               ) : (
+                 <h1 className="text-white text-[17px] font-black tracking-tight leading-tight max-w-[180px]">
+                   Mau makan mie pakai topping apa hari ini?
+                 </h1>
+               )}
+             </div>
+          </div>
+          <button onClick={() => setShowCartDrawer(true)} className="relative p-2 bg-white/20 rounded-full text-white hover:bg-white/30 transition-colors shrink-0">
+            <ShoppingCart className="w-5 h-5" />
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-1 bg-white text-primary text-[10px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center shadow-sm">
+                {totalItems}
+              </span>
             )}
-          </motion.div>
-
-          {isLoadingMenu ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            </div>
-          ) : (
-            <div className="space-y-12">
-              {categoriesToShow.map(cat => {
-                const items = dbMenuItems.filter((m: any) => m.category === cat.id);
-                if (items.length === 0) return null;
-
-                return (
-                  <div key={cat.id}>
-                    <h3 className="text-2xl sm:text-3xl font-extrabold mb-6 flex items-center gap-3">
-                      <span className="text-2xl sm:text-3xl">{cat.emoji}</span> {cat.title}
-                    </h3>
-                    <div className="flex gap-4 overflow-x-auto pb-6 snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
-                      {items.map((item: any, i: number) => (
-                        <motion.div
-                          key={item.id}
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          whileInView={{ opacity: 1, scale: 1 }}
-                          viewport={{ once: true }}
-                          transition={{ delay: i * 0.05 }}
-                          className="snap-center shrink-0 w-64"
-                        >
-                          <div className="card p-0 h-full flex flex-col justify-between hover:border-primary/50 transition-colors overflow-hidden group">
-                            {/* Image Area */}
-                            <div>
-                              {item.imageUrl ? (
-                                <div className="w-full aspect-square overflow-hidden relative">
-                                  <Image 
-                                    src={item.imageUrl} 
-                                    alt={item.name} 
-                                    fill 
-                                    className="object-cover group-hover:scale-105 transition-transform duration-500" 
-                                    sizes="256px" 
-                                  />
-                                </div>
-                              ) : (
-                                <div className="w-full aspect-square bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center text-5xl">
-                                  {cat.emoji}
-                                </div>
-                              )}
-                              <div className="p-4 pb-0">
-                                <h4 className="font-bold text-sm mb-1">{item.name}</h4>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between p-4 pt-2">
-                              <p className="text-secondary font-bold text-lg">{formatRupiah(item.price)}</p>
-                              
-                              {getItemQuantity(item.id) === 0 ? (
-                                <motion.button
-                                  whileTap={{ scale: 0.85 }}
-                                  onClick={() => handleAddToCart(item)}
-                                  className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/80 transition-colors shadow-lg shadow-primary/30"
-                                >
-                                  <Plus className="w-5 h-5" />
-                                </motion.button>
-                              ) : (
-                                <motion.div
-                                  initial={{ scale: 0.8 }}
-                                  animate={{ scale: 1 }}
-                                  className="flex items-center gap-2"
-                                >
-                                  <button
-                                    onClick={() => handleUpdateQuantity(item.id, getItemQuantity(item.id) - 1)}
-                                    className="w-8 h-8 rounded-full bg-muted text-foreground/70 flex items-center justify-center hover:bg-primary/20 hover:text-primary transition-colors"
-                                  >
-                                    <Minus className="w-4 h-4" />
-                                  </button>
-                                  <span className="w-6 text-center font-bold text-sm">{getItemQuantity(item.id)}</span>
-                                  <button
-                                    onClick={() => handleUpdateQuantity(item.id, getItemQuantity(item.id) + 1)}
-                                    className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/80 transition-colors"
-                                  >
-                                    <Plus className="w-4 h-4" />
-                                  </button>
-                                </motion.div>
-                              )}
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          </button>
         </div>
-      </section>
+      </div>
 
-      {/* ============ LOKASI & JADWAL ============ */}
-      <section id="lokasi" className="py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-            <h2 className="text-3xl sm:text-5xl font-extrabold mb-4">
-              <MapPin className="w-8 h-8 inline-block mr-2 text-primary" />
-              Jadwal <span className="gradient-text">Mangkal</span>
-            </h2>
-            <p className="text-foreground/60 text-lg max-w-xl mx-auto">
-              Cek di mana gerobak Mienian lagi nongkrong minggu ini. Update setiap minggu!
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            {scheduleData.map((s, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="card p-6 sm:p-8 text-center"
-              >
-                <div className="inline-block px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-bold mb-4">
-                  {s.day}
+      {/* ============ MIENIACS LOYALTY CARD (OVERLAPPING) ============ */}
+      <div className="max-w-md mx-auto px-4 w-full -mt-16 relative z-20">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider mb-0.5">MIENIACS</p>
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-blue-500">
+                  <span className="text-[10px]">⚡</span>
                 </div>
-                <h4 className="font-bold text-lg mb-2">{s.area}</h4>
-                <p className="text-foreground/50 flex items-center justify-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  {s.time}
-                </p>
-              </motion.div>
-            ))}
+                <span className="text-xl font-black">{userPoints.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+               <div className="flex items-center w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                 <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (userPoints / 1000) * 100)}%` }}></div>
+               </div>
+               <div className="bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                 🍜 x2 Gratis
+               </div>
+            </div>
           </div>
-
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
-            <p className="text-foreground/50 text-sm mb-4">
-              📌 Jadwal bisa berubah sewaktu-waktu. Follow IG kita buat update real-time!
-            </p>
-            <a
-              href="https://instagram.com/mienian_id"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-outlined btn-md"
-            >
-              Follow @mienian_id
-            </a>
-          </motion.div>
+          <div className="flex gap-2">
+            <button className="flex-1 border border-gray-200 rounded-xl p-2.5 flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors">
+              <div className="w-6 h-6 bg-red-100 rounded-md flex items-center justify-center text-primary">
+                 <QrCode className="w-4 h-4" />
+              </div>
+              <div className="text-left leading-none">
+                <span className="block font-black text-[11px]">KLAIM</span>
+                <span className="text-[9px] text-gray-500">Buka QR</span>
+              </div>
+            </button>
+            <button className="flex-1 bg-blue-50/50 border border-blue-100 rounded-xl p-2.5 flex items-center justify-between hover:bg-blue-50 transition-colors">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-blue-100 rounded-md flex items-center justify-center text-blue-600">
+                   <Gift className="w-4 h-4" />
+                </div>
+                <div className="text-left leading-none">
+                  <span className="block font-black text-[11px] text-blue-700">REDEEM</span>
+                  <span className="text-[9px] text-blue-600/70">1 Poin = Rp 1</span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </button>
+          </div>
         </div>
-      </section>
+      </div>
 
-      {/* ============ CTA ============ */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          className="max-w-4xl mx-auto card p-10 sm:p-14 text-center bg-gradient-to-br from-secondary/10 to-accent"
-        >
-          <h3 className="text-2xl sm:text-4xl font-extrabold mb-4">Mau Mienian di Acara Lo? 🔥</h3>
-          <p className="text-foreground/60 text-lg max-w-lg mx-auto mb-8">
-            Kalau nemu gerobak aja udah gini enaknya, bayangin live cooking buat acara lo gimana.
-          </p>
-          <Link href="/stall" className="btn btn-primary btn-lg">
-            Cek Paket Catering
-            <ArrowRight className="w-5 h-5" />
-          </Link>
-        </motion.div>
-      </section>
-
-      {/* ============ DAILY QUEST WIDGET ============ */}
-      <DailyQuestWidget />
-
-      {/* ============ FLOATING CART BAR ============ */}
-      <AnimatePresence>
-        {totalItems > 0 && (
-          <motion.div
-            initial={{ y: 100 }}
-            animate={{ y: 0 }}
-            exit={{ y: 100 }}
-            className="fixed bottom-0 left-0 right-0 z-50 p-4 pointer-events-none"
-          >
-            <div className="max-w-3xl mx-auto pointer-events-auto">
-              <Link
-                href="/mienian-go/checkout"
-                className="bg-primary text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between hover:bg-primary/90 transition-all border border-white/20"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <motion.div 
-                      key={totalItems}
-                      initial={{ scale: 1.3 }}
-                      animate={{ scale: 1 }}
-                      className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center"
-                    >
-                      <ShoppingCart className="w-6 h-6" />
-                    </motion.div>
-                    <motion.span 
-                      key={`badge-${totalItems}`}
-                      initial={{ scale: 1.5 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 bg-secondary text-secondary-foreground text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full border-2 border-primary"
-                    >
-                      {totalItems}
-                    </motion.span>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-xs opacity-80 mb-0.5">Total Pesanan</p>
-                    <p className="font-extrabold text-lg leading-none">{formatRupiah(totalPrice)}</p>
-                  </div>
+      {/* ============ MAIN CONTENT AREA ============ */}
+      <main className="flex-1 mt-6 px-4 max-w-md mx-auto w-full space-y-6">
+        
+        {activeTab === "menu" ? (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* MAP SECTION CARD */}
+            <div className="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-[#1C1C1E] px-4 py-3 flex items-center gap-2 text-white">
+                <MapPin className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-xs font-semibold truncate">{userAddress}</span>
+              </div>
+              <div className="h-80 mb-4 relative bg-gray-100">
+                 <NearbyKangDoMieMap onStartOrder={() => setActiveTab("menu")} hideTitle={true} />
+              </div>
+              {/* Conditional Banner based on driver availability */}
+              {availableKangCount > 0 ? (
+                <div className="bg-green-50 px-4 py-3 flex items-center justify-between border-b border-green-100">
+                   <span className="text-xs font-black text-green-600">✅ {availableKangCount} KangDoMie siap di areamu!</span>
+                   <button 
+                     onClick={() => document.getElementById("menu-catalog-section")?.scrollIntoView({ behavior: "smooth" })}
+                     className="text-[10px] text-green-700 font-bold hover:text-green-900"
+                   >
+                     Pesan sekarang &gt;
+                   </button>
                 </div>
-                <div className="flex items-center gap-2 font-bold bg-white/20 px-4 py-2.5 rounded-xl">
-                  Checkout <ArrowRight className="w-4 h-4" />
+              ) : (
+                <div className="bg-[#FFEBEE] px-4 py-3 flex items-center justify-between border-b border-red-100">
+                   <span className="text-xs font-black text-[#C8102E]">Gak ada KangDoMie di areamu :(</span>
+                   <button onClick={() => setShowNoKangDoMieModal(true)} className="text-[10px] text-gray-600 font-semibold hover:text-black">
+                     Baca lebih &gt;
+                   </button>
                 </div>
-              </Link>
+              )}
+              {/* Delivery CTA */}
+              <div className="p-4 flex gap-3">
+                 <div className="w-20 shrink-0">
+                    <div className="aspect-[3/4] bg-red-50 rounded-xl flex items-center justify-center border border-red-100 relative overflow-hidden">
+                      <Image src="/images/mienian-logo-maroon.jpg" alt="Delivery" width={60} height={80} className="object-cover opacity-80" />
+                    </div>
+                 </div>
+                 <div className="flex flex-col justify-center">
+                    <h3 className="font-black text-sm">{availableKangCount > 0 ? "KangDoMie siap antar!" : "Coba pesan delivery (gratis!)"}</h3>
+                    <p className="text-[10px] text-gray-500 leading-relaxed mt-1 mb-3">
+                      Tinggal duduk dan tunggu, KangDoMie terdekat akan mengantarkan pesananmu~
+                    </p>
+                    <button 
+                      onClick={() => document.getElementById("menu-catalog-section")?.scrollIntoView({ behavior: "smooth" })}
+                      className="bg-[#C8102E] text-white rounded-full py-2.5 px-4 text-xs font-black flex items-center justify-between w-full shadow-md shadow-red-500/20 active:scale-95 transition-transform"
+                    >
+                      <span>PESAN DELIVERY</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                 </div>
+              </div>
             </div>
+
+            {/* PROMOTIONAL CAROUSEL */}
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 no-scrollbar">
+              {promos.map((promo) => (
+                <div key={promo.id} className="snap-center shrink-0 w-[85%] rounded-2xl h-[180px] bg-gray-100 relative overflow-hidden shadow-sm">
+                   {promo.image ? (
+                     <Image 
+                       src={promo.image} 
+                       alt={`Promo ${promo.id}`} 
+                       fill
+                       className="object-cover"
+                       unoptimized
+                     />
+                   ) : null}
+                </div>
+              ))}
+            </div>
+
+            {/* MENU CATALOG (Appended so users can still order!) */}
+            <div id="menu-catalog-section" className="pt-4 pb-12">
+               <div className="bg-white rounded-t-[2rem] rounded-b-[2rem] shadow-sm border border-gray-200 overflow-hidden">
+                 <div className="p-4 text-center border-b border-gray-100">
+                   <h3 className="font-black text-[15px] text-gray-800">Menu Kami</h3>
+                 </div>
+                 
+                 {isLoadingMenu ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  </div>
+                 ) : (
+                  <div className="flex flex-col">
+                    {categoriesToShow.map((cat, index) => {
+                      const items = dbMenuItems.filter((m: any) => m.category === cat.id);
+                      if (items.length === 0) return null;
+
+                      return (
+                        <div key={cat.id} className={`${index > 0 ? 'border-t border-dashed border-gray-200' : ''} p-5`}>
+                          <h4 className="text-xs font-black text-[#6B5B95] uppercase flex items-center gap-2 mb-4">
+                            <span>{cat.emoji}</span>
+                            <span>{cat.title}</span>
+                          </h4>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            {items.map((item: any) => (
+                              <div
+                                key={item.id}
+                                onClick={() => setSelectedCustomItem(item)}
+                                className="flex flex-col items-center text-center cursor-pointer active:scale-95 transition-transform"
+                              >
+                                <div className="relative w-full aspect-square mb-2 bg-transparent">
+                                  <img
+                                    src={item.imageUrl || "/mienian-logo.png"}
+                                    alt={item.name}
+                                    className="w-full h-full object-contain"
+                                    onError={(e) => { (e.target as HTMLImageElement).src = "/mienian-logo.png"; }}
+                                  />
+                                  {getItemQuantity(item.id) > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center shadow-md">
+                                      {getItemQuantity(item.id)}
+                                    </span>
+                                  )}
+                                </div>
+                                <h5 className="font-black text-xs leading-tight mb-1">{item.name.toUpperCase()}</h5>
+                                <span className="text-gray-700 font-medium text-xs">{formatRupiah(item.price)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                 )}
+
+                 <div className="p-5 pt-0">
+                    <button 
+                      className="bg-[#C8102E] text-white rounded-full py-3.5 w-full text-xs font-black tracking-wide flex items-center justify-center gap-2 hover:bg-red-700 transition-colors"
+                    >
+                      LIHAT SEMUA MENU
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                 </div>
+               </div>
+            </div>
+
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in">
+             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+               <Info className="w-8 h-8 text-gray-400" />
+             </div>
+             <h3 className="font-black text-lg text-gray-700">Halaman Menyusul</h3>
+             <p className="text-xs text-gray-500 mt-2 max-w-[200px]">Fitur untuk halaman ini sedang dalam tahap pengembangan akhir.</p>
+             <button onClick={() => setActiveTab("menu")} className="mt-6 px-6 py-2 bg-primary text-white font-bold rounded-full text-xs">Kembali ke Beranda</button>
+          </div>
+        )}
+      </main>
+
+      {/* ============ FLOATING BONUS WIDGET ============ */}
+      {activeTab === "menu" && (
+        <div className="fixed bottom-24 right-4 z-40 w-[90px] cursor-pointer hover:scale-105 transition-transform active:scale-95 drop-shadow-xl">
+           <Image src="/images/bonus-widget.jpg" alt="Bonus Widget" width={90} height={90} className="rounded-full" />
+        </div>
+      )}
+
+      {/* ============ BOTTOM NAVIGATION BAR ============ */}
+      <BottomNavigation activeTab="home" />
+
+      {/* ============ MENU CUSTOMIZATION SHEET ============ */}
+      <CustomizationSheet
+        item={selectedCustomItem}
+        isOpen={!!selectedCustomItem}
+        onClose={() => setSelectedCustomItem(null)}
+        onAddToCart={handleAddToCart}
+      />
+
+      {/* ============ QUICK CART DRAWER ============ */}
+      <QuickCartDrawer
+        isOpen={showCartDrawer}
+        onClose={() => setShowCartDrawer(false)}
+      />
+
+      {/* ============ INFO MODAL (BACA LEBIH) ============ */}
+      <AnimatePresence>
+        {showNoKangDoMieModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+          >
+             <motion.div 
+               initial={{ scale: 0.9 }}
+               animate={{ scale: 1 }}
+               exit={{ scale: 0.9 }}
+               className="bg-white rounded-3xl p-6 max-w-xs w-full text-center relative"
+             >
+                <div className="w-16 h-16 bg-red-100 text-[#C8102E] rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MapPin className="w-8 h-8" />
+                </div>
+                <h3 className="font-black text-lg text-gray-900 mb-2">Area Belum Terjangkau</h3>
+                <p className="text-xs text-gray-500 mb-6">
+                  Saat ini armada KangDoMie belum tersedia di area kamu. Kami terus memperluas jangkauan layanan Mienian GO!
+                </p>
+                <button onClick={() => setShowNoKangDoMieModal(false)} className="w-full py-3 bg-[#C8102E] text-white font-bold rounded-xl text-sm">
+                  Mengerti
+                </button>
+             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* AUTH MODAL */}
+      <AnimatePresence>
+        {showAuthModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              className="bg-white w-full max-w-sm rounded-3xl border border-gray-100 shadow-2xl p-6 relative"
+            >
+              <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-black">✕</button>
+              <h2 className="text-2xl font-bold mb-1">{isLoginMode ? "Masuk Log" : "Buat Akun"}</h2>
+              <p className="text-sm text-gray-500 mb-6">Silakan {isLoginMode ? "login" : "registrasi"} agar transaksi dapat dilacak.</p>
+
+              <form onSubmit={handleAuthSubmit} className="space-y-4">
+                {authError && <div className="text-xs text-red-500 font-bold bg-red-50 p-2 rounded">{authError}</div>}
+                <input type="email" placeholder="Email Pembeli" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required className="w-full px-4 py-3 rounded-xl border bg-gray-50 focus:border-[#C8102E] focus:outline-none text-sm transition-colors" />
+                <input type="password" placeholder="Kata Sandi" value={authPassword} onChange={e => setAuthPassword(e.target.value)} required className="w-full px-4 py-3 rounded-xl border bg-gray-50 focus:border-[#C8102E] focus:outline-none text-sm transition-colors" />
+                <button type="submit" disabled={isSubmittingAuth} className="w-full py-4 bg-[#C8102E] text-white font-bold rounded-xl mt-2">{isSubmittingAuth ? "Memproses..." : isLoginMode ? "Masuk" : "Daftar Akun"}</button>
+              </form>
+              <div className="mt-6 text-center text-xs text-gray-500">
+                {isLoginMode ? "Belum punya akun? " : "Sudah punya akun? "}
+                <button type="button" onClick={() => setIsLoginMode(!isLoginMode)} className="text-[#C8102E] font-bold">{isLoginMode ? "Daftar di sini" : "Login di sini"}</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

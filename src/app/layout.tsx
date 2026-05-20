@@ -5,7 +5,8 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { BookingProvider } from "@/context/BookingContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { GoCartProvider } from "@/context/GoCartContext";
-import { ConditionalLayout } from "@/components/ConditionalLayout";
+import SplashScreen from "@/components/SplashScreen";
+import PushNotificationSetup from "@/components/PushNotificationSetup";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -21,17 +22,11 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Mienian — Warmindo Live Cooking Experience",
+    default: "Mienian — Mobile App",
     template: "%s | Mienian",
   },
   description:
-    "Dari gerobak keliling sampai live cooking di wedding & corporate event. Mienian — taste that slaps, vibes that stick. 🔥",
-  keywords: ["mienian", "warmindo", "catering", "live cooking", "indomie", "wedding catering", "Jakarta", "Bandung", "Yogyakarta"],
-  openGraph: {
-    title: "Mienian — Warmindo Live Cooking Experience",
-    description: "Dari gerobak keliling sampai live cooking di wedding & corporate event.",
-    type: "website",
-  },
+    "Mienian GO & Stall — Order warmindo live cooking langsung dari HP kamu! 🔥",
 };
 
 export default function RootLayout({
@@ -50,7 +45,9 @@ export default function RootLayout({
           <AuthProvider>
             <BookingProvider>
               <GoCartProvider>
-                <ConditionalLayout>{children}</ConditionalLayout>
+                <PushNotificationSetup />
+                <SplashScreen />
+                <main className="min-h-screen">{children}</main>
               </GoCartProvider>
             </BookingProvider>
           </AuthProvider>

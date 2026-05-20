@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { subscribeToChatMessages, sendChatMessage, type ChatMessage } from "@/lib/firestoreGo";
 import {
-  Loader2, CheckCircle2, MapPin, Phone, MessageCircle,
+  Loader2, CheckCircle2, MapPin, MessageCircle,
   Send, ArrowLeft, Clock, Flame, Truck, Package, PartyPopper, X,
 } from "lucide-react";
 import Link from "next/link";
@@ -27,9 +27,9 @@ function formatRupiah(num: number) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
 }
 
-export default function TrackingPage() {
-  const params = useParams();
-  const orderId = params.orderId as string;
+function TrackingContent() {
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get("id") || "";
 
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +39,7 @@ export default function TrackingPage() {
   const [sending, setSending] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [cookingSecondsLeft, setCookingSecondsLeft] = useState<number | null>(null);
+  const [waitingSecondsLeft, setWaitingSecondsLeft] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // ETA States
@@ -104,6 +105,43 @@ export default function TrackingPage() {
     return () => clearInterval(timer);
   }, [cookingSecondsLeft]);
 
+  // Auto-reject timer
+  useEffect(() => {
+    if (!order || order.status !== "waiting_driver" || !order.createdAt) {
+      setWaitingSecondsLeft(null);
+      return;
+    }
+    const orderTime = order.createdAt?.toMillis?.() || order.createdAt?.seconds * 1000 || Date.now();
+    
+    const timer = setInterval(async () => {
+      const diff = 30000 - (Date.now() - orderTime);
+      if (diff <= 0) {
+        setWaitingSecondsLeft(0);
+        clearInterval(timer);
+        
+        try {
+          const { updateDoc } = await import("firebase/firestore");
+          await updateDoc(doc(db, "orders", order.id), {
+            status: "rejected",
+            rejectReason: "KangDoMie tidak merespon dalam 30 detik"
+          });
+          
+          if (order.costs?.pointsDiscount > 0 && order.userId) {
+            const { redeemPoints } = await import("@/lib/firestoreGo");
+            // Reverse the redemption by adding points back
+            await redeemPoints(order.userId, -(order.costs.pointsDiscount));
+          }
+        } catch (err) {
+          console.error("Auto reject failed:", err);
+        }
+      } else {
+        setWaitingSecondsLeft(Math.ceil(diff / 1000));
+      }
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [order?.status, order?.createdAt, order?.id, order?.costs?.pointsDiscount, order?.userId]);
+
   // Subscribe to chat
   useEffect(() => {
     if (!orderId) return;
@@ -119,7 +157,6 @@ export default function TrackingPage() {
     if (!isLoaded || !window.google || !order || order.status !== "delivering" || !driverLat || !driverLng || !order.lat || !order.lng) return;
 
     const now = Date.now();
-    // Throttle: only calculate every 60 seconds
     if (now - lastEtaFetchTime.current < 60000) return;
 
     lastEtaFetchTime.current = now;
@@ -159,6 +196,18 @@ export default function TrackingPage() {
   };
 
   const currentStepIndex = STATUS_STEPS.findIndex((s) => s.key === order?.status);
+
+  if (!orderId) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f0f1a] text-white px-4">
+        <Package className="w-16 h-16 text-white/20 mb-4" />
+        <h2 className="text-xl font-bold mb-2">Order ID tidak ditemukan</h2>
+        <Link href="/mienian-go" className="px-6 py-3 rounded-xl bg-primary text-white font-bold text-sm mt-4">
+          Kembali ke Mienian GO
+        </Link>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -244,11 +293,41 @@ export default function TrackingPage() {
               </motion.h2>
             </>
           )}
+
+          {order.status === "waiting_driver" && (
+            <div>
+              <Clock className="w-16 h-16 text-yellow-400/50 mx-auto mb-4 animate-[spin_3s_linear_infinite]" />
+              <h2 className="text-2xl font-extrabold mb-2">Mencari KangDoMie... 🔎</h2>
+              <p className="text-white/40 text-sm mb-4">Menunggu konfirmasi dari KangDoMie terdekat</p>
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-yellow-500/15 border border-yellow-500/30">
+                <span className="text-yellow-400 font-extrabold tabular-nums">
+                  Sisa Waktu: {waitingSecondsLeft !== null ? `${waitingSecondsLeft} detik` : "..."}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {order.status === "rejected" && (
+            <div>
+              <X className="w-16 h-16 text-red-500/50 mx-auto mb-4" />
+              <h2 className="text-2xl font-extrabold mb-2 text-red-500">Pencarian Gagal 😔</h2>
+              <p className="text-white/40 text-sm mb-6 max-w-sm mx-auto">Waduh, KangDoMie yang kamu pilih sedang super sibuk atau tidak aktif. Yuk pilih KangDoMie yang lain!</p>
+              <Link href="/mienian-go" className="px-6 py-3 rounded-xl bg-primary text-white font-bold text-sm">
+                Pesan Ulang
+              </Link>
+            </div>
+          )}
+
           {order.status === "pending_payment" && (
             <div>
-              <Clock className="w-16 h-16 text-yellow-400/50 mx-auto mb-4" />
-              <h2 className="text-2xl font-extrabold mb-2">Menunggu Pembayaran ⏳</h2>
-              <p className="text-white/40 text-sm">Segera selesaikan pembayaran untuk memproses pesanan</p>
+              <CheckCircle2 className="w-16 h-16 text-green-500/50 mx-auto mb-4" />
+              <h2 className="text-2xl font-extrabold mb-2 text-green-400">KangDoMie Ditemukan! 🎉</h2>
+              <p className="text-white/40 text-sm mb-6">Selesaikan pembayaranmu agar pesanan segera dibuat</p>
+              {order.paymentUrl && (
+                <a href={order.paymentUrl} className="inline-block px-8 py-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/30 transition-all">
+                  Bayar Sekarang
+                </a>
+              )}
             </div>
           )}
 
@@ -280,7 +359,6 @@ export default function TrackingPage() {
 
               return (
                 <div key={step.key} className="flex gap-4">
-                  {/* Vertical line + dot */}
                   <div className="flex flex-col items-center">
                     <motion.div
                       initial={false}
@@ -299,7 +377,6 @@ export default function TrackingPage() {
                     )}
                   </div>
 
-                  {/* Label */}
                   <div className={`pt-1 pb-6 ${isActive ? "" : "opacity-30"}`}>
                     <p className={`font-bold text-sm ${isCurrent ? step.color : ""}`}>{step.label}</p>
                     {isCurrent && (
@@ -417,7 +494,6 @@ export default function TrackingPage() {
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
             className="fixed inset-0 z-50 bg-[#0f0f1a] flex flex-col"
           >
-            {/* Chat Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
@@ -433,7 +509,6 @@ export default function TrackingPage() {
               </button>
             </div>
 
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {messages.length === 0 && (
                 <div className="text-center py-12">
@@ -472,7 +547,6 @@ export default function TrackingPage() {
               <div ref={chatEndRef} />
             </div>
 
-            {/* Input */}
             <div className="p-4 border-t border-white/10">
               <div className="flex gap-2">
                 <input
@@ -496,5 +570,17 @@ export default function TrackingPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function TrackingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#0f0f1a]">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    }>
+      <TrackingContent />
+    </Suspense>
   );
 }

@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "822379789209",
+    "project_id": "mienian-web-ok",
+    "storage_bucket": "mienian-web-ok.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:822379789209:android:d59bc454aeb2e81a30f108",
+        "android_client_info": {
+          "package_name": "com.mienian.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "822379789209-l7iq96p1ccfc9d2930m6i2kmv2mh3eum.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCy_snLbbgwOsYcLU11gI2-DnHUWmodG_U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "822379789209-l7iq96p1ccfc9d2930m6i2kmv2mh3eum.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

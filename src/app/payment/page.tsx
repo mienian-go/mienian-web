@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
-import { Copy, UploadCloud, CheckCircle2, AlertCircle, ReceiptText, MapPin, Calendar, Clock, Phone, User, Download } from "lucide-react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { Copy, UploadCloud, CheckCircle2, ReceiptText, MapPin, Calendar, Phone, User, Download, Loader2 } from "lucide-react";
 import { getDoc, doc, updateDoc } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
 import { getSettings } from "@/lib/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import Link from "next/link";
-import Image from "next/image";
 
-export default function PaymentPage({ params }: { params: Promise<{ orderId: string }> }) {
-  // Fix Next.js App Router params unwrapping issue
-  const { orderId } = use(params);
+function PaymentContent() {
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get("id") || "";
 
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -25,6 +25,7 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
+    if (!orderId) { setLoading(false); return; }
     async function fetchOrder() {
       try {
         const [docSnap, settings] = await Promise.all([
@@ -58,7 +59,8 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
   const handleDokuPayment = async () => {
     setDokuLoading(true);
     try {
-      const res = await fetch("/api/doku/create-payment", {
+      const apiBase = process.env.NEXT_PUBLIC_BASE_URL || "https://mienian-web.vercel.app";
+      const res = await fetch(`${apiBase}/api/doku/create-payment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -78,7 +80,7 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
       }
     } catch (err: any) {
       alert("Gagal memproses Doku. Anda bisa menggunakan metode Transfer Manual.");
-      setIsDokuError(true); // Fallback to manual if Doku fails
+      setIsDokuError(true);
     } finally {
       setDokuLoading(false);
     }
@@ -88,14 +90,12 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
     if (!file) return alert("Pilih file bukti pembayaran terlebih dahulu.");
     setUploading(true);
     try {
-      // Create safe filename
       const ext = file.name.split('.').pop();
       const storageRef = ref(storage, `receipts/${orderId}_${Date.now()}.${ext}`);
       
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
 
-      // Update Order Status
       await updateDoc(doc(db, "orders", orderId), {
         status: "payment_verifying",
         receiptUrl: url,
@@ -110,6 +110,7 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
     }
   };
 
+  if (!orderId) return <div className="min-h-screen pt-32 flex justify-center text-foreground/50">Order ID tidak ditemukan.</div>;
   if (loading) return <div className="min-h-screen pt-32 flex justify-center text-foreground/50">Memeriksa tagihan...</div>;
   if (error) return <div className="min-h-screen pt-32 flex justify-center text-red-500">{error}</div>;
   if (!order) return <div className="min-h-screen pt-32 flex justify-center">Order Invalid.</div>;
@@ -135,7 +136,6 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
                 <ReceiptText className="w-48 h-48" />
              </div>
              
-             {/* Receipt Header */}
              <div className="bg-primary p-6 sm:p-8 text-center text-white relative">
                 <div className="inline-flex items-center justify-center p-3 bg-white/20 rounded-full mb-3 backdrop-blur-sm">
                    <CheckCircle2 className="w-8 h-8 text-white" />
@@ -149,7 +149,6 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
              </div>
 
              <div className="p-6 sm:p-8">
-                {/* Order Details */}
                 <div className="border-b border-dashed border-card-border pb-6 mb-6">
                    <div className="flex justify-between items-start mb-6">
                       <div>
@@ -184,7 +183,6 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
                    </div>
                 </div>
 
-                {/* Items Breakdown */}
                 <div className="mb-6">
                    <p className="text-xs text-foreground/50 font-bold uppercase tracking-wider mb-4">Rincian Pesanan</p>
                    {order.orderType === "delivery" ? (
@@ -226,7 +224,6 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
                    )}
                 </div>
 
-                {/* Costs Breakdown */}
                 <div className="border-t border-dashed border-card-border pt-4 mb-6 space-y-3 text-sm text-foreground/70">
                    {order.costs?.extraFee > 0 && (
                      <div className="flex justify-between">
@@ -260,24 +257,17 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
                    )}
                 </div>
 
-                {/* Grand Total */}
                 <div className="bg-primary/5 rounded-2xl p-5 flex items-center justify-between">
                    <span className="font-bold text-primary">Total Pembayaran</span>
                    <span className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">Rp {order.costs?.grandTotal?.toLocaleString("id-ID") || 0}</span>
                 </div>
 
-                {/* Actions */}
                 <div className="mt-8 flex flex-col sm:flex-row gap-3">
                    <Link href="/stall" className="flex-1 btn btn-outlined bg-card hover:bg-muted py-3 justify-center text-sm">
                       Kembali ke Beranda
                    </Link>
-                   <button onClick={() => window.print()} className="flex-1 btn btn-primary py-3 justify-center text-sm gap-2">
-                      <Download className="w-4 h-4"/>
-                      Simpan / Cetak Struk
-                   </button>
                 </div>
                 
-                {/* Upload Ulang Button (Optional Escape Hatch) */}
                 <div className="mt-6 text-center">
                    <button onClick={() => { setSuccess(false); setOrder({...order, status: "pending_payment"}); }} className="text-[11px] text-foreground/40 hover:text-primary transition-colors underline">
                      Terjadi kesalahan transfer? Unggah ulang bukti
@@ -287,7 +277,6 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
           </div>
         ) : (
           <div className="bg-card rounded-3xl border border-card-border shadow-xl overflow-hidden mb-8">
-             {/* Order Total Block */}
              <div className="bg-primary/10 p-6 sm:p-8 text-center border-b border-primary/20">
                <p className="text-sm font-bold text-primary mb-1">TOTAL TAGIHAN</p>
                <h2 className="text-4xl font-extrabold tracking-tight">Rp {order.costs?.grandTotal?.toLocaleString("id-ID") || 0}</h2>
@@ -295,90 +284,73 @@ export default function PaymentPage({ params }: { params: Promise<{ orderId: str
              </div>
 
              <div className="p-6 sm:p-8 space-y-8">
-                {/* Doku Payment */}
+                {/* Manual Bank Transfer - primary for mobile app */}
                 <div>
                    <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">1</div>
-                     Pembayaran Otomatis (Virtual Account / E-Wallet / CC)
+                     Transfer Bank
                    </h3>
-                   <div className="bg-muted p-6 rounded-xl border border-card-border flex flex-col items-center justify-center text-center">
-                      <p className="text-sm font-bold text-foreground mb-2">DOKU Payment Gateway</p>
-                      <p className="text-xs text-foreground/60 mb-4">Bayar praktis tanpa perlu upload bukti transfer. Konfirmasi otomatis.</p>
-                      <button onClick={handleDokuPayment} disabled={dokuLoading} className="w-full py-3 bg-[#E32526] text-white font-bold rounded-xl disabled:opacity-50 hover:opacity-90 transition-all flex justify-center items-center gap-2 shadow-lg">
-                         {dokuLoading ? "Memproses..." : "Bayar via Doku Sekarang"}
-                      </button>
+                   <div className="bg-muted p-4 rounded-xl border border-card-border">
+                      <p className="text-xs text-foreground/60 mb-1">{globalSettings?.bankName || "Bank Syariah Indonesia (BSI)"}</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xl font-bold tracking-widest text-primary">{globalSettings?.bankAccount || "8777767896"}</span>
+                        <button onClick={() => copyToClipboard(globalSettings?.bankAccount || "8777767896")} className="p-2 bg-card hover:bg-card-border rounded-lg text-foreground/50 transition-colors">
+                           <Copy className="w-4 h-4"/>
+                        </button>
+                      </div>
+                      <p className="text-sm font-bold text-foreground">a/n {globalSettings?.bankHolder || "PT Mie Kekinian Sukses"}</p>
                    </div>
                 </div>
 
-                {/* Conditionally show manual payment if enabled in settings OR if Doku throws an error */}
-                {(globalSettings?.enableManualPayment || isDokuError) && (
-                  <>
-                    <div className="flex items-center gap-4 py-2">
-                      <div className="h-px bg-card-border flex-1"></div>
-                      <span className="text-xs font-bold text-foreground/40 uppercase tracking-widest">ATAU TRANSFER MANUAL</span>
-                      <div className="h-px bg-card-border flex-1"></div>
-                    </div>
+                {/* QRIS */}
+                <div>
+                   <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">2</div>
+                     Via QRIS (Semua E-Wallet/M-Banking)
+                   </h3>
+                   <div className="bg-white p-6 rounded-xl border border-card-border flex flex-col items-center">
+                      <div className="w-full max-w-[250px] aspect-square relative mb-3 bg-muted/30 rounded-lg overflow-hidden border">
+                         {/* eslint-disable-next-line @next/next/no-img-element */}
+                         <img src={globalSettings?.qrisImageUrl || "/qris.jpg"} alt="QRIS Mienian" className="w-full h-full object-contain" />
+                      </div>
+                      <p className="text-[10px] text-center text-black/40">Pastikan atas nama {globalSettings?.bankHolder || "PT Mie Kekinian Sukses"} saat melakukan scan.</p>
+                   </div>
+                </div>
 
-                    {/* Manual Bank Transfer */}
-                    <div>
-                       <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                         <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">2</div>
-                         Transfer Bank Manual
-                       </h3>
-                       <div className="bg-muted p-4 rounded-xl border border-card-border">
-                          <p className="text-xs text-foreground/60 mb-1">{globalSettings?.bankName || "Bank Syariah Indonesia (BSI)"}</p>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xl font-bold tracking-widest text-primary">{globalSettings?.bankAccount || "8777767896"}</span>
-                            <button onClick={() => copyToClipboard(globalSettings?.bankAccount || "8777767896")} className="p-2 bg-card hover:bg-card-border rounded-lg text-foreground/50 transition-colors">
-                               <Copy className="w-4 h-4"/>
-                            </button>
+                {/* Upload Bukti */}
+                <div className="pt-4 border-t border-dashed border-card-border">
+                   <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">3</div>
+                     Unggah Bukti Transfer
+                   </h3>
+                   <div className="space-y-4">
+                      <label className="flex items-center justify-center w-full h-32 px-4 transition bg-card border-2 border-primary/20 border-dashed rounded-xl appearance-none cursor-pointer hover:border-primary/50 focus:outline-none">
+                          <div className="flex flex-col items-center space-y-2">
+                            <UploadCloud className="w-6 h-6 text-foreground/40" />
+                            <span className="font-medium text-foreground/60 text-sm">
+                              {file ? file.name : "Klik untuk memilih foto (JPG/PNG/PDF)"}
+                            </span>
                           </div>
-                          <p className="text-sm font-bold text-foreground">a/n {globalSettings?.bankHolder || "PT Mie Kekinian Sukses"}</p>
-                       </div>
-                    </div>
-
-                    {/* QRIS */}
-                    <div>
-                       <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                         <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">3</div>
-                         Via QRIS Manual (Semua E-Wallet/M-Banking)
-                       </h3>
-                       <div className="bg-white p-6 rounded-xl border border-card-border flex flex-col items-center">
-                          <div className="w-full max-w-[250px] aspect-square relative mb-3 bg-muted/30 rounded-lg overflow-hidden border">
-                             <Image src={globalSettings?.qrisImageUrl || "/qris.jpg"} alt="QRIS Mienian" fill className="object-contain" onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/250?text=QRIS+Not+Found+in+/public'; }} />
-                          </div>
-                          <p className="text-[10px] text-center text-black/40">Pastikan atas nama {globalSettings?.bankHolder || "PT Mie Kekinian Sukses"} saat melakukan scan.</p>
-                       </div>
-                    </div>
-
-                    {/* Upload Bukti */}
-                    <div className="pt-4 border-t border-dashed border-card-border">
-                       <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                         <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">4</div>
-                         Unggah Bukti Transfer Manual
-                       </h3>
-                       <div className="space-y-4">
-                          <label className="flex items-center justify-center w-full h-32 px-4 transition bg-card border-2 border-primary/20 border-dashed rounded-xl appearance-none cursor-pointer hover:border-primary/50 focus:outline-none">
-                              <div className="flex flex-col items-center space-y-2">
-                                <UploadCloud className="w-6 h-6 text-foreground/40" />
-                                <span className="font-medium text-foreground/60 text-sm">
-                                  {file ? file.name : "Klik untuk memilih foto (JPG/PNG/PDF)"}
-                                </span>
-                              </div>
-                              <input type="file" name="file_upload" className="hidden" accept="image/*,.pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-                          </label>
-                          <button onClick={handleUpload} disabled={!file || uploading} className="w-full py-3 bg-primary text-white font-bold rounded-xl disabled:opacity-50 hover:bg-primary/90 transition-all flex justify-center items-center gap-2">
-                             {uploading ? "Sedang Mengunggah..." : "Konfirmasi Pembayaran"}
-                          </button>
-                       </div>
-                    </div>
-                  </>
-                )}
+                          <input type="file" name="file_upload" className="hidden" accept="image/*,.pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                      </label>
+                      <button onClick={handleUpload} disabled={!file || uploading} className="w-full py-3 bg-primary text-white font-bold rounded-xl disabled:opacity-50 hover:bg-primary/90 transition-all flex justify-center items-center gap-2">
+                         {uploading ? "Sedang Mengunggah..." : "Konfirmasi Pembayaran"}
+                      </button>
+                   </div>
+                </div>
              </div>
           </div>
         )}
 
       </div>
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen pt-32 flex justify-center text-foreground/50">Memeriksa tagihan...</div>}>
+      <PaymentContent />
+    </Suspense>
   );
 }
