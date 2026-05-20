@@ -119,6 +119,7 @@ export function subscribeToUnassignedOrders(city: string, callback: (orders: Kan
 export async function acceptOrder(orderId: string, driverUid: string): Promise<void> {
   await updateDoc(doc(db, "orders", orderId), {
     assignedDriver: driverUid,
+    driverId: driverUid, // Keep both fields in sync for mienian-app compatibility
     status: "accepted",
     updatedAt: Timestamp.now(),
   });

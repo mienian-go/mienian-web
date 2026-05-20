@@ -29,6 +29,7 @@ import {
 import { useLoadScript, GoogleMap, HeatmapLayer, Marker } from "@react-google-maps/api";
 
 const STATUS_FLOW: Record<string, { next: string; label: string; color: string }> = {
+  paid: { next: "accepted", label: "Terima Pesanan ✅", color: "bg-green-500" },
   accepted: { next: "delivering", label: "Siap Antar 🛺", color: "bg-blue-500" },
   delivering: { next: "preparing", label: "Sudah Sampai 📍", color: "bg-purple-500" },
   preparing: { next: "cooking", label: "Mulai Masak 🔥", color: "bg-orange-500" },

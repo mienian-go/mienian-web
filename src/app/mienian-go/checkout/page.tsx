@@ -282,6 +282,7 @@ export default function CheckoutPage() {
         lat: isPickup ? null : state.lat,
         lng: isPickup ? null : state.lng,
         driverId: state.driverId || null,
+        assignedDriver: null, // Will be set when driver accepts
         driverName: state.driverName || null,
         items: state.items,
         promoCode: appliedPromo ? appliedPromo.code : null,

@@ -12,6 +12,7 @@ import {
   Send, ArrowLeft, Clock, Flame, Truck, Package, PartyPopper, X,
 } from "lucide-react";
 import Link from "next/link";
+import { useLoadScript } from "@react-google-maps/api";
 
 const STATUS_STEPS = [
   { key: "paid", icon: CheckCircle2, label: "Pesanan Masuk", copy: "Pesanan masuk, cuy! ✅", color: "text-green-400" },
@@ -40,6 +41,17 @@ export default function TrackingPage() {
   const [cookingSecondsLeft, setCookingSecondsLeft] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // ETA States
+  const [driverLat, setDriverLat] = useState<number | null>(null);
+  const [driverLng, setDriverLng] = useState<number | null>(null);
+  const [etaText, setEtaText] = useState("");
+  const [distanceText, setDistanceText] = useState("");
+  const lastEtaFetchTime = useRef<number>(0);
+
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+  });
+
   // Auth
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => setCurrentUser(user));
@@ -64,6 +76,10 @@ export default function TrackingPage() {
     const unsub = onSnapshot(doc(db, "kangdomie_drivers", order.assignedDriver), (snap) => {
       if (snap.exists()) {
         const data = snap.data();
+        if (data.lat && data.lng) {
+          setDriverLat(data.lat);
+          setDriverLng(data.lng);
+        }
         if (data.isCooking && data.cookingUntil) {
           const diffSec = Math.max(0, Math.ceil((data.cookingUntil.toMillis() - Date.now()) / 1000));
           setCookingSecondsLeft(diffSec > 0 ? diffSec : null);
@@ -97,6 +113,33 @@ export default function TrackingPage() {
     });
     return () => unsub();
   }, [orderId]);
+
+  // ETA Calculation
+  useEffect(() => {
+    if (!isLoaded || !window.google || !order || order.status !== "delivering" || !driverLat || !driverLng || !order.lat || !order.lng) return;
+
+    const now = Date.now();
+    // Throttle: only calculate every 60 seconds
+    if (now - lastEtaFetchTime.current < 60000) return;
+
+    lastEtaFetchTime.current = now;
+    
+    const service = new window.google.maps.DistanceMatrixService();
+    service.getDistanceMatrix(
+      {
+        origins: [{ lat: driverLat, lng: driverLng }],
+        destinations: [{ lat: order.lat, lng: order.lng }],
+        travelMode: window.google.maps.TravelMode.DRIVING,
+      },
+      (response, status) => {
+        if (status === "OK" && response && response.rows[0].elements[0].status === "OK") {
+          const element = response.rows[0].elements[0];
+          setDistanceText(element.distance.text);
+          setEtaText(element.duration.text);
+        }
+      }
+    );
+  }, [isLoaded, order?.status, order?.lat, order?.lng, driverLat, driverLng]);
 
   const handleSend = async () => {
     if (!newMessage.trim() || !currentUser || sending) return;
@@ -349,10 +392,15 @@ export default function TrackingPage() {
             {/* ETA Info */}
             {order.status === "delivering" && order.address && (
               <div className="mt-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                <p className="text-xs text-blue-300 flex items-center gap-1.5">
+                <p className="text-xs text-blue-300 flex items-center gap-1.5 mb-1.5">
                   <MapPin className="w-3.5 h-3.5" />
                   KangDoMie sedang dalam perjalanan ke alamatmu
                 </p>
+                {etaText && distanceText && (
+                  <p className="text-sm font-bold text-blue-400 pl-5">
+                    🛺 Jarak: {distanceText} &bull; Estimasi: {etaText}
+                  </p>
+                )}
               </div>
             )}
           </div>
