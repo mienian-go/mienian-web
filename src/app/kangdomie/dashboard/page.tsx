@@ -314,6 +314,19 @@ export default function KangDoMieDashboard() {
     try {
       await updateOrderStatusDriver(orderId, newStatus);
 
+      // Sync cooking state to driver document for online orders
+      if (newStatus === "cooking" || newStatus === "delivered") {
+        try {
+          const { doc: fbDoc, updateDoc: fbUpdate } = await import("firebase/firestore");
+          await fbUpdate(fbDoc(db, "kangdomie_drivers", driver.uid), {
+            isCooking: newStatus === "cooking",
+            cookingUntil: newStatus === "cooking" ? new Date(Date.now() + 3 * 60000) : null
+          });
+        } catch (stateErr) {
+          console.error("Failed to update driver cooking state:", stateErr);
+        }
+      }
+
       // When delivered → record sale for report & history
       if (newStatus === "delivered") {
         const order = myOrders.find((o) => o.id === orderId);
