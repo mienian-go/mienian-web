@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.mienian.app-mergeDebugResources-3:/values-v29/values-v29.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\Seto Raffa Aditiya\\.gradle\\caches\\9.4.1\\transforms\\3a90b461a06e54e2081ba7c172fd6d3e\\transformed\\core-splashscreen-1.0.1\\res\\values-v29\\values-v29.xml",
+                    "from": {
+                        "startLines": "2,7",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,374",
+                        "endLines": "6,8",
+                        "endColumns": "12,12",
+                        "endOffsets": "369,464"
+                    }
+                }
+            ]
+        }
+    ]
+}

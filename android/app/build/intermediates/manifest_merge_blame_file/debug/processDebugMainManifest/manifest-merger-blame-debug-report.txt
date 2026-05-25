@@ -1,0 +1,350 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.mienian.app"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+7-->INJECTED
+8        android:minSdkVersion="23"
+8-->INJECTED
+9        android:targetSdkVersion="35" />
+9-->INJECTED
+10
+11    <!-- Permissions -->
+12
+13    <uses-permission android:name="android.permission.INTERNET" />
+13-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:34:5-67
+13-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:34:22-64
+14    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+14-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:35:5-77
+14-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:35:22-74
+15    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+15-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:36:5-81
+15-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:36:22-78
+16    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+16-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:37:5-79
+16-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:37:22-76
+17
+18    <uses-feature android:name="android.hardware.location.gps" />
+18-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:38:5-66
+18-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:38:19-63
+19
+20    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+20-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:22:5-79
+20-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:22:22-76
+21    <uses-permission android:name="android.permission.WAKE_LOCK" /> <!-- Required by older versions of Google Play services to create IID tokens -->
+21-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:24:5-68
+21-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:24:22-65
+22    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+22-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:26:5-82
+22-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:26:22-79
+23
+24    <permission
+24-->[androidx.core:core:1.15.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\31ff1a72f8f0ed3e23fd573ca1fafa7a\transformed\core-1.15.0\AndroidManifest.xml:22:5-24:47
+25        android:name="com.mienian.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+25-->[androidx.core:core:1.15.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\31ff1a72f8f0ed3e23fd573ca1fafa7a\transformed\core-1.15.0\AndroidManifest.xml:23:9-81
+26        android:protectionLevel="signature" />
+26-->[androidx.core:core:1.15.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\31ff1a72f8f0ed3e23fd573ca1fafa7a\transformed\core-1.15.0\AndroidManifest.xml:24:9-44
+27
+28    <uses-permission android:name="com.mienian.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+28-->[androidx.core:core:1.15.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\31ff1a72f8f0ed3e23fd573ca1fafa7a\transformed\core-1.15.0\AndroidManifest.xml:26:5-97
+28-->[androidx.core:core:1.15.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\31ff1a72f8f0ed3e23fd573ca1fafa7a\transformed\core-1.15.0\AndroidManifest.xml:26:22-94
+29
+30    <application
+30-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:3:5-30:19
+31        android:allowBackup="true"
+31-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:4:9-35
+32        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+32-->[androidx.core:core:1.15.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\31ff1a72f8f0ed3e23fd573ca1fafa7a\transformed\core-1.15.0\AndroidManifest.xml:28:18-86
+33        android:debuggable="true"
+34        android:extractNativeLibs="false"
+34-->INJECTED
+35        android:icon="@mipmap/ic_launcher"
+35-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:5:9-43
+36        android:label="@string/app_name"
+36-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:6:9-41
+37        android:roundIcon="@mipmap/ic_launcher_round"
+37-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:7:9-54
+38        android:supportsRtl="true"
+38-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:8:9-35
+39        android:testOnly="true"
+40        android:theme="@style/AppTheme" >
+40-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:9:9-40
+41        <activity
+41-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:10:9-21:20
+42            android:name="com.mienian.app.MainActivity"
+42-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:12:13-41
+43            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation"
+43-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:11:13-140
+44            android:exported="true"
+44-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:16:13-36
+45            android:label="@string/title_activity_main"
+45-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:13:13-56
+46            android:launchMode="singleTask"
+46-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:15:13-44
+47            android:theme="@style/AppTheme.NoActionBarLaunch" >
+47-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:14:13-62
+48            <intent-filter>
+48-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:17:13-20:29
+49                <action android:name="android.intent.action.MAIN" />
+49-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:18:17-69
+49-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:18:25-66
+50
+51                <category android:name="android.intent.category.LAUNCHER" />
+51-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:19:17-77
+51-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:19:27-74
+52            </intent-filter>
+53        </activity>
+54
+55        <provider
+55-->INJECTED
+56            android:name="androidx.core.content.FileProvider"
+56-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:24:13-62
+57            android:authorities="com.mienian.app.fileprovider"
+57-->INJECTED
+58            android:exported="false"
+58-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:26:13-37
+59            android:grantUriPermissions="true" >
+59-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:27:13-47
+60            <meta-data
+60-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:28:13-112
+61                android:name="android.support.FILE_PROVIDER_PATHS"
+61-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:28:24-74
+62                android:resource="@xml/file_paths" />
+62-->C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\android\app\src\main\AndroidManifest.xml:28:75-109
+63        </provider>
+64
+65        <service
+65-->[:capacitor-push-notifications] C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:8:9-14:19
+66            android:name="com.capacitorjs.plugins.pushnotifications.MessagingService"
+66-->[:capacitor-push-notifications] C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:9:13-86
+67            android:exported="false" >
+67-->[:capacitor-push-notifications] C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:10:13-37
+68            <intent-filter>
+68-->[:capacitor-push-notifications] C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:11:13-13:29
+69                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+69-->[:capacitor-push-notifications] C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:12:17-78
+69-->[:capacitor-push-notifications] C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:12:25-75
+70            </intent-filter>
+71        </service>
+72
+73        <receiver
+73-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:29:9-40:20
+74            android:name="com.google.firebase.iid.FirebaseInstanceIdReceiver"
+74-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:30:13-78
+75            android:exported="true"
+75-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:31:13-36
+76            android:permission="com.google.android.c2dm.permission.SEND" >
+76-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:32:13-73
+77            <intent-filter>
+77-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:33:13-35:29
+78                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+78-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:34:17-81
+78-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:34:25-78
+79            </intent-filter>
+80
+81            <meta-data
+81-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:37:13-39:40
+82                android:name="com.google.android.gms.cloudmessaging.FINISHED_AFTER_HANDLED"
+82-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:38:17-92
+83                android:value="true" />
+83-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:39:17-37
+84        </receiver>
+85        <!--
+86             FirebaseMessagingService performs security checks at runtime,
+87             but set to not exported to explicitly avoid allowing another app to call it.
+88        -->
+89        <service
+89-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:46:9-53:19
+90            android:name="com.google.firebase.messaging.FirebaseMessagingService"
+90-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:47:13-82
+91            android:directBootAware="true"
+91-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:48:13-43
+92            android:exported="false" >
+92-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:49:13-37
+93            <intent-filter android:priority="-500" >
+93-->[:capacitor-push-notifications] C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:11:13-13:29
+94                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+94-->[:capacitor-push-notifications] C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:12:17-78
+94-->[:capacitor-push-notifications] C:\Users\Seto Raffa Aditiya\.gemini\antigravity\playground\mienian-mobile\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:12:25-75
+95            </intent-filter>
+96        </service>
+97        <service
+97-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:54:9-63:19
+98            android:name="com.google.firebase.components.ComponentDiscoveryService"
+98-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:55:13-84
+99            android:directBootAware="true"
+99-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\fa33eb85c3813b59aa1e0c168ffafc2c\transformed\firebase-common-21.0.0\AndroidManifest.xml:32:13-43
+100            android:exported="false" >
+100-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:56:13-37
+101            <meta-data
+101-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:57:13-59:85
+102                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingKtxRegistrar"
+102-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:58:17-122
+103                android:value="com.google.firebase.components.ComponentRegistrar" />
+103-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:59:17-82
+104            <meta-data
+104-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:60:13-62:85
+105                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingRegistrar"
+105-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:61:17-119
+106                android:value="com.google.firebase.components.ComponentRegistrar" />
+106-->[com.google.firebase:firebase-messaging:24.1.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\71dd783fbb4fa31d125f6e17dc89ba6c\transformed\firebase-messaging-24.1.0\AndroidManifest.xml:62:17-82
+107            <meta-data
+107-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\4554512dbff9770268e7fab69c8a2928\transformed\firebase-installations-17.2.0\AndroidManifest.xml:15:13-17:85
+108                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsKtxRegistrar"
+108-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\4554512dbff9770268e7fab69c8a2928\transformed\firebase-installations-17.2.0\AndroidManifest.xml:16:17-130
+109                android:value="com.google.firebase.components.ComponentRegistrar" />
+109-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\4554512dbff9770268e7fab69c8a2928\transformed\firebase-installations-17.2.0\AndroidManifest.xml:17:17-82
+110            <meta-data
+110-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\4554512dbff9770268e7fab69c8a2928\transformed\firebase-installations-17.2.0\AndroidManifest.xml:18:13-20:85
+111                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsRegistrar"
+111-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\4554512dbff9770268e7fab69c8a2928\transformed\firebase-installations-17.2.0\AndroidManifest.xml:19:17-127
+112                android:value="com.google.firebase.components.ComponentRegistrar" />
+112-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\4554512dbff9770268e7fab69c8a2928\transformed\firebase-installations-17.2.0\AndroidManifest.xml:20:17-82
+113            <meta-data
+113-->[com.google.firebase:firebase-common-ktx:21.0.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\450e83daafc812bbfc9e8c6e0aeac8cf\transformed\firebase-common-ktx-21.0.0\AndroidManifest.xml:12:13-14:85
+114                android:name="com.google.firebase.components:com.google.firebase.ktx.FirebaseCommonLegacyRegistrar"
+114-->[com.google.firebase:firebase-common-ktx:21.0.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\450e83daafc812bbfc9e8c6e0aeac8cf\transformed\firebase-common-ktx-21.0.0\AndroidManifest.xml:13:17-116
+115                android:value="com.google.firebase.components.ComponentRegistrar" />
+115-->[com.google.firebase:firebase-common-ktx:21.0.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\450e83daafc812bbfc9e8c6e0aeac8cf\transformed\firebase-common-ktx-21.0.0\AndroidManifest.xml:14:17-82
+116            <meta-data
+116-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\fa33eb85c3813b59aa1e0c168ffafc2c\transformed\firebase-common-21.0.0\AndroidManifest.xml:35:13-37:85
+117                android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar"
+117-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\fa33eb85c3813b59aa1e0c168ffafc2c\transformed\firebase-common-21.0.0\AndroidManifest.xml:36:17-109
+118                android:value="com.google.firebase.components.ComponentRegistrar" />
+118-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\fa33eb85c3813b59aa1e0c168ffafc2c\transformed\firebase-common-21.0.0\AndroidManifest.xml:37:17-82
+119            <meta-data
+119-->[com.google.firebase:firebase-datatransport:18.2.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\70782a99995f8dc8b35b8ed8d2df0ca5\transformed\firebase-datatransport-18.2.0\AndroidManifest.xml:25:13-27:85
+120                android:name="com.google.firebase.components:com.google.firebase.datatransport.TransportRegistrar"
+120-->[com.google.firebase:firebase-datatransport:18.2.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\70782a99995f8dc8b35b8ed8d2df0ca5\transformed\firebase-datatransport-18.2.0\AndroidManifest.xml:26:17-115
+121                android:value="com.google.firebase.components.ComponentRegistrar" />
+121-->[com.google.firebase:firebase-datatransport:18.2.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\70782a99995f8dc8b35b8ed8d2df0ca5\transformed\firebase-datatransport-18.2.0\AndroidManifest.xml:27:17-82
+122        </service>
+123
+124        <activity
+124-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\81a3a84eaf80e2d38a7c9530e8f70c15\transformed\play-services-base-18.0.1\AndroidManifest.xml:20:9-22:45
+125            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+125-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\81a3a84eaf80e2d38a7c9530e8f70c15\transformed\play-services-base-18.0.1\AndroidManifest.xml:20:19-85
+126            android:exported="false"
+126-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\81a3a84eaf80e2d38a7c9530e8f70c15\transformed\play-services-base-18.0.1\AndroidManifest.xml:22:19-43
+127            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+127-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\81a3a84eaf80e2d38a7c9530e8f70c15\transformed\play-services-base-18.0.1\AndroidManifest.xml:21:19-78
+128
+129        <provider
+129-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\fa33eb85c3813b59aa1e0c168ffafc2c\transformed\firebase-common-21.0.0\AndroidManifest.xml:23:9-28:39
+130            android:name="com.google.firebase.provider.FirebaseInitProvider"
+130-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\fa33eb85c3813b59aa1e0c168ffafc2c\transformed\firebase-common-21.0.0\AndroidManifest.xml:24:13-77
+131            android:authorities="com.mienian.app.firebaseinitprovider"
+131-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\fa33eb85c3813b59aa1e0c168ffafc2c\transformed\firebase-common-21.0.0\AndroidManifest.xml:25:13-72
+132            android:directBootAware="true"
+132-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\fa33eb85c3813b59aa1e0c168ffafc2c\transformed\firebase-common-21.0.0\AndroidManifest.xml:26:13-43
+133            android:exported="false"
+133-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\fa33eb85c3813b59aa1e0c168ffafc2c\transformed\firebase-common-21.0.0\AndroidManifest.xml:27:13-37
+134            android:initOrder="100" />
+134-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\fa33eb85c3813b59aa1e0c168ffafc2c\transformed\firebase-common-21.0.0\AndroidManifest.xml:28:13-36
+135        <provider
+135-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\e4ce445ea4a5f5112b84a8a83f527e2f\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+136            android:name="androidx.startup.InitializationProvider"
+136-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\e4ce445ea4a5f5112b84a8a83f527e2f\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+137            android:authorities="com.mienian.app.androidx-startup"
+137-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\e4ce445ea4a5f5112b84a8a83f527e2f\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+138            android:exported="false" >
+138-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\e4ce445ea4a5f5112b84a8a83f527e2f\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+139            <meta-data
+139-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\e4ce445ea4a5f5112b84a8a83f527e2f\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+140                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+140-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\e4ce445ea4a5f5112b84a8a83f527e2f\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+141                android:value="androidx.startup" />
+141-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\e4ce445ea4a5f5112b84a8a83f527e2f\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+142            <meta-data
+142-->[androidx.lifecycle:lifecycle-process:2.6.2] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\fec3a20e08f78d768d80bd1e2bc74831\transformed\lifecycle-process-2.6.2\AndroidManifest.xml:29:13-31:52
+143                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+143-->[androidx.lifecycle:lifecycle-process:2.6.2] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\fec3a20e08f78d768d80bd1e2bc74831\transformed\lifecycle-process-2.6.2\AndroidManifest.xml:30:17-78
+144                android:value="androidx.startup" />
+144-->[androidx.lifecycle:lifecycle-process:2.6.2] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\fec3a20e08f78d768d80bd1e2bc74831\transformed\lifecycle-process-2.6.2\AndroidManifest.xml:31:17-49
+145            <meta-data
+145-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+146                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+146-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+147                android:value="androidx.startup" />
+147-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+148        </provider>
+149
+150        <meta-data
+150-->[com.google.android.gms:play-services-basement:18.3.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\85a98433ac073ac3c09b8153bb659e49\transformed\play-services-basement-18.3.0\AndroidManifest.xml:21:9-23:69
+151            android:name="com.google.android.gms.version"
+151-->[com.google.android.gms:play-services-basement:18.3.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\85a98433ac073ac3c09b8153bb659e49\transformed\play-services-basement-18.3.0\AndroidManifest.xml:22:13-58
+152            android:value="@integer/google_play_services_version" />
+152-->[com.google.android.gms:play-services-basement:18.3.0] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\85a98433ac073ac3c09b8153bb659e49\transformed\play-services-basement-18.3.0\AndroidManifest.xml:23:13-66
+153
+154        <receiver
+154-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+155            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+155-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+156            android:directBootAware="false"
+156-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+157            android:enabled="true"
+157-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+158            android:exported="true"
+158-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+159            android:permission="android.permission.DUMP" >
+159-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+160            <intent-filter>
+160-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+161                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+161-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+161-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+162            </intent-filter>
+163            <intent-filter>
+163-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+164                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+164-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+164-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+165            </intent-filter>
+166            <intent-filter>
+166-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+167                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+167-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+167-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+168            </intent-filter>
+169            <intent-filter>
+169-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+170                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+170-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+170-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\12fea0f3b8f876f299cb2f749bd2ac16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+171            </intent-filter>
+172        </receiver>
+173
+174        <service
+174-->[com.google.android.datatransport:transport-backend-cct:3.1.9] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\50ba495e2667922b93f0aea476a45140\transformed\transport-backend-cct-3.1.9\AndroidManifest.xml:28:9-34:19
+175            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+175-->[com.google.android.datatransport:transport-backend-cct:3.1.9] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\50ba495e2667922b93f0aea476a45140\transformed\transport-backend-cct-3.1.9\AndroidManifest.xml:29:13-103
+176            android:exported="false" >
+176-->[com.google.android.datatransport:transport-backend-cct:3.1.9] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\50ba495e2667922b93f0aea476a45140\transformed\transport-backend-cct-3.1.9\AndroidManifest.xml:30:13-37
+177            <meta-data
+177-->[com.google.android.datatransport:transport-backend-cct:3.1.9] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\50ba495e2667922b93f0aea476a45140\transformed\transport-backend-cct-3.1.9\AndroidManifest.xml:31:13-33:39
+178                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
+178-->[com.google.android.datatransport:transport-backend-cct:3.1.9] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\50ba495e2667922b93f0aea476a45140\transformed\transport-backend-cct-3.1.9\AndroidManifest.xml:32:17-94
+179                android:value="cct" />
+179-->[com.google.android.datatransport:transport-backend-cct:3.1.9] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\50ba495e2667922b93f0aea476a45140\transformed\transport-backend-cct-3.1.9\AndroidManifest.xml:33:17-36
+180        </service>
+181        <service
+181-->[com.google.android.datatransport:transport-runtime:3.1.9] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\c284f985c9c4e3e7f7c8dff14c45c38f\transformed\transport-runtime-3.1.9\AndroidManifest.xml:26:9-30:19
+182            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
+182-->[com.google.android.datatransport:transport-runtime:3.1.9] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\c284f985c9c4e3e7f7c8dff14c45c38f\transformed\transport-runtime-3.1.9\AndroidManifest.xml:27:13-117
+183            android:exported="false"
+183-->[com.google.android.datatransport:transport-runtime:3.1.9] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\c284f985c9c4e3e7f7c8dff14c45c38f\transformed\transport-runtime-3.1.9\AndroidManifest.xml:28:13-37
+184            android:permission="android.permission.BIND_JOB_SERVICE" >
+184-->[com.google.android.datatransport:transport-runtime:3.1.9] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\c284f985c9c4e3e7f7c8dff14c45c38f\transformed\transport-runtime-3.1.9\AndroidManifest.xml:29:13-69
+185        </service>
+186
+187        <receiver
+187-->[com.google.android.datatransport:transport-runtime:3.1.9] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\c284f985c9c4e3e7f7c8dff14c45c38f\transformed\transport-runtime-3.1.9\AndroidManifest.xml:32:9-34:40
+188            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
+188-->[com.google.android.datatransport:transport-runtime:3.1.9] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\c284f985c9c4e3e7f7c8dff14c45c38f\transformed\transport-runtime-3.1.9\AndroidManifest.xml:33:13-132
+189            android:exported="false" />
+189-->[com.google.android.datatransport:transport-runtime:3.1.9] C:\Users\Seto Raffa Aditiya\.gradle\caches\9.4.1\transforms\c284f985c9c4e3e7f7c8dff14c45c38f\transformed\transport-runtime-3.1.9\AndroidManifest.xml:34:13-37
+190    </application>
+191
+192</manifest>

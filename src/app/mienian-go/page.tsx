@@ -1,19 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Sparkles, ShieldCheck, Clock, Utensils, ArrowRight, Loader2, ShoppingCart, Plus, Minus, Bike, MessageCircle, Trophy } from "lucide-react";
+import { motion } from "framer-motion";
+import { MapPin, Sparkles, ShieldCheck, Clock, Utensils, ArrowRight, Loader2, ShoppingCart, Plus } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatRupiah } from "@/data/menu";
+import { PackageShowcase } from "@/components/PackageShowcase";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { subscribeToKangDoMieLocations } from "@/lib/firestoreGo";
 import { useGoCart } from "@/context/GoCartContext";
-import { useAuth } from "@/context/AuthContext";
 import NearbyKangDoMieMap from "@/components/NearbyKangDoMieMap";
-import MienianPowerBar from "@/components/go/MienianPowerBar";
-import DailyQuestWidget from "@/components/go/DailyQuestWidget";
 
 const container = {
   hidden: { opacity: 0 },
@@ -32,10 +29,8 @@ const scheduleData = [
 
 export default function MienianGO() {
   const { state, dispatch, totalItems, totalPrice } = useGoCart();
-  const { user } = useAuth();
   const [dbMenuItems, setDbMenuItems] = useState<any[]>([]);
   const [isLoadingMenu, setIsLoadingMenu] = useState(true);
-  const [availableKangCount, setAvailableKangCount] = useState(0);
 
   const handleAddToCart = (item: any) => {
     dispatch({
@@ -74,96 +69,43 @@ export default function MienianGO() {
     fetchMenu();
   }, []);
 
-  const [rawLocations, setRawLocations] = useState<any[]>([]);
-
-  useEffect(() => {
-    const unsub = subscribeToKangDoMieLocations((locations) => {
-      setRawLocations(locations);
-    });
-    return () => unsub();
-  }, []);
-
-  useEffect(() => {
-    const updateCount = () => {
-      const now = Date.now();
-      const count = rawLocations.filter((k) => {
-        if (k.status !== "available") return false;
-        if (!k.lastUpdated) return true;
-        const diff = now - k.lastUpdated.toMillis();
-        return diff <= 120000;
-      });
-      setAvailableKangCount(count.length);
-    };
-    updateCount();
-    const interval = setInterval(updateCount, 5000);
-    return () => clearInterval(interval);
-  }, [rawLocations]);
-
   const categoriesToShow = [
     { id: "mie", title: "Pilihan Mie", emoji: "🍜" },
     { id: "topping-reguler", title: "Pilihan Topping Reguler", emoji: "🥚" },
     { id: "topping-premium", title: "Pilihan Topping Premium", emoji: "🥩" },
   ];
 
-  const displayName = user?.displayName?.split(" ")[0] || null;
-
   return (
     <div className="flex flex-col overflow-hidden">
-      {/* ============ HUB HEADER ============ */}
-      <section className="relative pt-24 pb-8 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-background to-background" />
+      {/* ============ HERO ============ */}
+      <section className="relative min-h-[60vh] flex items-center pt-24 pb-16 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 via-background to-background" />
         <div className="absolute top-10 right-10 w-64 h-64 bg-secondary/10 rounded-full blur-[100px]" />
 
         <motion.div
           variants={container}
           initial="hidden"
           animate="show"
-          className="relative z-10 max-w-7xl mx-auto"
+          className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
         >
-          {/* Greeting */}
-          <motion.div variants={item} className="mb-6">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight">
-              {displayName ? (
-                <>Mau Indomie pakai topping apa, <span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary to-[#FFD54F]">{displayName}</span>? 🍜</>
-              ) : (
-                <>Mau makan <span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary to-[#FFD54F]">Indomie</span> apa hari ini?</>
-              )}
-            </h1>
+          <motion.div variants={item} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-sm font-medium mb-6 text-secondary">
+            <Sparkles className="w-4 h-4" />
+            <span>Warmindo Keliling</span>
           </motion.div>
 
-          {/* Mienian Power + Quick Actions */}
-          <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-            {/* Power Bar */}
-            <MienianPowerBar />
+          <motion.h1 variants={item} className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight mb-6 max-w-3xl">
+            Gerobak <span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary to-[#FFD54F]">Mienian</span> Siap Mangkal!
+          </motion.h1>
 
-            {/* Quick Stats */}
-            <div className="card p-5 sm:p-6 flex flex-col justify-between">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Bike className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-widest text-foreground/40 font-bold">KangDoMie Aktif</p>
-                  <p className="text-xl font-extrabold leading-tight">{availableKangCount} <span className="text-sm text-foreground/50 font-medium">di sekitarmu</span></p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Link
-                  href="#menu-go"
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-colors"
-                >
-                  <ShoppingCart className="w-3.5 h-3.5" />
-                  Pesan Sekarang
-                </Link>
-                <Link
-                  href="/mienian-go/leaderboard"
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-muted hover:bg-muted/80 text-foreground/70 text-xs font-bold transition-colors"
-                >
-                  <Trophy className="w-3.5 h-3.5" />
-                  Leaderboard
-                </Link>
-              </div>
-            </div>
+          <motion.p variants={item} className="text-lg sm:text-xl text-foreground/60 max-w-2xl mb-8">
+            Bukan warmindo biasa. Fresh cooking, menu variatif, dan antrean yang selalu rame — bukti rasa yang gak pernah bohong. 🛺
+          </motion.p>
+
+          <motion.div variants={item}>
+            <a href="#lokasi" className="btn btn-secondary btn-lg">
+              <MapPin className="w-5 h-5" />
+              Cek Jadwal Mangkal
+            </a>
           </motion.div>
         </motion.div>
       </section>
@@ -171,10 +113,12 @@ export default function MienianGO() {
       {/* ============ NEARBY KANGDOMIE MAP ============ */}
       <NearbyKangDoMieMap />
 
+      <PackageShowcase />
+
       {/* ============ USP ============ */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      <section className="py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
             <h2 className="text-3xl sm:text-5xl font-extrabold mb-4">
               Beda dari Warmindo <span className="gradient-text">Biasa</span>
             </h2>
@@ -224,41 +168,34 @@ export default function MienianGO() {
       </section>
 
       {/* ============ MENU HIGHLIGHTS ============ */}
-      <section id="menu-go" className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/50">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/50">
         <div className="max-w-7xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
             <h2 className="text-3xl sm:text-5xl font-extrabold mb-4">
               Menu <span className="gradient-text">Andalan</span>
             </h2>
-            {state.driverName ? (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm font-medium mb-4 text-primary">
-                <Bike className="w-4 h-4" />
-                <span>Memesan dari KangDoMie: <strong>{state.driverName}</strong></span>
-              </div>
-            ) : (
-              <p className="text-foreground/60 text-lg max-w-xl mx-auto">
-                Semua varian mie cuma {formatRupiah(8500)} — topping mulai dari {formatRupiah(3500)}. Affordable tapi premium!
-              </p>
-            )}
+            <p className="text-foreground/60 text-lg max-w-xl mx-auto">
+              Semua varian mie cuma {formatRupiah(8500)} — topping mulai dari {formatRupiah(3500)}. Affordable tapi premium!
+            </p>
           </motion.div>
 
           {isLoadingMenu ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            <div className="flex justify-center p-12">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
             </div>
           ) : (
             <div className="space-y-12">
               {categoriesToShow.map(cat => {
-                const items = dbMenuItems.filter((m: any) => m.category === cat.id);
+                const items = dbMenuItems.filter(m => m.category === cat.id);
                 if (items.length === 0) return null;
 
                 return (
                   <div key={cat.id}>
-                    <h3 className="text-2xl sm:text-3xl font-extrabold mb-6 flex items-center gap-3">
+                    <h3 className="text-xl sm:text-2xl font-bold mb-6 flex items-center gap-3">
                       <span className="text-2xl sm:text-3xl">{cat.emoji}</span> {cat.title}
                     </h3>
                     <div className="flex gap-4 overflow-x-auto pb-6 snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
-                      {items.map((item: any, i: number) => (
+                      {items.map((item, i) => (
                         <motion.div
                           key={item.id}
                           initial={{ opacity: 0, scale: 0.9 }}
@@ -267,59 +204,45 @@ export default function MienianGO() {
                           transition={{ delay: i * 0.05 }}
                           className="snap-center shrink-0 w-64"
                         >
-                          <div className="card p-0 h-full flex flex-col justify-between hover:border-primary/50 transition-colors overflow-hidden group">
-                            {/* Image Area */}
+                          <div className="card p-6 h-full flex flex-col justify-between hover:border-primary/50 transition-colors">
                             <div>
                               {item.imageUrl ? (
-                                <div className="w-full aspect-square overflow-hidden relative">
-                                  <Image 
-                                    src={item.imageUrl} 
-                                    alt={item.name} 
-                                    fill 
-                                    className="object-cover group-hover:scale-105 transition-transform duration-500" 
-                                    sizes="256px" 
-                                  />
+                                <div className="w-full aspect-square rounded-xl overflow-hidden relative mb-4">
+                                  <Image src={item.imageUrl} alt={item.name} fill className="object-cover" sizes="256px" />
                                 </div>
                               ) : (
-                                <div className="w-full aspect-square bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center text-5xl">
+                                <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center mb-4 text-5xl">
                                   {cat.emoji}
                                 </div>
                               )}
-                              <div className="p-4 pb-0">
-                                <h4 className="font-bold text-sm mb-1">{item.name}</h4>
-                              </div>
+                              <h4 className="font-bold text-sm mb-1">{item.name}</h4>
                             </div>
-                            <div className="flex items-center justify-between p-4 pt-2">
+                            <div className="flex items-center justify-between mt-4">
                               <p className="text-secondary font-bold text-lg">{formatRupiah(item.price)}</p>
                               
                               {getItemQuantity(item.id) === 0 ? (
-                                <motion.button
-                                  whileTap={{ scale: 0.85 }}
+                                <button
                                   onClick={() => handleAddToCart(item)}
-                                  className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/80 transition-colors shadow-lg shadow-primary/30"
+                                  className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
                                 >
                                   <Plus className="w-5 h-5" />
-                                </motion.button>
+                                </button>
                               ) : (
-                                <motion.div
-                                  initial={{ scale: 0.8 }}
-                                  animate={{ scale: 1 }}
-                                  className="flex items-center gap-2"
-                                >
+                                <div className="flex items-center gap-3 bg-muted rounded-full p-1 border border-white/10">
                                   <button
                                     onClick={() => handleUpdateQuantity(item.id, getItemQuantity(item.id) - 1)}
-                                    className="w-8 h-8 rounded-full bg-muted text-foreground/70 flex items-center justify-center hover:bg-primary/20 hover:text-primary transition-colors"
+                                    className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors"
                                   >
-                                    <Minus className="w-4 h-4" />
+                                    -
                                   </button>
-                                  <span className="w-6 text-center font-bold text-sm">{getItemQuantity(item.id)}</span>
+                                  <span className="font-bold text-sm w-4 text-center">{getItemQuantity(item.id)}</span>
                                   <button
                                     onClick={() => handleUpdateQuantity(item.id, getItemQuantity(item.id) + 1)}
-                                    className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/80 transition-colors"
+                                    className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/80 transition-colors"
                                   >
-                                    <Plus className="w-4 h-4" />
+                                    +
                                   </button>
-                                </motion.div>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -404,55 +327,39 @@ export default function MienianGO() {
         </motion.div>
       </section>
 
-      {/* ============ DAILY QUEST WIDGET ============ */}
-      <DailyQuestWidget />
-
-      {/* ============ FLOATING CART BAR ============ */}
-      <AnimatePresence>
-        {totalItems > 0 && (
-          <motion.div
-            initial={{ y: 100 }}
-            animate={{ y: 0 }}
-            exit={{ y: 100 }}
-            className="fixed bottom-0 left-0 right-0 z-50 p-4 pointer-events-none"
-          >
-            <div className="max-w-3xl mx-auto pointer-events-auto">
-              <Link
-                href="/mienian-go/checkout"
-                className="bg-primary text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between hover:bg-primary/90 transition-all border border-white/20"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <motion.div 
-                      key={totalItems}
-                      initial={{ scale: 1.3 }}
-                      animate={{ scale: 1 }}
-                      className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center"
-                    >
-                      <ShoppingCart className="w-6 h-6" />
-                    </motion.div>
-                    <motion.span 
-                      key={`badge-${totalItems}`}
-                      initial={{ scale: 1.5 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 bg-secondary text-secondary-foreground text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full border-2 border-primary"
-                    >
-                      {totalItems}
-                    </motion.span>
+      {/* Floating Cart Bar */}
+      {totalItems > 0 && (
+        <motion.div
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          className="fixed bottom-0 left-0 right-0 z-50 p-4 pointer-events-none"
+        >
+          <div className="max-w-3xl mx-auto pointer-events-auto">
+            <Link
+              href="/mienian-go/checkout"
+              className="bg-primary text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between hover:bg-primary/90 transition-all border border-white/20"
+            >
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                    <ShoppingCart className="w-6 h-6" />
                   </div>
-                  <div className="text-left">
-                    <p className="text-xs opacity-80 mb-0.5">Total Pesanan</p>
-                    <p className="font-extrabold text-lg leading-none">{formatRupiah(totalPrice)}</p>
-                  </div>
+                  <span className="absolute -top-1 -right-1 bg-secondary text-secondary-foreground text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full border-2 border-primary">
+                    {totalItems}
+                  </span>
                 </div>
-                <div className="flex items-center gap-2 font-bold bg-white/20 px-4 py-2.5 rounded-xl">
-                  Checkout <ArrowRight className="w-4 h-4" />
+                <div className="text-left">
+                  <p className="text-xs opacity-80 mb-0.5">Total Pesanan</p>
+                  <p className="font-extrabold text-lg leading-none">{formatRupiah(totalPrice)}</p>
                 </div>
-              </Link>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              </div>
+              <div className="flex items-center gap-2 font-bold bg-white/20 px-4 py-2.5 rounded-xl">
+                Checkout <ArrowRight className="w-4 h-4" />
+              </div>
+            </Link>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

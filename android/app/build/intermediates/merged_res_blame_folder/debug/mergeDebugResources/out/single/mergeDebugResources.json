@@ -1,0 +1,126 @@
+[
+    {
+        "merged": "com.mienian.app-debug-5:/xml_config.xml.flat",
+        "source": "com.mienian.app-main-7:/xml/config.xml"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-mdpi_ic_launcher_round.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-mdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-xxxhdpi_ic_launcher_background.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-xxxhdpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/xml_file_paths.xml.flat",
+        "source": "com.mienian.app-main-7:/xml/file_paths.xml"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-hdpi_ic_launcher_foreground.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-hdpi/ic_launcher_foreground.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-mdpi_ic_launcher_foreground.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-mdpi/ic_launcher_foreground.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.mienian.app-main-7:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-ldpi_ic_launcher_background.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-ldpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-hdpi_ic_launcher_background.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-hdpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/layout_activity_main.xml.flat",
+        "source": "com.mienian.app-main-7:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.mienian.app-main-7:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/drawable-anydpi-v24_ic_launcher_foreground.xml.flat",
+        "source": "com.mienian.app-pngs-0:/drawable-anydpi-v24/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-ldpi_ic_launcher_foreground.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-ldpi/ic_launcher_foreground.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-ldpi_ic_launcher.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-ldpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-xxxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-xxhdpi_ic_launcher_round.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-xxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-xxxhdpi_ic_launcher_foreground.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-xxxhdpi/ic_launcher_foreground.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.mienian.app-main-7:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-xhdpi_ic_launcher_background.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-xhdpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-ldpi_ic_launcher_round.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-ldpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-mdpi_ic_launcher_background.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-mdpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-xhdpi_ic_launcher_round.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-xhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-xxhdpi_ic_launcher_background.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-xxhdpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-hdpi_ic_launcher_round.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-hdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-xhdpi_ic_launcher_foreground.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-xhdpi/ic_launcher_foreground.png"
+    },
+    {
+        "merged": "com.mienian.app-debug-5:/mipmap-xxhdpi_ic_launcher_foreground.png.flat",
+        "source": "com.mienian.app-main-7:/mipmap-xxhdpi/ic_launcher_foreground.png"
+    }
+]
