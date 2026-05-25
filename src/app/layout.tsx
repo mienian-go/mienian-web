@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { BookingProvider } from "@/context/BookingContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { GoCartProvider } from "@/context/GoCartContext";
+import { ConditionalLayout } from "@/components/ConditionalLayout";
 import SplashScreen from "@/components/SplashScreen";
 import PushNotificationSetup from "@/components/PushNotificationSetup";
 
@@ -47,7 +48,7 @@ export default function RootLayout({
               <GoCartProvider>
                 <PushNotificationSetup />
                 <SplashScreen />
-                <main className="min-h-screen">{children}</main>
+                <ConditionalLayout>{children}</ConditionalLayout>
               </GoCartProvider>
             </BookingProvider>
           </AuthProvider>

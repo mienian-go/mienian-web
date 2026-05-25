@@ -8,7 +8,7 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdminPage = pathname.startsWith("/admin");
   const isKangDoMiePage = pathname.startsWith("/kangdomie");
-  const hideLayout = isAdminPage || isKangDoMiePage;
+  const hideLayout = isAdminPage || isKangDoMiePage || pathname.startsWith("/mienian-go") || pathname.startsWith("/payment") || pathname.startsWith("/akun");
   return (
     <>
       {!hideLayout && <Navbar />}
