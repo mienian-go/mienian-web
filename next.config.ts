@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
+  ...(process.env.CAPACITOR_BUILD ? { output: "export" } : {}),
   reactCompiler: true,
   images: {
     unoptimized: true,
